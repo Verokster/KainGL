@@ -1,0 +1,4 @@
+LIBRARY	"DDRAW"
+EXPORTS
+	DirectDrawCreate			= ?DirectDrawCreate@Main@@YGJPAU_GUID@@PAPAUIDirectDraw@@PAUIUnknown@@@Z
+	DirectDrawEnumerateA		= ?DirectDrawEnumerateA@Main@@YGJP6GHPAU_GUID@@PAD1PAX@Z2@Z
