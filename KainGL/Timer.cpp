@@ -31,6 +31,7 @@ CANCELWAITABLETIMER UserCancelWaitableTimer;
 HMODULE hKernel32;
 HANDLE hTimer;
 BOOL isStarted;
+BOOL isSupported;
 
 namespace Timer
 {
@@ -46,10 +47,12 @@ namespace Timer
 				UserCreateWaitableTimer = (CREATEWAITABLETIMER)GetProcAddress(hKernel32, "CreateWaitableTimerA");
 				UserSetWaitableTimer = (SETWAITABLETIMER)GetProcAddress(hKernel32, "SetWaitableTimer");
 				UserCancelWaitableTimer = (CANCELWAITABLETIMER)GetProcAddress(hKernel32, "CancelWaitableTimer");
+
+				isSupported = UserCreateWaitableTimer && UserSetWaitableTimer && UserCancelWaitableTimer;
 			}
 		}
 
-		if (!hTimer)
+		if (!hTimer && isSupported)
 			hTimer = UserCreateWaitableTimer(NULL, FALSE, NULL);
 	}
 
@@ -64,6 +67,9 @@ namespace Timer
 
 	VOID __fastcall Start(LONG timeout)
 	{
+		if (!isSupported)
+			return;
+
 		Stop();
 
 		isStarted = TRUE;
@@ -73,7 +79,7 @@ namespace Timer
 
 	VOID __fastcall Stop()
 	{
-		if (isStarted)
+		if (isStarted && isSupported)
 		{
 			isStarted = FALSE;
 			UserCancelWaitableTimer(hTimer);
@@ -82,6 +88,7 @@ namespace Timer
 
 	VOID __fastcall Wait()
 	{
-		SleepEx(INFINITE, TRUE);
+		if (isSupported)
+			SleepEx(INFINITE, TRUE);
 	}
 }

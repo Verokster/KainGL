@@ -242,16 +242,14 @@ extern GLGETUNIFORMLOCATION GLGetUniformLocation;
 extern GLUNIFORM1I GLUniform1i;
 extern GLUNIFORMMATRIX4FV GLUniformMatrix4fv;
 
-extern HMODULE hModule;
-
 extern WORD glVersion;
 extern DWORD glCapsClampToEdge;
 
 namespace GL
 {
-	BOOL LoadRenderModule();
+	BOOL Load();
 
-	VOID FreeRenderModule();
+	VOID Free();
 
 	VOID CreateContextAttribs(HDC devContext, HGLRC* glContext);
 

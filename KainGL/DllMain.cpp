@@ -36,18 +36,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
-		if (GL::LoadRenderModule())
-		{
-			hDllModule = hModule;
-			Hooks::Load();
-			Timer::Load();
-		}
+		hDllModule = hModule;
+		Hooks::Load();
+		Timer::Load();
 		break;
 
 	case DLL_PROCESS_DETACH:
 		ChangeDisplaySettings(NULL, NULL);
 		Timer::Unload();
-		GL::FreeRenderModule();
+		GL::Free();
 		break;
 
 	case DLL_THREAD_ATTACH:

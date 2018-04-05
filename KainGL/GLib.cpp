@@ -106,25 +106,26 @@ DWORD glCapsClampToEdge;
 
 namespace GL
 {
-	BOOL LoadRenderModule()
+	BOOL Load()
 	{
-		hModule = LoadLibrary("OPENGL32.DLL");
-		if (hModule != NULL)
+		if (!hModule)
+			hModule = LoadLibrary("OPENGL32.DLL");
+
+		if (hModule)
 		{
 			WGLGetProcAddress = (WGLGETPROCADDRESS)GetProcAddress(hModule, "wglGetProcAddress");
 			WGLMakeCurrent = (WGLMAKECURRENT)GetProcAddress(hModule, "wglMakeCurrent");
 			WGLCreateContext = (WGLCREATECONTEXT)GetProcAddress(hModule, "wglCreateContext");
 			WGLDeleteContext = (WGLDELETECONTEXT)GetProcAddress(hModule, "wglDeleteContext");
-
-			return TRUE;
 		}
 
-		return FALSE;
+		return (BOOL)hModule;
 	}
 
-	VOID FreeRenderModule()
+	VOID Free()
 	{
-		FreeLibrary(hModule);
+		if (FreeLibrary(hModule))
+			hModule = NULL;
 	}
 
 	VOID __fastcall LoadGLFunction(CHAR* buffer, const CHAR* prefix, const CHAR* name, PROC* func, const CHAR* sufix = NULL)
