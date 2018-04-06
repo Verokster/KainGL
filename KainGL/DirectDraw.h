@@ -40,7 +40,8 @@ public:
 	HWND hWnd;
 	HDC hDc;
 	HGLRC hRc;
-	DisplayMode* dwMode;
+	DisplayMode* virtualMode;
+	DisplayMode* realMode;
 	BOOL isFinish;
 	DWORD mbPressed;
 
@@ -65,6 +66,7 @@ public:
 	HRESULT SetInternalMode();
 	VOID ScaleMouseIn(LPARAM* lParam);
 	VOID ScaleMouseOut(LPARAM* lParam);
+	VOID CheckDisplayMode();
 
 	VOID RenderOld(DWORD glMaxTexSize);
 	VOID RenderNew();

@@ -42,7 +42,7 @@ namespace Hooks
 		PatchByte(0x00429430, 0x75);
 		PatchNop(0x0044CAC4, 2);
 		PatchByte(0x00468C6C, 0xC3);
-
 		PatchByte(0x0044E669, 0xEB); // remove language check
+		PatchByte(0x00467C74, 0x7E); // patch resolution count check
 	}
 }

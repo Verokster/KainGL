@@ -70,7 +70,11 @@ struct DisplayMode
 	DWORD dwWidth;
 	DWORD dwHeight;
 	DWORD dwBPP;
-	DWORD dwFrequency;
+	union
+	{
+		DWORD dwFrequency;
+		BOOL dwExists;
+	};
 };
 
 enum WindowState

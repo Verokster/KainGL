@@ -157,15 +157,15 @@ namespace GL
 		LoadGLFunction(buffer, PREFIX_WGL, "CreateContextAttribs", (PROC*)&WGLCreateContextAttribs, "ARB");
 		if (WGLCreateContextAttribs)
 		{
-			DWORD wglAttributes[] = {
+			DWORD wglAttributes_3_0[] = {
 				WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 				WGL_CONTEXT_MINOR_VERSION_ARB, 0,
-				WGL_CONTEXT_FLAGS_ARB, 0,
+				WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 				WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 				0
 			};
 
-			HGLRC glHandler = WGLCreateContextAttribs(devContext, NULL, wglAttributes);
+			HGLRC glHandler = WGLCreateContextAttribs(devContext, NULL, wglAttributes_3_0);
 			if (glHandler)
 			{
 				WGLMakeCurrent(devContext, glHandler);
@@ -174,11 +174,28 @@ namespace GL
 			}
 			else
 			{
-				DWORD errorCode = GetLastError();
-				if (errorCode == 0x2095)
-					Main::ShowError("Invalid ARB version", __FILE__, __LINE__);
-				else if (errorCode == 0x2096)
-					Main::ShowError("Invalid ARB profile", __FILE__, __LINE__);
+				DWORD wglAttributes_1_4[] = {
+					WGL_CONTEXT_MAJOR_VERSION_ARB, 1,
+					WGL_CONTEXT_MINOR_VERSION_ARB, 4,
+					WGL_CONTEXT_FLAGS_ARB, 0,
+					0
+				};
+
+				glHandler = WGLCreateContextAttribs(devContext, NULL, wglAttributes_1_4);
+				if (glHandler)
+				{
+					WGLMakeCurrent(devContext, glHandler);
+					WGLDeleteContext(*glContext);
+					*glContext = glHandler;
+				}
+				else
+				{
+					DWORD errorCode = GetLastError();
+					if (errorCode == ERROR_INVALID_VERSION_ARB)
+						Main::ShowError("Invalid ARB version", __FILE__, __LINE__);
+					else if (errorCode == ERROR_INVALID_PROFILE_ARB)
+						Main::ShowError("Invalid ARB profile", __FILE__, __LINE__);
+				}
 			}
 		}
 

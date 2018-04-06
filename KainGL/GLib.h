@@ -102,6 +102,9 @@ typedef char GLchar;
 
 #define GL_SHARED_TEXTURE_PALETTE_EXT 0x81FB
 
+#define ERROR_INVALID_VERSION_ARB 0x2095
+#define ERROR_INVALID_PROFILE_ARB 0x2096
+
 typedef PROC(__stdcall *WGLGETPROCADDRESS)(LPCSTR name);
 typedef BOOL(__stdcall *WGLMAKECURRENT)(HDC devContext, HGLRC glContext);
 typedef HGLRC(__stdcall *WGLCREATECONTEXT)(HDC devContext);

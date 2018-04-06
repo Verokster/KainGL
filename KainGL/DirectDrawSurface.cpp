@@ -67,7 +67,7 @@ DirectDrawSurface::DirectDrawSurface(LPDIRECTDRAW lpDD, BOOL isDouble)
 
 	this->index = 0;
 
-	DisplayMode* dwMode = ((DirectDraw*)this->ddraw)->dwMode;
+	DisplayMode* dwMode = ((DirectDraw*)this->ddraw)->virtualMode;
 	DWORD bufferSize = dwMode->dwWidth * dwMode->dwHeight * (dwMode->dwBPP >> 3);
 	this->indexBuffer = (BYTE*)malloc(bufferSize * (isDouble ? 2 : 1));
 	this->attachedSurface = isDouble ? new DirectDrawSurface(lpDD, this, this->indexBuffer + bufferSize) : NULL;
@@ -161,7 +161,7 @@ HRESULT DirectDrawSurface::GetPixelFormat(LPDDPIXELFORMAT lpDDPixelFormat)
 
 HRESULT DirectDrawSurface::Lock(LPRECT lpDestRect, LPDDSURFACEDESC lpDDSurfaceDesc, DWORD dwFlags, HANDLE hEvent)
 {
-	DisplayMode* dwMode = ((DirectDraw*)this->ddraw)->dwMode;
+	DisplayMode* dwMode = ((DirectDraw*)this->ddraw)->virtualMode;
 
 	lpDDSurfaceDesc->dwWidth = dwMode->dwWidth;
 	lpDDSurfaceDesc->dwHeight = dwMode->dwHeight;

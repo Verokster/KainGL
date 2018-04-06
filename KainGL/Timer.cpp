@@ -22,6 +22,7 @@
 	SOFTWARE.
 */
 
+#include "stdafx.h"
 #include "Timer.h"
 
 CREATEWAITABLETIMER UserCreateWaitableTimer;

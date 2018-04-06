@@ -45,8 +45,8 @@ const GLchar* shFragmentFullscreen =
 "in vec2 fTexCoord;"
 "out vec4 fragColor;"
 "void main(void) {"
-	"float index = texture2D(tex01, fTexCoord).x;"
-	"fragColor = texture1D(pal01, index);"
+	"float index = texture(tex01, fTexCoord).x;"
+	"fragColor = texture(pal01, index);"
 "}";
 
 const GLchar* shFragmentWindowed = 
@@ -56,5 +56,5 @@ const GLchar* shFragmentWindowed =
 "in vec2 fTexCoord;"
 "out vec4 fragColor;"
 "void main(void) {"
-	"fragColor = texture2D(tex01, fTexCoord);"
+	"fragColor = texture(tex01, fTexCoord);"
 "}";
