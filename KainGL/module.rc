@@ -53,7 +53,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2018,4,7,18
+ FILEVERSION 2018,4,7,19
  PRODUCTVERSION 1,1,2,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
@@ -70,7 +70,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Blood Omen DDraw OpenGL wrapper"
-            VALUE "FileVersion", "2018.04.07.18"
+            VALUE "FileVersion", "2018.04.07.19"
             VALUE "LegalCopyright", "© 2018 Verok"
             VALUE "OriginalFilename", "ddraw.dll"
             VALUE "ProductVersion", "1.1.2"

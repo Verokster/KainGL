@@ -191,7 +191,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 					ddraw->isStateChanged = TRUE;
 				}
-				break;
+				return NULL;
 			}
 
 			// Native resolution on/off
@@ -208,7 +208,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 							ddraw->SetInternalMode();
 					}
 				}
-				break;
+				return NULL;
 			}
 
 			// FPS counter on/off
@@ -216,7 +216,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				isFpsEnabled = !isFpsEnabled;
 				isFpsChanged = TRUE;
-				break;
+				return NULL;
 			}
 
 			// Filtering on/off
@@ -227,8 +227,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
 				if (ddraw)
 					ddraw->isStateChanged = TRUE;
-
-				break;
+				return NULL;
 			}
 
 			// Speed PC/PS1
@@ -236,7 +235,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				currentTimeout = currentTimeout != TIMEOUT_PC ? TIMEOUT_PC : TIMEOUT_PS;
 				Timer::Start(currentTimeout);
-				break;
+				return NULL;
 			}
 
 			default:
