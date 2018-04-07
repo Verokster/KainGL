@@ -44,5 +44,6 @@ namespace Hooks
 		PatchByte(0x00468C6C, 0xC3);
 		PatchByte(0x0044E669, 0xEB); // remove language check
 		PatchByte(0x00467C74, 0x7E); // patch resolution count check
+		PatchNop(0x0044436E, 2); // remove timer for gameplay
 	}
 }

@@ -46,7 +46,8 @@ public:
 	DWORD mbPressed;
 
 	HANDLE hDrawThread;
-	//BOOL isDraw;
+	HANDLE hDrawEvent;
+	BOOL isDraw;
 
 	Viewport viewport;
 	DWORD fsStyle;

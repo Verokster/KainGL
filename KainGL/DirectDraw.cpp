@@ -30,7 +30,6 @@
 #include "DirectDrawSurface.h"
 #include "ShaderSource.h"
 #include "FpsCounter.h"
-#include "Timer.h"
 
 #pragma region Not Implemented
 ULONG DirectDraw::AddRef() { return 0; }
@@ -52,14 +51,17 @@ HRESULT DirectDraw::QueryInterface(REFIID riid, LPVOID* ppvObj) { return DD_OK; 
 #define VK_F 0x46
 #define VK_R 0x52
 
+#define TIMEOUT_PC 25.0
+#define TIMEOUT_PS 16.666666
+
 DisplayMode modesList[6];
 
 WNDPROC OldWindowProc;
 LPARAM mousePos;
 HWND mousehWnd;
-LONG currentTimeout = TIMEOUT_PC;
+FLOAT currentTimeout = TIMEOUT_PS;
 GLint glFilter = GL_LINEAR;
-BOOL isRegMode;
+BOOL isRegMode = TRUE;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -100,7 +102,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	case WM_NCACTIVATE:
 	{
-		DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
+		/*DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
 		if (ddraw && ddraw->virtualMode)
 		{
 			if ((BOOL)wParam)
@@ -113,7 +115,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				ChangeDisplaySettings(NULL, NULL);
 				ShowWindow(hWnd, SW_MINIMIZE);
 			}
-		}
+		}*/
 
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
@@ -125,7 +127,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			switch (wParam)
 			{
-			// Windowed mode on/off
+				// Windowed mode on/off
 			case VK_RETURN:
 			{
 				DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
@@ -234,7 +236,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			case VK_R: // R
 			{
 				currentTimeout = currentTimeout != TIMEOUT_PC ? TIMEOUT_PC : TIMEOUT_PS;
-				Timer::Start(currentTimeout);
 				return NULL;
 			}
 
@@ -816,155 +817,153 @@ VOID DirectDraw::RenderNew()
 									{
 										do
 										{
-											//if (this->isDraw)
-											//{
-											//	this->isDraw = FALSE;
-
-											if (isFpsEnabled && this->virtualMode->dwBPP != 8)
-											{
-												DWORD tick = GetTickCount();
-
-												if (isFpsChanged)
+												if (isFpsEnabled && this->virtualMode->dwBPP != 8)
 												{
-													isFpsChanged = FALSE;
-													fpsIdx = -1;
-													fpsTotal = 0;
-													fpsCount = 0;
-													fpsSum = 0;
-													memset(fpsQueue, 0, sizeof(fpsQueue));
-													memset(tickQueue, 0, sizeof(tickQueue));
-												}
+													DWORD tick = GetTickCount();
 
-												++fpsTotal;
-												if (fpsCount < FPS_COUNT)
-													++fpsCount;
-
-												++fpsIdx;
-												if (fpsIdx == FPS_COUNT)
-													fpsIdx = 0;
-
-												DWORD diff = tick - tickQueue[fpsTotal != fpsCount ? fpsIdx : 0];
-												tickQueue[fpsIdx] = tick;
-
-												DWORD fps = diff ? Main::Round(1000.0 / diff * fpsCount) : 9999;
-
-												DWORD* queue = &fpsQueue[fpsIdx];
-												fpsSum -= *queue - fps;
-												*queue = fps;
-											}
-
-											this->CheckView();
-
-											DirectDrawSurface* surface = (DirectDrawSurface*)this->attachedSurface;
-
-											if (this->virtualMode->dwBPP == 8)
-											{
-												if (glFilter == GL_LINEAR)
-												{
-													if (this->isStateChanged)
+													if (isFpsChanged)
 													{
-														this->isStateChanged = FALSE;
-														GLUseProgram(shProgramWin);
-
-														GLuint textureId = textures[2];
-														GLActiveTexture(GL_TEXTURE0);
-														GLBindTexture(GL_TEXTURE_2D, textureId);
+														isFpsChanged = FALSE;
+														fpsIdx = -1;
+														fpsTotal = 0;
+														fpsCount = 0;
+														fpsSum = 0;
+														memset(fpsQueue, 0, sizeof(fpsQueue));
+														memset(tickQueue, 0, sizeof(tickQueue));
 													}
 
-													BYTE* idx = surface->indexBuffer;
-													PALETTEENTRY* pix = (PALETTEENTRY*)pixelBuffer;
-													DWORD count = this->virtualMode->dwWidth * this->virtualMode->dwHeight;
-													while (count--) *pix++ = surface->attachedPallete->entries[*idx++];
+													++fpsTotal;
+													if (fpsCount < FPS_COUNT)
+														++fpsCount;
 
-													GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+													++fpsIdx;
+													if (fpsIdx == FPS_COUNT)
+														fpsIdx = 0;
+
+													DWORD diff = tick - tickQueue[fpsTotal != fpsCount ? fpsIdx : 0];
+													tickQueue[fpsIdx] = tick;
+
+													DWORD fps = diff ? Main::Round(1000.0 / diff * fpsCount) : 9999;
+
+													DWORD* queue = &fpsQueue[fpsIdx];
+													fpsSum -= *queue - fps;
+													*queue = fps;
+												}
+
+												this->CheckView();
+
+												DirectDrawSurface* surface = (DirectDrawSurface*)this->attachedSurface;
+
+												if (this->virtualMode->dwBPP == 8)
+												{
+													if (glFilter == GL_LINEAR)
+													{
+														if (this->isStateChanged)
+														{
+															this->isStateChanged = FALSE;
+															GLUseProgram(shProgramWin);
+
+															GLuint textureId = textures[2];
+															GLActiveTexture(GL_TEXTURE0);
+															GLBindTexture(GL_TEXTURE_2D, textureId);
+														}
+
+														BYTE* idx = surface->indexBuffer;
+														PALETTEENTRY* pix = (PALETTEENTRY*)pixelBuffer;
+														DWORD count = this->virtualMode->dwWidth * this->virtualMode->dwHeight;
+														while (count--) *pix++ = surface->attachedPallete->entries[*idx++];
+
+														GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+													}
+													else
+													{
+														GLuint paletteId = textures[0];
+														GLuint indicesId = textures[1];
+
+														if (this->isStateChanged)
+														{
+															this->isStateChanged = FALSE;
+															GLUseProgram(shProgramFull);
+														}
+
+														GLActiveTexture(GL_TEXTURE1);
+														GLBindTexture(GL_TEXTURE_1D, paletteId);
+														GLTexSubImage1D(GL_TEXTURE_1D, 0, 0, 256, GL_RGBA, GL_UNSIGNED_BYTE, surface->attachedPallete->entries);
+
+														GLActiveTexture(GL_TEXTURE0);
+														GLBindTexture(GL_TEXTURE_2D, indicesId);
+														GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_RED, GL_UNSIGNED_BYTE, surface->indexBuffer);
+													}
 												}
 												else
 												{
-													GLuint paletteId = textures[0];
-													GLuint indicesId = textures[1];
-
 													if (this->isStateChanged)
 													{
 														this->isStateChanged = FALSE;
-														GLUseProgram(shProgramFull);
+
+														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
+														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
 													}
 
-													GLActiveTexture(GL_TEXTURE1);
-													GLBindTexture(GL_TEXTURE_1D, paletteId);
-													GLTexSubImage1D(GL_TEXTURE_1D, 0, 0, 256, GL_RGBA, GL_UNSIGNED_BYTE, surface->attachedPallete->entries);
+													GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, surface->indexBuffer);
 
-													GLActiveTexture(GL_TEXTURE0);
-													GLBindTexture(GL_TEXTURE_2D, indicesId);
-													GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_RED, GL_UNSIGNED_BYTE, surface->indexBuffer);
-												}
-											}
-											else
-											{
-												if (this->isStateChanged)
-												{
-													this->isStateChanged = FALSE;
-
-													GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
-													GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
-												}
-
-												GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, surface->indexBuffer);
-
-												if (isFpsEnabled)
-												{
-													DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
-
-													DWORD offset = FPS_X;
-
-													DWORD digCount = 0;
-													DWORD current = fps;
-													do
+													if (isFpsEnabled)
 													{
-														++digCount;
-														current = current / 10;
-													} while (current);
+														DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
 
-													DWORD dcount = digCount;
-													current = fps;
-													do
-													{
-														DWORD digit = current % 10;
-														bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
+														DWORD offset = FPS_X;
 
-														for (DWORD y = 0; y < FPS_HEIGHT; ++y)
+														DWORD digCount = 0;
+														DWORD current = fps;
+														do
 														{
-															WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
-																FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
+															++digCount;
+															current = current / 10;
+														} while (current);
 
-															WORD* pix = (WORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
-																(FPS_STEP + FPS_WIDTH) * (dcount - 1);
+														DWORD dcount = digCount;
+														current = fps;
+														do
+														{
+															DWORD digit = current % 10;
+															bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
 
-															memcpy(pix, idx, FPS_STEP * sizeof(WORD));
-															pix += FPS_STEP;;
-															idx += FPS_STEP;
-
-															DWORD width = FPS_WIDTH;
-															do
+															for (DWORD y = 0; y < FPS_HEIGHT; ++y)
 															{
-																*pix++ = *lpDig++ ? FPS_COLOR : *idx;
-																++idx;
-															} while (--width);
-														}
+																WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
+																	FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
 
-														current = current / 10;
-													} while (--dcount);
+																WORD* pix = (WORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
+																	(FPS_STEP + FPS_WIDTH) * (dcount - 1);
 
-													GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-													GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
-													GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+																memcpy(pix, idx, FPS_STEP * sizeof(WORD));
+																pix += FPS_STEP;;
+																idx += FPS_STEP;
+
+																DWORD width = FPS_WIDTH;
+																do
+																{
+																	*pix++ = *lpDig++ ? FPS_COLOR : *idx;
+																	++idx;
+																} while (--width);
+															}
+
+															current = current / 10;
+														} while (--dcount);
+
+														GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+														GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
+														GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+													}
 												}
-											}
 
-											GLDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+												GLDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-											GLFlush();
-											SwapBuffers(this->hDc);
-											//}
+												GLFlush();
+												SwapBuffers(this->hDc);
+
+												WaitForSingleObject(this->hDrawEvent, INFINITE);
+												ResetEvent(this->hDrawEvent);
 										} while (!this->isFinish);
 										GLFinish();
 									}
@@ -1001,13 +1000,11 @@ DirectDraw::DirectDraw(DirectDraw* lastObj)
 	this->attachedSurface = NULL;
 	this->tick = GetTickCount();
 
-	Timer::Start(currentTimeout);
+	this->hDrawEvent = CreateEvent(0, TRUE, FALSE, 0);
 }
 
 DirectDraw::~DirectDraw()
 {
-	Timer::Stop();
-
 	DirectDrawSurface* surfaceEntry = (DirectDrawSurface*)this->surfaceEntries;
 	while (surfaceEntry)
 	{
@@ -1031,6 +1028,8 @@ DirectDraw::~DirectDraw()
 		delete clipperEntry;
 		clipperEntry = curr;
 	}
+
+	CloseHandle(this->hDrawEvent);
 }
 
 VOID DirectDraw::CheckView()
@@ -1337,10 +1336,7 @@ HRESULT DirectDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceD
 	return DD_OK;
 }
 
-HRESULT DirectDraw::FlipToGDISurface()
-{
-	return DD_OK;
-}
+HRESULT DirectDraw::FlipToGDISurface() { return DD_OK; }
 
 HRESULT DirectDraw::GetCaps(LPDDCAPS lpDDDriverCaps, LPDDCAPS lpDDHELCaps)
 {
@@ -1396,7 +1392,4 @@ HRESULT DirectDraw::SetDisplayMode(DWORD dwWidth, DWORD dwHeight, DWORD dwBPP)
 	return DD_OK;
 }
 
-HRESULT DirectDraw::WaitForVerticalBlank(DWORD dwFlags, HANDLE hEvent)
-{
-	return DD_OK;
-}
+HRESULT DirectDraw::WaitForVerticalBlank(DWORD dwFlags, HANDLE hEvent) { return DD_OK; }

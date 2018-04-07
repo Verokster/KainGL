@@ -36,6 +36,8 @@ extern DirectDraw* ddrawList;
 extern LPARAM mousePos;
 extern HWND mousehWnd;
 
+extern FLOAT currentTimeout;
+
 namespace Main
 {
 	DirectDraw* FindDirectDrawByWindow(HWND hWnd);

@@ -26,7 +26,6 @@
 #include "GLib.h"
 #include "DirectDrawSurface.h"
 #include "DirectDraw.h"
-#include "Timer.h"
 
 #pragma region Not Implemented
 HRESULT DirectDrawSurface::QueryInterface(REFIID riid, LPVOID* ppvObj) { return DD_OK; }
@@ -102,6 +101,7 @@ ULONG DirectDrawSurface::Release()
 	{
 		DirectDraw* mdraw = (DirectDraw*)this->ddraw;
 		mdraw->isFinish = TRUE;
+		SetEvent(mdraw->hDrawEvent);
 		WaitForSingleObject(mdraw->hDrawThread, INFINITE);
 
 		RedrawWindow(mdraw->hWnd, NULL, NULL, RDW_INVALIDATE);
@@ -188,14 +188,29 @@ HRESULT DirectDrawSurface::SetPalette(LPDIRECTDRAWPALETTE lpDDPalette)
 	return DD_OK;
 }
 
-INT oldTick;
-
+DOUBLE oldTime;
 HRESULT DirectDrawSurface::Unlock(LPVOID lpRect)
 {
-	((DirectDraw*)this->ddraw)->attachedSurface = this;
-	//((DirectDraw*)this->ddraw)->isDraw = TRUE;
-
-	Timer::Wait();
+	DirectDraw* mdraw = (DirectDraw*)this->ddraw;
+	mdraw->attachedSurface = this;
+ 	SetEvent(mdraw->hDrawEvent);
 	
+	LONGLONG qpf;
+	QueryPerformanceFrequency((LARGE_INTEGER*)&qpf);
+	DOUBLE timerResolution = 0.001 * qpf;
+
+	DOUBLE endTime = oldTime + currentTimeout;
+	DOUBLE currentTime = 0;
+	do
+	{
+		LONGLONG qpc;
+		QueryPerformanceCounter((LARGE_INTEGER*)&qpc);
+		currentTime = (DOUBLE)qpc / timerResolution;
+
+		//if (endTime - currentTime > 3.0)
+		//	Sleep(1);
+	} while (currentTime < endTime);
+	oldTime = currentTime;
+
 	return DD_OK;
 }

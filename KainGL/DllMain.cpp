@@ -24,7 +24,6 @@
 
 #include "stdafx.h"
 #include "Hooks.h"
-#include "Timer.h"
 
 DWORD libCount;
 HMODULE* modules;
@@ -38,12 +37,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		hDllModule = hModule;
 		Hooks::Load();
-		Timer::Load();
 		break;
 
 	case DLL_PROCESS_DETACH:
 		ChangeDisplaySettings(NULL, NULL);
-		Timer::Unload();
 		GL::Free();
 		break;
 
