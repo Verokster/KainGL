@@ -208,6 +208,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 							ddraw->SetInternalMode();
 					}
 				}
+				break;
 			}
 
 			// FPS counter on/off
