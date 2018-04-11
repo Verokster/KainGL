@@ -25,6 +25,8 @@
 #include "stdafx.h"
 #include "Windowsx.h"
 #include "Hooks.h"
+#include "Config.h"
+#include "Main.h"
 
 BOOL __stdcall GetMousePos(LPPOINT lpPoint)
 {
@@ -36,13 +38,19 @@ BOOL __stdcall GetMousePos(LPPOINT lpPoint)
 BOOL __stdcall SetMousePos(INT X, INT Y)
 {
 	DirectDraw* ddraw = Main::FindDirectDrawByWindow(mousehWnd);
-	if (ddraw && ddraw->windowState == WinStateWindowed)
+	if (ddraw)
 	{
 		mousePos = MAKELONG(X, Y);
 		ddraw->ScaleMouseOut(&mousePos);
 
 		POINT point = { GET_X_LPARAM(mousePos), GET_Y_LPARAM(mousePos) };
+
+		RECT r;
+		GetWindowRect(ddraw->hWnd, &r);
+
 		ClientToScreen(ddraw->hWnd, &point);
+		if (!configDisplayWindowed)
+			++point.y;
 
 		SetCursorPos(point.x, point.y);
 	}
@@ -62,5 +70,24 @@ namespace Hooks
 
 		PatchDWord(0x004608D8 + 3, (DWORD)&lpSetMousePos);
 		PatchDWord(0x0047060E + 2, (DWORD)&lpSetMousePos);
+
+		// ----------------------------
+		PatchDWord(0x00441EAB + 1, 360); // 480
+		PatchDWord(0x00441EB0 + 1, 480); // 640
+		
+		PatchDWord(0x00441EB7 + 1, 180); // 240
+		PatchDWord(0x00441EBC + 1, 240); // 320
+		// ----------------------------
+		PatchDWord(0x00441F68 + 1, 360); // 480
+		PatchDWord(0x00441F6D + 1, 480); // 640
+
+		PatchDWord(0x00441F74 + 1, 180); // 240
+		PatchDWord(0x00441F79 + 1, 240); // 320
+		// ----------------------------
+		PatchDWord(0x00442075 + 1, 360); // 480
+		PatchDWord(0x0044207A + 1, 480); // 640
+
+		PatchDWord(0x00442081 + 1, 180); // 240
+		PatchDWord(0x00442086 + 1, 240); // 320
 	}
 }

@@ -1,4 +1,22 @@
 LIBRARY	"DDRAW"
 EXPORTS
-	DirectDrawCreate			= ?DirectDrawCreate@Main@@YGJPAU_GUID@@PAPAUIDirectDraw@@PAUIUnknown@@@Z
-	DirectDrawEnumerateA		= ?DirectDrawEnumerateA@Main@@YGJP6GHPAU_GUID@@PAD1PAX@Z2@Z
+	AcquireDDThreadLock				= ?AcquireDDThreadLock@@YGXXZ
+	CompleteCreateSysmemSurface		= ?CompleteCreateSysmemSurface@@YGXXZ
+	D3DParseUnknownCommand			= ?D3DParseUnknownCommand@@YGXXZ
+	DDGetAttachedSurfaceLcl			= ?DDGetAttachedSurfaceLcl@@YGXXZ
+	DDInternalLock					= ?DDInternalLock@@YGXXZ
+	DDInternalUnlock				= ?DDInternalUnlock@@YGXXZ
+	DSoundHelp						= ?DSoundHelp@@YGXXZ
+	DirectDrawCreate				= ?DirectDrawCreate@@YGXXZ
+	DirectDrawCreateClipper			= ?DirectDrawCreateClipper@@YGXXZ
+	DirectDrawCreateEx				= ?DirectDrawCreateEx@@YGXXZ
+	DirectDrawEnumerateA			= ?DirectDrawEnumerateA@@YGXXZ
+	DirectDrawEnumerateExA			= ?DirectDrawEnumerateExA@@YGXXZ
+	DirectDrawEnumerateExW			= ?DirectDrawEnumerateExW@@YGXXZ
+	DirectDrawEnumerateW			= ?DirectDrawEnumerateW@@YGXXZ
+	GetDDSurfaceLocal				= ?GetDDSurfaceLocal@@YGXXZ
+	GetOLEThunkData					= ?GetOLEThunkData@@YGXXZ
+	GetSurfaceFromDC				= ?GetSurfaceFromDC@@YGXXZ
+	RegisterSpecialCase				= ?RegisterSpecialCase@@YGXXZ
+	ReleaseDDThreadLock				= ?ReleaseDDThreadLock@@YGXXZ
+	SetAppCompatData				= ?SetAppCompatData@@YGXXZ

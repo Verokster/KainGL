@@ -31,22 +31,8 @@
 #include "DirectDraw.h"
 
 extern HMODULE hDllModule;
-extern DirectDraw* ddrawList;
 
 extern LPARAM mousePos;
 extern HWND mousehWnd;
 
 extern FLOAT currentTimeout;
-
-namespace Main
-{
-	DirectDraw* FindDirectDrawByWindow(HWND hWnd);
-
-	VOID __fastcall ShowError(CHAR* message, CHAR* file, DWORD line);
-
-	DWORD __fastcall Round(FLOAT number);
-
-#ifdef _DEBUG
-	VOID __fastcall CheckError(CHAR* file, DWORD line);
-#endif
-}

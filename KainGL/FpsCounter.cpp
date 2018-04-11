@@ -25,7 +25,6 @@
 #include "stdafx.h"
 #include "FpsCounter.h"
 
-BOOL isFpsEnabled;
 BOOL isFpsChanged;
 
 const bool counters[10][FPS_HEIGHT][FPS_WIDTH] = {

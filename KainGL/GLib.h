@@ -41,6 +41,10 @@ typedef ptrdiff_t GLintptr;
 typedef ptrdiff_t GLsizeiptr;
 typedef char GLchar;
 
+#define GL_VER_AUTO 0x0000
+#define GL_VER_1 0x0001
+#define GL_VER_3 0x0003
+
 #define GL_VER_1_1 0x0110
 #define GL_VER_1_2 0x0120
 #define GL_VER_1_3 0x0130
@@ -99,8 +103,6 @@ typedef char GLchar;
 #define GL_UNSIGNED_SHORT_5_6_5 0x8363
 //#define GL_UNSIGNED_SHORT_5_5_5_1 0x8034
 #define GL_UNSIGNED_SHORT_1_5_5_5_REV 0x8366
-
-#define GL_SHARED_TEXTURE_PALETTE_EXT 0x81FB
 
 #define ERROR_INVALID_VERSION_ARB 0x2095
 #define ERROR_INVALID_PROFILE_ARB 0x2096

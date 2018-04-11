@@ -22,18 +22,25 @@
 	SOFTWARE.
 */
 
-#include "stdafx.h"
-#include "Hooks.h"
+#pragma once
+#include "windows.h"
+#include "DirectDraw.h"
 
-namespace Hooks
+extern DirectDraw* ddrawList;
+
+namespace Main
 {
-	VOID Patch_System()
-	{
-		PatchByte(0x00429430, 0x75);
-		PatchNop(0x0044CAC4, 2);
-		PatchByte(0x00468C6C, 0xC3);
-		
-		PatchByte(0x00467C74, 0x7E); // patch resolution count check
-		PatchNop(0x0044436E, 2); // remove timer for gameplay
-	}
+	HRESULT __stdcall DirectDrawCreate(GUID* lpGUID, LPDIRECTDRAW* lplpDD, IUnknown* pUnkOuter);
+
+	HRESULT __stdcall DirectDrawEnumerate(LPDDENUMCALLBACK lpCallback, LPVOID lpContext);
+
+	DirectDraw* FindDirectDrawByWindow(HWND hWnd);
+
+	VOID __fastcall ShowError(CHAR* message, CHAR* file, DWORD line);
+
+	DWORD __fastcall Round(FLOAT number);
+
+#ifdef _DEBUG
+	VOID __fastcall CheckError(CHAR* file, DWORD line);
+#endif
 }

@@ -22,18 +22,42 @@
 	SOFTWARE.
 */
 
-#include "stdafx.h"
-#include "Hooks.h"
+#pragma once
+#include "windows.h"
 
-namespace Hooks
+#define CONFIG_GL "OPENGL"
+#define CONFIG_GL_VERSION "Version"
+#define CONFIG_GL_FILTERING "Filtering"
+
+#define CONFIG_DISPLAY "DISPLAY"
+#define CONFIG_DISPLAY_WINDOWED "Windowed"
+#define CONFIG_DISPLAY_RESOLUTION "Resolution"
+#define CONFIG_DISPLAY_ASPECT "Aspect"
+
+#define CONFIG_FPS "FPS"
+#define CONFIG_FPS_LIMIT "Limit"
+#define CONFIG_FPS_COUNTER "Counter"
+
+#define CONFIG_OTHER "OTHER"
+#define CONFIG_OTHER_SKIP_INTRO "SkipIntro"
+
+extern TCHAR iniFile[];
+
+extern DWORD configGlVersion;
+extern DWORD configGlFiltering;
+
+extern BOOL configDisplayWindowed;
+extern Resolution configDisplayResolution;
+extern BOOL configDisplayAspect;
+
+extern FLOAT configFpsLimit;
+extern BOOL configFpsCounter;
+
+extern BOOL configOtherSkipIntro;
+
+namespace Config
 {
-	VOID Patch_System()
-	{
-		PatchByte(0x00429430, 0x75);
-		PatchNop(0x0044CAC4, 2);
-		PatchByte(0x00468C6C, 0xC3);
-		
-		PatchByte(0x00467C74, 0x7E); // patch resolution count check
-		PatchNop(0x0044436E, 2); // remove timer for gameplay
-	}
+	VOID Load();
+	DWORD __fastcall Get(const CHAR* section, const CHAR* key, DWORD def);
+	BOOL __fastcall Set(const CHAR* section, const CHAR* key, DWORD value);
 }

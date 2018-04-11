@@ -24,16 +24,22 @@
 
 #include "stdafx.h"
 #include "Hooks.h"
+#include "Config.h"
 
 namespace Hooks
 {
-	VOID Patch_System()
+	VOID Patch_Movie()
 	{
-		PatchByte(0x00429430, 0x75);
-		PatchNop(0x0044CAC4, 2);
-		PatchByte(0x00468C6C, 0xC3);
-		
-		PatchByte(0x00467C74, 0x7E); // patch resolution count check
-		PatchNop(0x0044436E, 2); // remove timer for gameplay
+		if (configOtherSkipIntro)
+		{
+			// skip movies
+			PatchNop(0x0042A6FD, 0x0042A72A - 0x0042A6FD); // Skip movies
+			PatchNop(0x0042A754, 0x0042A7E5 - 0x0042A754); // Skip intro
+		}
+		else
+		{
+			PatchDWord(0x0042A7A5 + 1, 4000); // Lower intro 1 timeout
+			PatchDWord(0x0042A7D9 + 1, 3000); // Lower intro 2 timeout
+		}
 	}
 }

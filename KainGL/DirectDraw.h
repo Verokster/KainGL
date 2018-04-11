@@ -50,8 +50,8 @@ public:
 	BOOL isDraw;
 
 	Viewport viewport;
-	DWORD fsStyle;
-	WindowState windowState;
+	DWORD isStylesLoaded;
+	//WindowState windowState;
 	BOOL isStateChanged;
 	WINDOWPLACEMENT windowPlacement;
 	DWORD clearStage;
@@ -63,8 +63,10 @@ public:
 	DirectDraw(DirectDraw* lastObj);
 	~DirectDraw();
 
+	VOID CalcView();
 	VOID CheckView();
-	HRESULT SetInternalMode();
+	HRESULT SetFullscreenMode();
+	HRESULT SetWindowedMode();
 	VOID ScaleMouseIn(LPARAM* lParam);
 	VOID ScaleMouseOut(LPARAM* lParam);
 	VOID CheckDisplayMode();

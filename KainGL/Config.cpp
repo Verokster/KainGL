@@ -23,17 +23,41 @@
 */
 
 #include "stdafx.h"
-#include "Hooks.h"
+#include "Config.h"
+#include "Glib.h"
 
-namespace Hooks
+TCHAR iniFile[MAX_PATH];
+
+DWORD configGlVersion;
+DWORD configGlFiltering;
+
+BOOL configDisplayWindowed;
+Resolution configDisplayResolution;
+BOOL configDisplayAspect;
+
+BOOL configFpsCounter;
+FLOAT configFpsLimit;
+
+BOOL configOtherSkipIntro;
+
+namespace Config
 {
-	VOID Patch_System()
+	VOID Load()
 	{
-		PatchByte(0x00429430, 0x75);
-		PatchNop(0x0044CAC4, 2);
-		PatchByte(0x00468C6C, 0xC3);
-		
-		PatchByte(0x00467C74, 0x7E); // patch resolution count check
-		PatchNop(0x0044436E, 2); // remove timer for gameplay
+		GetModuleFileName(hDllModule, iniFile, MAX_PATH);
+		*strrchr(iniFile, '.') = NULL;
+		strcat(iniFile, ".ini");
+	}
+
+	DWORD __fastcall Get(const CHAR* section, const CHAR* key, DWORD def)
+	{
+		return GetPrivateProfileInt(section, key, def, iniFile);
+	}
+
+	BOOL __fastcall Set(const CHAR* section, const CHAR* key, DWORD value)
+	{
+		TCHAR res[20];
+		sprintf(res, "%d", value);
+		return WritePrivateProfileString(section, key, res, iniFile);
 	}
 }

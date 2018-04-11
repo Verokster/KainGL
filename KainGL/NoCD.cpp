@@ -27,13 +27,9 @@
 
 namespace Hooks
 {
-	VOID Patch_System()
+	VOID Patch_NoCD()
 	{
-		PatchByte(0x00429430, 0x75);
-		PatchNop(0x0044CAC4, 2);
-		PatchByte(0x00468C6C, 0xC3);
-		
-		PatchByte(0x00467C74, 0x7E); // patch resolution count check
-		PatchNop(0x0044436E, 2); // remove timer for gameplay
+		PatchDWord(0x0044E6F8 + 2, 0x005947F4);
+		PatchDWord(0x0044E737 + 1, 0x005947E8);
 	}
 }

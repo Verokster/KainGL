@@ -31,16 +31,16 @@ DirectDraw* ddrawList;
 
 namespace Main
 {
-	HRESULT WINAPI DirectDrawCreate(GUID* lpGUID, LPDIRECTDRAW* lplpDD, IUnknown * pUnkOuter)
+	HRESULT __stdcall DirectDrawCreate(GUID* lpGUID, LPDIRECTDRAW* lplpDD, IUnknown* pUnkOuter)
 	{
 		ddrawList = new DirectDraw(ddrawList);
 		*(DirectDraw**)lplpDD = ddrawList;
 		return DD_OK;
 	}
 
-	HRESULT WINAPI DirectDrawEnumerate(LPDDENUMCALLBACK lpCallback, LPVOID lpContext)
+	HRESULT __stdcall DirectDrawEnumerate(LPDDENUMCALLBACK lpCallback, LPVOID lpContext)
 	{
-		GUID id = { 0X51221AA6, 0XC5DA, 0X468F, 0X82, 0X31, 0X68, 0X0E, 0XC9, 0X03, 0XA3, 0XB8 };
+		GUID id = { 0x51221AA6, 0xC5DA, 0x468F, 0x82, 0x31, 0x68, 0x0E, 0xC9, 0x03, 0xA3, 0xB8 };
 		lpCallback(&id, "OpenGL Wrapper", "OpenGL Wrapper", lpContext);
 		return DD_OK;
 	}
@@ -70,6 +70,8 @@ namespace Main
 		CHAR dest[400];
 		sprintf(dest, "%s\n\n\nFILE %s\nLINE %d", message, file, line);
 		MessageBox(NULL, dest, "Error", MB_OK | MB_ICONERROR);
+
+		exit(1);
 	}
 
 #ifdef _DEBUG

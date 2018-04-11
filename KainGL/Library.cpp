@@ -24,16 +24,18 @@
 
 #include "stdafx.h"
 #include "Hooks.h"
+#include "Main.h"
+
+DWORD pLibEnumerate, pLibCreate;
 
 namespace Hooks
 {
-	VOID Patch_System()
+	VOID Patch_Library()
 	{
-		PatchByte(0x00429430, 0x75);
-		PatchNop(0x0044CAC4, 2);
-		PatchByte(0x00468C6C, 0xC3);
-		
-		PatchByte(0x00467C74, 0x7E); // patch resolution count check
-		PatchNop(0x0044436E, 2); // remove timer for gameplay
+		pLibEnumerate = (DWORD)Main::DirectDrawEnumerateA;
+		pLibCreate = (DWORD)Main::DirectDrawCreate;
+
+		PatchDWord(0x004707BE + 2, (DWORD)&pLibEnumerate);
+		PatchDWord(0x004707C4 + 2, (DWORD)&pLibCreate);
 	}
 }

@@ -29,9 +29,7 @@
 #define FPS_HEIGHT 24
 #define FPS_STEP 4
 #define FPS_COUNT 120
-#define FPS_COLOR 0xFFFF
 
-extern BOOL isFpsEnabled;
 extern BOOL isFpsChanged;
 
 extern const bool counters[10][FPS_HEIGHT][FPS_WIDTH];

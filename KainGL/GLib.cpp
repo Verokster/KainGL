@@ -24,6 +24,8 @@
 
 #include "stdafx.h"
 #include "GLib.h"
+#include "Config.h"
+#include "Main.h"
 
 #define PREFIX_GL "gl"
 #define PREFIX_WGL "wgl"
@@ -150,52 +152,75 @@ namespace GL
 		}
 	}
 
-	VOID CreateContextAttribs(HDC devContext, HGLRC* glContext)
+	BOOL __fastcall GetContext(HDC hDc, HGLRC* lpHRc, BOOL showError, DWORD* wglAttributes)
+	{
+		HGLRC hRc = WGLCreateContextAttribs(hDc, NULL, wglAttributes);
+		if (hRc)
+		{
+			WGLMakeCurrent(hDc, hRc);
+			WGLDeleteContext(*lpHRc);
+			*lpHRc = hRc;
+
+			return TRUE;
+		}
+		else if (showError)
+		{
+			DWORD errorCode = GetLastError();
+			if (errorCode == ERROR_INVALID_VERSION_ARB)
+				Main::ShowError("Invalid ARB version", __FILE__, __LINE__);
+			else if (errorCode == ERROR_INVALID_PROFILE_ARB)
+				Main::ShowError("Invalid ARB profile", __FILE__, __LINE__);
+		}
+
+		return FALSE;
+	}
+
+	BOOL __fastcall GetContext_1_4(HDC hDc, HGLRC* lpHRc, BOOL showError)
+	{
+		DWORD wglAttributes[] = {
+			WGL_CONTEXT_MAJOR_VERSION_ARB, 1,
+			WGL_CONTEXT_MINOR_VERSION_ARB, 4,
+			WGL_CONTEXT_FLAGS_ARB, 0,
+			0
+		};
+
+		return GetContext(hDc, lpHRc, showError, wglAttributes);
+	}
+
+	BOOL __fastcall GetContext_3_0(HDC hDc, HGLRC* lpHRc, BOOL showError)
+	{
+		DWORD wglAttributes[] = {
+			WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+			WGL_CONTEXT_MINOR_VERSION_ARB, 0,
+			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+			WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+			0
+		};
+
+		return GetContext(hDc, lpHRc, showError, wglAttributes);
+	}
+
+	VOID CreateContextAttribs(HDC hDc, HGLRC* lpHRc)
 	{
 		CHAR buffer[256];
-
 		LoadGLFunction(buffer, PREFIX_WGL, "CreateContextAttribs", (PROC*)&WGLCreateContextAttribs, "ARB");
+
 		if (WGLCreateContextAttribs)
 		{
-			DWORD wglAttributes_3_0[] = {
-				WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-				WGL_CONTEXT_MINOR_VERSION_ARB, 0,
-				WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-				WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-				0
-			};
-
-			HGLRC glHandler = WGLCreateContextAttribs(devContext, NULL, wglAttributes_3_0);
-			if (glHandler)
+			switch (configGlVersion)
 			{
-				WGLMakeCurrent(devContext, glHandler);
-				WGLDeleteContext(*glContext);
-				*glContext = glHandler;
-			}
-			else
-			{
-				DWORD wglAttributes_1_4[] = {
-					WGL_CONTEXT_MAJOR_VERSION_ARB, 1,
-					WGL_CONTEXT_MINOR_VERSION_ARB, 4,
-					WGL_CONTEXT_FLAGS_ARB, 0,
-					0
-				};
+			case GL_VER_1:
+				GetContext_1_4(hDc, lpHRc, TRUE);
+				break;
 
-				glHandler = WGLCreateContextAttribs(devContext, NULL, wglAttributes_1_4);
-				if (glHandler)
-				{
-					WGLMakeCurrent(devContext, glHandler);
-					WGLDeleteContext(*glContext);
-					*glContext = glHandler;
-				}
-				else
-				{
-					DWORD errorCode = GetLastError();
-					if (errorCode == ERROR_INVALID_VERSION_ARB)
-						Main::ShowError("Invalid ARB version", __FILE__, __LINE__);
-					else if (errorCode == ERROR_INVALID_PROFILE_ARB)
-						Main::ShowError("Invalid ARB profile", __FILE__, __LINE__);
-				}
+			case GL_VER_3:
+				GetContext_3_0(hDc, lpHRc, TRUE);
+				break;
+
+			default:
+				if (!GetContext_3_0(hDc, lpHRc, FALSE))
+					GetContext_1_4(hDc, lpHRc, TRUE);
+				break;
 			}
 		}
 
@@ -268,7 +293,8 @@ namespace GL
 
 		if (GLGetString)
 		{
-			glVersion = 0;
+			glVersion = GL_VER_AUTO;
+
 			WORD shiftVal = 8;
 			const CHAR* strVer = (const CHAR*)GLGetString(GL_VERSION);
 			if (strVer)
@@ -278,6 +304,7 @@ namespace GL
 				{
 					if (strVer[j] <= '9' && strVer[j] >= '0')
 					{
+						DWORD dx = (strVer[j] - '0') << shiftVal;
 						glVersion += (strVer[j] - '0') << shiftVal;
 						shiftVal -= 4;
 					}
@@ -289,6 +316,9 @@ namespace GL
 			}
 			else
 				glVersion = GL_VER_1_1;
+
+			if (configGlVersion == GL_VER_1 && glVersion >= GL_VER_1_4)
+				glVersion = GL_VER_1_4;
 
 			if (glVersion < GL_VER_1_2)
 			{
@@ -307,7 +337,7 @@ namespace GL
 			GLColorTable = NULL;
 	}
 
-	LRESULT CALLBACK DummyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	LRESULT __stdcall DummyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
@@ -346,18 +376,18 @@ namespace GL
 				NULL
 			);
 
-			if (dummyhWnd != NULL)
+			if (dummyhWnd)
 			{
 				HDC dummyDc = ::GetDC(dummyhWnd);
-				if (dummyDc != NULL)
+				if (dummyDc)
 				{
 					*pixelFormat = ChoosePixelFormat(dummyDc, pfd);
-					if (*pixelFormat != 0)
+					if (*pixelFormat)
 					{
 						if (SetPixelFormat(dummyDc, *pixelFormat, pfd))
 						{
 							HGLRC hRc = WGLCreateContext(dummyDc);
-							if (hRc != NULL)
+							if (hRc)
 							{
 								if (WGLMakeCurrent(dummyDc, hRc))
 								{
@@ -377,13 +407,13 @@ namespace GL
 											0
 										};
 
-										int glPixelFormats[128];
-										if (WGLChoosePixelFormatARB(dummyDc, (const int*)attribList, NULL, sizeof(glPixelFormats) / sizeof(int), glPixelFormats, &numGlFormats))
+										INT glPixelFormats[128];
+										if (WGLChoosePixelFormatARB(dummyDc, (const INT*)attribList, NULL, sizeof(glPixelFormats) / sizeof(INT), glPixelFormats, &numGlFormats))
 											if (numGlFormats >= 1)
 												*pixelFormat = glPixelFormats[0];
 									}
 
-									if (hRc != NULL)
+									if (hRc)
 									{
 										WGLMakeCurrent(NULL, NULL);
 										WGLDeleteContext(hRc);

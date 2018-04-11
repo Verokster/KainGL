@@ -30,6 +30,8 @@
 #include "DirectDrawSurface.h"
 #include "ShaderSource.h"
 #include "FpsCounter.h"
+#include "Config.h"
+#include "Main.h"
 
 #pragma region Not Implemented
 ULONG DirectDraw::AddRef() { return 0; }
@@ -46,24 +48,18 @@ HRESULT DirectDraw::DuplicateSurface(LPDIRECTDRAWSURFACE, LPDIRECTDRAWSURFACE *)
 HRESULT DirectDraw::QueryInterface(REFIID riid, LPVOID* ppvObj) { return DD_OK; }
 #pragma endregion
 
-#define WIN_STYLE WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_SIZEBOX
+#define WIN_STYLE WS_POPUPWINDOW | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CLIPSIBLINGS | WS_SIZEBOX
+#define FS_STYLE WS_POPUP | WS_SYSMENU | WS_CAPTION | WS_VISIBLE | WS_CLIPSIBLINGS
 #define VK_I 0x49
 #define VK_F 0x46
-#define VK_R 0x52
-
-#define TIMEOUT_PC 25.0
-#define TIMEOUT_PS 16.666666
 
 DisplayMode modesList[6];
 
 WNDPROC OldWindowProc;
 LPARAM mousePos;
 HWND mousehWnd;
-FLOAT currentTimeout = TIMEOUT_PS;
-GLint glFilter = GL_LINEAR;
-BOOL isRegMode = TRUE;
 
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
@@ -73,8 +69,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if (ddraw && ddraw->virtualMode)
 		{
 			ddraw->viewport.width = LOWORD(lParam);
-			ddraw->viewport.height = HIWORD(lParam) - (ddraw->windowState != WinStateWindowed ? -1 : 0);
+			ddraw->viewport.height = HIWORD(lParam) - (!configDisplayWindowed ? 1 : 0);
 			ddraw->viewport.refresh = TRUE;
+			SetEvent(ddraw->hDrawEvent);
 		}
 
 		return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
@@ -102,20 +99,20 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	case WM_NCACTIVATE:
 	{
-		/*DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
-		if (ddraw && ddraw->virtualMode)
+		if (!configDisplayWindowed)
 		{
-			if ((BOOL)wParam)
+			DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
+			if (ddraw && ddraw->virtualMode)
 			{
-				if (ddraw->windowState != WinStateWindowed)
-					ddraw->SetInternalMode();
+				if ((BOOL)wParam)
+					ddraw->SetFullscreenMode();
+				else if (!ddraw->isFinish)
+				{
+					ChangeDisplaySettings(NULL, NULL);
+					ShowWindow(hWnd, SW_MINIMIZE);
+				}
 			}
-			else if (ddraw->windowState != WinStateWindowed && !ddraw->isFinish)
-			{
-				ChangeDisplaySettings(NULL, NULL);
-				ShowWindow(hWnd, SW_MINIMIZE);
-			}
-		}*/
+		}
 
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
@@ -130,18 +127,19 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				// Windowed mode on/off
 			case VK_RETURN:
 			{
+				configDisplayWindowed = !configDisplayWindowed;
+				Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_WINDOWED, configDisplayWindowed);
+
 				DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
 				if (ddraw)
 				{
-					if (ddraw->windowState == WinStateWindowed)
+					if (!configDisplayWindowed)
 					{
 						if (ddraw->realMode)
 						{
-							GetWindowPlacement(hWnd, &ddraw->windowPlacement);
-
-							ddraw->windowState = WinStateFullScreen;
-							SetWindowLong(hWnd, GWL_STYLE, ddraw->fsStyle);
-							ddraw->SetInternalMode();
+							if (ddraw->isStylesLoaded)
+								GetWindowPlacement(hWnd, &ddraw->windowPlacement);
+							ddraw->SetFullscreenMode();
 						}
 					}
 					else
@@ -149,74 +147,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						if (ddraw->virtualMode)
 						{
 							ChangeDisplaySettings(NULL, NULL);
-
-							RECT* rect = &ddraw->windowPlacement.rcNormalPosition;
-
-							WindowState oldState = ddraw->windowState;
-							if (ddraw->windowState == WinStateNone)
-							{
-								ddraw->fsStyle = GetWindowLong(hWnd, GWL_STYLE);
-								MONITORINFO mi = { sizeof(mi) };
-								HMONITOR hMon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-								GetMonitorInfo(hMon, &mi);
-								DWORD monWidth = mi.rcWork.right - mi.rcWork.left;
-								DWORD monHeight = mi.rcWork.bottom - mi.rcWork.top;
-								DWORD newWidth = 0.75 * (mi.rcWork.right - mi.rcWork.left);
-								DWORD newHeght = 0.75 * (mi.rcWork.bottom - mi.rcWork.top);
-
-								FLOAT k = (FLOAT)ddraw->virtualMode->dwWidth / ddraw->virtualMode->dwHeight;
-								if (newWidth > newHeght * k)
-									newWidth = newHeght * k;
-								else
-									newHeght = newWidth / k;
-
-								rect->left = mi.rcWork.left + (monWidth - newWidth) / 2;
-								rect->top = mi.rcWork.top + (monHeight - newHeght) / 2;
-								rect->right = rect->left + newWidth;
-								rect->bottom = rect->top + newHeght;
-								AdjustWindowRect(rect, WIN_STYLE, FALSE);
-
-								ddraw->windowPlacement.ptMinPosition.x = ddraw->windowPlacement.ptMinPosition.y = -1;
-								ddraw->windowPlacement.ptMaxPosition.x = ddraw->windowPlacement.ptMaxPosition.y = -1;
-
-								ddraw->windowPlacement.flags = NULL;
-								ddraw->windowPlacement.showCmd = SW_SHOWNORMAL;
-							}
-
-							ddraw->windowState = WinStateWindowed;
-
-							SetWindowLong(hWnd, GWL_STYLE, WIN_STYLE);
-							SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_WINDOWEDGE | WS_EX_APPWINDOW);
-							SetWindowPlacement(hWnd, &ddraw->windowPlacement);
+							ddraw->SetWindowedMode();
 						}
 					}
 
 					ddraw->isStateChanged = TRUE;
-				}
-				return NULL;
-			}
 
-			// Native resolution on/off
-			case VK_BACK:
-			{
-				DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
-				if (ddraw)
-				{
-					isRegMode = !isRegMode;
-					if (ddraw->realMode)
-					{
-						ddraw->CheckDisplayMode();
-						if (ddraw->windowState != WinStateWindowed)
-							ddraw->SetInternalMode();
-					}
+					ddraw->CalcView();
+					ddraw->ScaleMouseOut(&mousePos);
+					POINT point = { GET_X_LPARAM(mousePos), GET_Y_LPARAM(mousePos) };
+					ClientToScreen(ddraw->hWnd, &point);
+					if (!configDisplayWindowed)
+						++point.y;
+					SetCursorPos(point.x, point.y);
 				}
+
 				return NULL;
 			}
 
 			// FPS counter on/off
 			case VK_I:
 			{
-				isFpsEnabled = !isFpsEnabled;
+				configFpsCounter = !configFpsCounter;
+				Config::Set(CONFIG_FPS, CONFIG_FPS_COUNTER, configFpsCounter);
 				isFpsChanged = TRUE;
 				return NULL;
 			}
@@ -224,18 +177,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			// Filtering on/off
 			case VK_F:
 			{
-				glFilter = glFilter == GL_NEAREST ? GL_LINEAR : GL_NEAREST;
+				configGlFiltering = configGlFiltering == GL_LINEAR ? GL_NEAREST : GL_LINEAR;
+				Config::Set(CONFIG_GL, CONFIG_GL_FILTERING, configGlFiltering == GL_LINEAR);
 
 				DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
 				if (ddraw)
 					ddraw->isStateChanged = TRUE;
-				return NULL;
-			}
-
-			// Speed PC/PS1
-			case VK_R: // R
-			{
-				currentTimeout = currentTimeout != TIMEOUT_PC ? TIMEOUT_PC : TIMEOUT_PS;
 				return NULL;
 			}
 
@@ -282,8 +229,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSELEAVE:
 	case WM_NCMOUSELEAVE:
 	{
-		DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
-		if (ddraw && ddraw->windowState == WinStateWindowed)
+		if (configDisplayWindowed && Main::FindDirectDrawByWindow(hWnd))
 			while (ShowCursor(TRUE) <= 0);
 
 		return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
@@ -296,7 +242,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return NULL;
 }
 
-DWORD WINAPI RenderThread(LPVOID lpParameter)
+DWORD __stdcall RenderThread(LPVOID lpParameter)
 {
 	DirectDraw* ddraw = (DirectDraw*)lpParameter;
 	ddraw->hDc = ::GetDC(ddraw->hWnd);
@@ -304,27 +250,18 @@ DWORD WINAPI RenderThread(LPVOID lpParameter)
 		if (!ddraw->wasPixelSet)
 		{
 			ddraw->wasPixelSet = TRUE;
-			PIXELFORMATDESCRIPTOR pfd =
-			{
-				sizeof(PIXELFORMATDESCRIPTOR), // Size Of This Pixel Format Descriptor
-				1, // Version Number
-				PFD_DRAW_TO_WINDOW // Format Must Support Window
-				| PFD_SUPPORT_OPENGL // Format Must Support OpenGL
-				| PFD_DOUBLEBUFFER, // Must Support Double Buffering
-				PFD_TYPE_RGBA, // Request An RGBA Format
-				32, // Select Our Color Depth
-				0, 0, 0, 0, 0, 0, // Color Bits Ignored
-				0, // No Alpha Buffer
-				0, // Shift Bit Ignored
-				0, // No Accumulation Buffer
-				0, 0, 0, 0, // Accumulation Bits Ignored
-				16, // Z-Buffer (Depth Buffer) 
-				0, // Stencil Buffer
-				0, // No Auxiliary Buffer
-				PFD_MAIN_PLANE, // Main Drawing Layer
-				0, // Reserved
-				0, 0, 0 // Layer Masks Ignored
-			};
+			PIXELFORMATDESCRIPTOR pfd = { NULL };
+			pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+			pfd.nVersion = 1;
+			pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+			pfd.iPixelType = PFD_TYPE_RGBA;
+			pfd.cColorBits = configDisplayResolution.bpp;
+			pfd.cAlphaBits = 0;
+			pfd.cAccumBits = 0;
+			pfd.cDepthBits = 0;
+			pfd.cStencilBits = 0;
+			pfd.cAuxBuffers = 0;
+			pfd.iLayerType = PFD_MAIN_PLANE;
 
 			DWORD pfIndex;
 			if (!GL::PreparePixelFormat(&pfd, &pfIndex, ddraw->hWnd))
@@ -368,10 +305,19 @@ DWORD WINAPI RenderThread(LPVOID lpParameter)
 						maxTexSize <<= 1;
 
 					if (maxTexSize > glMaxTexSize)
-						glVersion = GL_VER_1_1;
+						glVersion = GL_VER_1_4;
 				}
 
-				if (glVersion >= GL_VER_3_0)
+				if (configGlVersion == GL_VER_3)
+				{
+					if (glVersion >= GL_VER_3_0)
+						ddraw->RenderNew();
+					else
+						Main::ShowError("OpenGL 3.0 is not supported", __FILE__, __LINE__);
+				}
+				else if (configGlVersion == GL_VER_1)
+					ddraw->RenderOld(glMaxTexSize);
+				else if (glVersion >= GL_VER_3_0)
 					ddraw->RenderNew();
 				else
 					ddraw->RenderOld(glMaxTexSize);
@@ -391,10 +337,14 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 	if (glMaxTexSize < 256)
 		glMaxTexSize = 256;
 
-	DWORD minSize = this->virtualMode->dwWidth < this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight;
+	DWORD size;
+	if (glCapsClampToEdge == GL_CLAMP_TO_EDGE)
+		size = this->virtualMode->dwWidth < this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight;
+	else
+		size = this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight;
 
 	DWORD maxAllow = 1;
-	while (maxAllow < minSize)
+	while (maxAllow < size)
 		maxAllow <<= 1;
 
 	DWORD maxTexSize = maxAllow < glMaxTexSize ? maxAllow : glMaxTexSize;
@@ -438,8 +388,8 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glCapsClampToEdge);
 					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
-					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
+					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
 
 					GLTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
@@ -450,8 +400,10 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 						else
 							GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, maxTexSize, maxTexSize, GL_NONE, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 					}
-					else
+					else if (glVersion > GL_VER_1_1)
 						GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, maxTexSize, maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+					else
+						GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, maxTexSize, maxTexSize, GL_NONE, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 				}
 			}
 		}
@@ -475,7 +427,7 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 		DWORD fpsCount = 0;
 		INT fpsSum = 0;
 
-		if (this->virtualMode->dwBPP != 8)
+		if (configFpsCounter && this->virtualMode->dwBPP != 8)
 		{
 			memset(fpsQueue, 0, sizeof(fpsQueue));
 			memset(tickQueue, 0, sizeof(tickQueue));
@@ -485,170 +437,246 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 		{
 			do
 			{
-				if (isFpsEnabled && this->virtualMode->dwBPP != 8)
-				{
-					DWORD tick = GetTickCount();
-
-					if (isFpsChanged)
-					{
-						isFpsChanged = FALSE;
-						fpsIdx = -1;
-						fpsTotal = 0;
-						fpsCount = 0;
-						fpsSum = 0;
-						memset(fpsQueue, 0, sizeof(fpsQueue));
-						memset(tickQueue, 0, sizeof(tickQueue));
-					}
-
-					++fpsTotal;
-					if (fpsCount < FPS_COUNT)
-						++fpsCount;
-
-					++fpsIdx;
-					if (fpsIdx == FPS_COUNT)
-						fpsIdx = 0;
-
-					DWORD diff = tick - tickQueue[fpsTotal != fpsCount ? fpsIdx : 0];
-					tickQueue[fpsIdx] = tick;
-
-					DWORD fps = diff ? Main::Round(1000.0 / diff * fpsCount) : 9999;
-
-					DWORD* queue = &fpsQueue[fpsIdx];
-					fpsSum -= *queue - fps;
-					*queue = fps;
-				}
-
-				this->CheckView();
-
-				BOOL updateFilter = this->isStateChanged;
-				if (this->isStateChanged)
-					this->isStateChanged = FALSE;
-
 				DirectDrawSurface* surface = (DirectDrawSurface*)this->attachedSurface;
-
-				DWORD count = frameCount;
-				Frame* frame = frames;
-				while (count--)
+				if (surface)
 				{
-					GLBindTexture(GL_TEXTURE_2D, frame->id[surface->index]);
-
-					if (updateFilter)
+					if (configFpsCounter && this->virtualMode->dwBPP != 8)
 					{
-						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
-						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+						DWORD tick = GetTickCount();
+
+						if (isFpsChanged)
+						{
+							isFpsChanged = FALSE;
+							fpsIdx = -1;
+							fpsTotal = 0;
+							fpsCount = 0;
+							fpsSum = 0;
+							memset(fpsQueue, 0, sizeof(fpsQueue));
+							memset(tickQueue, 0, sizeof(tickQueue));
+						}
+
+						++fpsTotal;
+						if (fpsCount < FPS_COUNT)
+							++fpsCount;
+
+						++fpsIdx;
+						if (fpsIdx == FPS_COUNT)
+							fpsIdx = 0;
+
+						DWORD diff = tick - tickQueue[fpsTotal != fpsCount ? fpsIdx : 0];
+						tickQueue[fpsIdx] = tick;
+
+						DWORD fps = diff ? Main::Round(1000.0 / diff * fpsCount) : 9999;
+
+						DWORD* queue = &fpsQueue[fpsIdx];
+						fpsSum -= *queue - fps;
+						*queue = fps;
 					}
 
-					if (this->virtualMode->dwBPP == 8)
+					this->CheckView();
+
+					BOOL updateFilter = this->isStateChanged;
+					if (this->isStateChanged)
+						this->isStateChanged = FALSE;
+
+					DWORD count = frameCount;
+					Frame* frame = frames;
+					while (count--)
 					{
-						if (GLColorTable)
+						GLBindTexture(GL_TEXTURE_2D, frame->id[surface->index]);
+
+						if (updateFilter)
 						{
-							GLColorTable(GL_TEXTURE_2D, GL_RGBA8, 256, GL_RGBA, GL_UNSIGNED_BYTE, surface->attachedPallete->entries);
+							GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
+							GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
+						}
 
-							BYTE* pix = (BYTE*)pixelBuffer;
-							for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
+						if (this->virtualMode->dwBPP == 8)
+						{
+							if (GLColorTable)
 							{
-								BYTE* idx = surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
-								memcpy(pix, idx, frame->rect.width);
-								pix += frame->rect.width;
-							}
+								GLColorTable(GL_TEXTURE_2D, GL_RGBA8, 256, GL_RGBA, GL_UNSIGNED_BYTE, surface->attachedPallete->entries);
 
-							GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, pixelBuffer);
+								BYTE* pix = (BYTE*)pixelBuffer;
+								for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
+								{
+									BYTE* idx = surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
+									memcpy(pix, idx, frame->rect.width);
+									pix += frame->rect.width;
+								}
+
+								GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, pixelBuffer);
+							}
+							else
+							{
+								PALETTEENTRY* pix = (PALETTEENTRY*)pixelBuffer;
+								for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
+								{
+									BYTE* idx = surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
+									for (DWORD x = frame->rect.x; x < frame->vSize.width; ++x)
+										*pix++ = surface->attachedPallete->entries[*idx++];
+								}
+
+								GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+							}
+						}
+						else if (glVersion > GL_VER_1_1)
+						{
+							if (frameCount > 1)
+							{
+								WORD* pix = (WORD*)pixelBuffer;
+								for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
+								{
+									WORD* idx = (WORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
+									memcpy(pix, idx, frame->rect.width * sizeof(WORD));
+									pix += frame->rect.width;
+								}
+							}
+							else
+								memcpy(pixelBuffer, surface->indexBuffer, frame->rect.width * frame->rect.height * sizeof(WORD));
+
+							GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
+
+							if (configFpsCounter && count == frameCount - 1)
+							{
+								DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
+
+								DWORD offset = FPS_X;
+
+								DWORD digCount = 0;
+								DWORD current = fps;
+								do
+								{
+									++digCount;
+									current = current / 10;
+								} while (current);
+
+								DWORD dcount = digCount;
+								current = fps;
+								do
+								{
+									DWORD digit = current % 10;
+									bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
+
+									for (DWORD y = 0; y < FPS_HEIGHT; ++y)
+									{
+										WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
+											FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+										WORD* pix = (WORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
+											(FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+										memcpy(pix, idx, FPS_STEP * sizeof(WORD));
+										pix += FPS_STEP;
+										idx += FPS_STEP;
+
+										DWORD width = FPS_WIDTH;
+										do
+										{
+											*pix++ = *lpDig++ ? 0xFFFF : *idx;
+											++idx;
+										} while (--width);
+									}
+
+									current = current / 10;
+								} while (--dcount);
+
+								GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+								GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
+								GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+							}
 						}
 						else
 						{
-							PALETTEENTRY* pix = (PALETTEENTRY*)pixelBuffer;
+							DWORD* pix = (DWORD*)pixelBuffer;
 							for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
 							{
-								BYTE* idx = surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
+								WORD* idx = (WORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
 								for (DWORD x = frame->rect.x; x < frame->vSize.width; ++x)
-									*pix++ = surface->attachedPallete->entries[*idx++];
+								{
+									WORD px = *idx++;
+									*pix++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
+								}
 							}
 
 							GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
-						}
-					}
-					else
-					{
-						WORD* pix = (WORD*)pixelBuffer;
-						for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
-						{
-							WORD* idx = (WORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
-							memcpy(pix, idx, frame->rect.width * sizeof(WORD));
-							pix += frame->rect.width;
-						}
 
-						GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
-
-						if (isFpsEnabled && count == frameCount - 1)
-						{
-							DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
-
-							DWORD offset = FPS_X;
-
-							DWORD digCount = 0;
-							DWORD current = fps;
-							do
+							if (configFpsCounter && count == frameCount - 1)
 							{
-								++digCount;
-								current = current / 10;
-							} while (current);
+								DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
 
-							DWORD dcount = digCount;
-							current = fps;
-							do
-							{
-								DWORD digit = current % 10;
-								bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
+								DWORD offset = FPS_X;
 
-								for (DWORD y = 0; y < FPS_HEIGHT; ++y)
+								DWORD digCount = 0;
+								DWORD current = fps;
+								do
 								{
-									WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
-										FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
+									++digCount;
+									current = current / 10;
+								} while (current);
 
-									WORD* pix = (WORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
-										(FPS_STEP + FPS_WIDTH) * (dcount - 1);
+								DWORD dcount = digCount;
+								current = fps;
+								do
+								{
+									DWORD digit = current % 10;
+									bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
 
-									memcpy(pix, idx, FPS_STEP * sizeof(WORD));
-									pix += FPS_STEP;;
-									idx += FPS_STEP;
-
-									DWORD width = FPS_WIDTH;
-									do
+									for (DWORD y = 0; y < FPS_HEIGHT; ++y)
 									{
-										*pix++ = *lpDig++ ? FPS_COLOR : *idx;
-										++idx;
-									} while (--width);
-								}
+										WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
+											FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
 
-								current = current / 10;
-							} while (--dcount);
+										DWORD* pix = (DWORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
+											(FPS_STEP + FPS_WIDTH) * (dcount - 1);
 
-							GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-							GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
-							GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+										for (DWORD x = 0; x < FPS_STEP; ++x)
+										{
+											WORD px = *idx++;
+											*pix++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
+										}
+
+										DWORD width = FPS_WIDTH;
+										do
+										{
+											WORD px = *idx++;
+											*pix++ = *lpDig++ ? 0xFFFFFFFF : (((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19));
+										} while (--width);
+									}
+
+									current = current / 10;
+								} while (--dcount);
+
+								GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+								GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+								GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+							}
 						}
+
+						GLBegin(GL_TRIANGLE_FAN);
+						{
+							GLTexCoord2f(0.0, 0.0);
+							GLVertex2s(frame->rect.x, frame->rect.y);
+
+							GLTexCoord2f(frame->tSize.width, 0.0);
+							GLVertex2s(frame->vSize.width, frame->rect.y);
+
+							GLTexCoord2f(frame->tSize.width, frame->tSize.height);
+							GLVertex2s(frame->vSize.width, frame->vSize.height);
+
+							GLTexCoord2f(0.0, frame->tSize.height);
+							GLVertex2s(frame->rect.x, frame->vSize.height);
+						}
+						GLEnd();
+						++frame;
 					}
 
-					GLBegin(GL_TRIANGLE_FAN);
-					{
-						GLTexCoord2f(0.0, 0.0);
-						GLVertex2s(frame->rect.x, frame->rect.y);
+					GLFlush();
+					SwapBuffers(this->hDc);
 
-						GLTexCoord2f(frame->tSize.width, 0.0);
-						GLVertex2s(frame->vSize.width, frame->rect.y);
-
-						GLTexCoord2f(frame->tSize.width, frame->tSize.height);
-						GLVertex2s(frame->vSize.width, frame->vSize.height);
-
-						GLTexCoord2f(0.0, frame->tSize.height);
-						GLVertex2s(frame->rect.x, frame->vSize.height);
-					}
-					GLEnd();
-					++frame;
+					WaitForSingleObject(this->hDrawEvent, INFINITE);
+					ResetEvent(this->hDrawEvent);
 				}
-
-				GLFlush();
-				SwapBuffers(this->hDc);
 			} while (!this->isFinish);
 			GLFinish();
 		}
@@ -664,7 +692,6 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 		}
 	}
 	free(frames);
-
 }
 
 VOID DirectDraw::RenderNew()
@@ -773,8 +800,8 @@ VOID DirectDraw::RenderNew()
 					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
-					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
-					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
+					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
 
 					GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, maxTexSize, maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
 				}
@@ -807,7 +834,7 @@ VOID DirectDraw::RenderNew()
 									DWORD fpsCount = 0;
 									INT fpsSum = 0;
 
-									if (this->virtualMode->dwBPP != 8)
+									if (configFpsCounter && this->virtualMode->dwBPP != 8)
 									{
 										memset(fpsQueue, 0, sizeof(fpsQueue));
 										memset(tickQueue, 0, sizeof(tickQueue));
@@ -817,7 +844,10 @@ VOID DirectDraw::RenderNew()
 									{
 										do
 										{
-												if (isFpsEnabled && this->virtualMode->dwBPP != 8)
+											DirectDrawSurface* surface = (DirectDrawSurface*)this->attachedSurface;
+											if (surface)
+											{
+												if (configFpsCounter && this->virtualMode->dwBPP != 8)
 												{
 													DWORD tick = GetTickCount();
 
@@ -852,11 +882,9 @@ VOID DirectDraw::RenderNew()
 
 												this->CheckView();
 
-												DirectDrawSurface* surface = (DirectDrawSurface*)this->attachedSurface;
-
 												if (this->virtualMode->dwBPP == 8)
 												{
-													if (glFilter == GL_LINEAR)
+													if (configGlFiltering == GL_LINEAR)
 													{
 														if (this->isStateChanged)
 														{
@@ -901,13 +929,13 @@ VOID DirectDraw::RenderNew()
 													{
 														this->isStateChanged = FALSE;
 
-														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
-														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
+														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
 													}
 
 													GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, surface->indexBuffer);
 
-													if (isFpsEnabled)
+													if (configFpsCounter)
 													{
 														DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
 
@@ -943,7 +971,7 @@ VOID DirectDraw::RenderNew()
 																DWORD width = FPS_WIDTH;
 																do
 																{
-																	*pix++ = *lpDig++ ? FPS_COLOR : *idx;
+																	*pix++ = *lpDig++ ? 0xFFFF : *idx;
 																	++idx;
 																} while (--width);
 															}
@@ -964,6 +992,7 @@ VOID DirectDraw::RenderNew()
 
 												WaitForSingleObject(this->hDrawEvent, INFINITE);
 												ResetEvent(this->hDrawEvent);
+											}
 										} while (!this->isFinish);
 										GLFinish();
 									}
@@ -994,7 +1023,7 @@ DirectDraw::DirectDraw(DirectDraw* lastObj)
 	GL::Load();
 
 	this->last = lastObj;
-
+	this->isStylesLoaded = NULL;
 	this->realMode = NULL;
 	this->virtualMode = NULL;
 	this->attachedSurface = NULL;
@@ -1032,46 +1061,47 @@ DirectDraw::~DirectDraw()
 	CloseHandle(this->hDrawEvent);
 }
 
+VOID DirectDraw::CalcView()
+{
+	this->viewport.rectangle.x = this->viewport.rectangle.y = 0;
+	this->viewport.point.x = this->viewport.point.y = 0.0f;
+
+	this->viewport.rectangle.width = this->viewport.width;
+	this->viewport.rectangle.height = this->viewport.height;
+
+	this->viewport.clipFactor.x = this->viewport.viewFactor.x = (FLOAT)this->viewport.width / this->virtualMode->dwWidth;
+	this->viewport.clipFactor.y = this->viewport.viewFactor.y = (FLOAT)this->viewport.height / this->virtualMode->dwHeight;
+
+	if (configDisplayAspect && this->viewport.viewFactor.x != this->viewport.viewFactor.y)
+	{
+		if (this->viewport.viewFactor.x > this->viewport.viewFactor.y)
+		{
+			FLOAT fw = this->viewport.viewFactor.y * this->virtualMode->dwWidth;
+			this->viewport.rectangle.width = Main::Round(fw);
+
+			this->viewport.point.x = ((FLOAT)this->viewport.width - fw) / 2.0f;
+			this->viewport.rectangle.x = Main::Round(this->viewport.point.x);
+
+			this->viewport.clipFactor.x = this->viewport.viewFactor.y;
+		}
+		else
+		{
+			FLOAT fh = this->viewport.viewFactor.x * this->virtualMode->dwHeight;
+			this->viewport.rectangle.height = Main::Round(fh);
+
+			this->viewport.point.y = ((FLOAT)this->viewport.height - fh) / 2.0f;
+			this->viewport.rectangle.y = Main::Round(this->viewport.point.y);
+
+			this->viewport.clipFactor.y = this->viewport.viewFactor.x;
+		}
+	}
+}
+
 VOID DirectDraw::CheckView()
 {
 	if (this->viewport.refresh)
 	{
-		this->viewport.refresh = FALSE;
-
-		this->viewport.rectangle.x = this->viewport.rectangle.y = 0;
-		this->viewport.point.x = this->viewport.point.y = 0.0f;
-
-		this->viewport.rectangle.width = this->viewport.width;
-		this->viewport.rectangle.height = this->viewport.height;
-
-		this->viewport.clipFactor.x = this->viewport.viewFactor.x = (FLOAT)this->viewport.width / this->virtualMode->dwWidth;
-		this->viewport.clipFactor.y = this->viewport.viewFactor.y = (FLOAT)this->viewport.height / this->virtualMode->dwHeight;
-
-		if (this->viewport.viewFactor.x != this->viewport.viewFactor.y)
-		{
-			if (this->viewport.viewFactor.x > this->viewport.viewFactor.y)
-			{
-				FLOAT fw = this->viewport.viewFactor.y * this->virtualMode->dwWidth;
-				this->viewport.rectangle.width = Main::Round(fw);
-
-				this->viewport.point.x = ((FLOAT)this->viewport.width - fw) / 2.0f;
-				this->viewport.rectangle.x = Main::Round(this->viewport.point.x);
-
-				this->viewport.clipFactor.x = this->viewport.viewFactor.y;
-			}
-			else
-			{
-				FLOAT fh = this->viewport.viewFactor.x * this->virtualMode->dwHeight;
-				this->viewport.rectangle.height = Main::Round(fh);
-
-				this->viewport.point.y = ((FLOAT)this->viewport.height - fh) / 2.0f;
-				this->viewport.rectangle.y = Main::Round(this->viewport.point.y);
-
-				this->viewport.clipFactor.y = this->viewport.viewFactor.x;
-			}
-		}
-
-
+		this->CalcView();
 		GLViewport(this->viewport.rectangle.x, this->viewport.rectangle.y, this->viewport.rectangle.width, this->viewport.rectangle.height);
 
 		this->clearStage = 0;
@@ -1081,7 +1111,7 @@ VOID DirectDraw::CheckView()
 		GLClear(GL_COLOR_BUFFER_BIT);
 }
 
-HRESULT DirectDraw::SetInternalMode()
+HRESULT DirectDraw::SetFullscreenMode()
 {
 	DEVMODE devMode = { NULL };
 	devMode.dmSize = sizeof(DEVMODE);
@@ -1089,7 +1119,8 @@ HRESULT DirectDraw::SetInternalMode()
 
 	devMode.dmPelsWidth = this->realMode->dwWidth;
 	devMode.dmPelsHeight = this->realMode->dwHeight;
-	devMode.dmBitsPerPel = 32;
+	if (configDisplayResolution.index > 1)
+		devMode.dmBitsPerPel = configDisplayResolution.bpp;
 	devMode.dmDisplayFrequency = this->realMode->dwFrequency;
 	devMode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 
@@ -1100,24 +1131,69 @@ HRESULT DirectDraw::SetInternalMode()
 	ChangeDisplaySettingsEx(NULL, &devMode, NULL, CDS_FULLSCREEN | CDS_RESET, NULL);
 	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devMode);
 
-	DWORD dwStyle = GetWindowLong(this->hWnd, GWL_STYLE);
-
 	RECT rect = { 0, -1, this->realMode->dwWidth, this->realMode->dwHeight };
-	AdjustWindowRect(&rect, dwStyle, FALSE);
+	AdjustWindowRect(&rect, FS_STYLE, FALSE);
 
 	rect.left += devMode.dmPosition.x;
 	rect.right += devMode.dmPosition.x;
 	rect.top += devMode.dmPosition.y;
 	rect.bottom += devMode.dmPosition.y;
+	SetWindowLong(this->hWnd, GWL_STYLE, FS_STYLE);
 	SetWindowPos(this->hWnd, NULL, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, NULL);
 	SetForegroundWindow(this->hWnd);
 
 	while (ShowCursor(FALSE) >= -1);
+
+	return DD_OK;
+}
+
+HRESULT DirectDraw::SetWindowedMode()
+{
+	if (!this->isStylesLoaded)
+	{
+		this->isStylesLoaded = TRUE;
+		MONITORINFO mi = { sizeof(mi) };
+		HMONITOR hMon = MonitorFromWindow(this->hWnd, MONITOR_DEFAULTTONEAREST);
+		GetMonitorInfo(hMon, &mi);
+		DWORD monWidth = mi.rcWork.right - mi.rcWork.left;
+		DWORD monHeight = mi.rcWork.bottom - mi.rcWork.top;
+		DWORD newWidth = 0.75 * (mi.rcWork.right - mi.rcWork.left);
+		DWORD newHeght = 0.75 * (mi.rcWork.bottom - mi.rcWork.top);
+
+		FLOAT k = (FLOAT)this->virtualMode->dwWidth / this->virtualMode->dwHeight;
+		if (newWidth > newHeght * k)
+			newWidth = newHeght * k;
+		else
+			newHeght = newWidth / k;
+
+		RECT* rect = &this->windowPlacement.rcNormalPosition;
+		rect->left = mi.rcWork.left + (monWidth - newWidth) / 2;
+		rect->top = mi.rcWork.top + (monHeight - newHeght) / 2;
+		rect->right = rect->left + newWidth;
+		rect->bottom = rect->top + newHeght;
+		AdjustWindowRect(rect, WIN_STYLE, FALSE);
+
+		this->windowPlacement.ptMinPosition.x = this->windowPlacement.ptMinPosition.y = -1;
+		this->windowPlacement.ptMaxPosition.x = this->windowPlacement.ptMaxPosition.y = -1;
+
+		this->windowPlacement.flags = NULL;
+		this->windowPlacement.showCmd = SW_SHOWNORMAL;
+	}
+
+	DWORD check = GetWindowLong(this->hWnd, GWL_STYLE) & WS_SIZEBOX;
+	if (!check)
+	{
+		SetWindowLong(this->hWnd, GWL_STYLE, WIN_STYLE);
+		SetWindowLong(this->hWnd, GWL_EXSTYLE, WS_EX_WINDOWEDGE | WS_EX_APPWINDOW);
+		SetWindowPlacement(this->hWnd, &this->windowPlacement);
+	}
+
+	return DD_OK;
 }
 
 VOID DirectDraw::ScaleMouseIn(LPARAM* lParam)
 {
-	if (this->windowState == WinStateWindowed || this->virtualMode != this->realMode)
+	if (configDisplayWindowed || this->virtualMode != this->realMode)
 	{
 		INT xPos = GET_X_LPARAM(*lParam);
 		INT yPos = GET_Y_LPARAM(*lParam);
@@ -1150,7 +1226,7 @@ VOID DirectDraw::ScaleMouseIn(LPARAM* lParam)
 
 VOID DirectDraw::ScaleMouseOut(LPARAM* lParam)
 {
-	if (this->windowState == WinStateWindowed)
+	if (configDisplayWindowed || this->virtualMode != this->realMode)
 	{
 		INT xPos = GET_X_LPARAM(*lParam);
 		{
@@ -1159,12 +1235,22 @@ VOID DirectDraw::ScaleMouseOut(LPARAM* lParam)
 			xPos = this->viewport.rectangle.x + INT(floorVal + 0.5f > number ? floorVal : ceil(number));
 		}
 
+		if (xPos < this->viewport.rectangle.x)
+			xPos = 0;
+		else if (xPos >= this->viewport.rectangle.x + this->viewport.rectangle.width)
+			xPos = this->viewport.rectangle.x + this->viewport.rectangle.width;
+
 		INT yPos = GET_Y_LPARAM(*lParam);
 		{
 			FLOAT number = this->viewport.clipFactor.y * yPos;
 			FLOAT floorVal = floor(number);
 			yPos = this->viewport.rectangle.y + INT(floorVal + 0.5f > number ? floorVal : ceil(number));
 		}
+
+		if (yPos < this->viewport.rectangle.y)
+			yPos = 0;
+		else if (yPos >= this->viewport.rectangle.y + this->viewport.rectangle.height)
+			yPos = this->viewport.rectangle.y + this->viewport.rectangle.height;
 
 		*lParam = MAKELONG(xPos, yPos);
 	}
@@ -1173,7 +1259,7 @@ VOID DirectDraw::ScaleMouseOut(LPARAM* lParam)
 VOID DirectDraw::CheckDisplayMode()
 {
 	DisplayMode* mode = this->virtualMode;
-	if (isRegMode)
+	if (configDisplayResolution.index)
 		this->realMode = &modesList[4 + (mode->dwBPP == 16 ? 1 : 0)];
 	else
 	{
@@ -1270,10 +1356,21 @@ HRESULT DirectDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceD
 
 	DEVMODE devMode = { NULL };
 	devMode.dmSize = sizeof(DEVMODE);
+
+	DWORD bppCheck = 32;
+	if (configDisplayResolution.index > 1)
+		bppCheck = configDisplayResolution.bpp;
+	else if (EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devMode))
+	{
+		bppCheck = devMode.dmBitsPerPel;
+		memset(&devMode, NULL, sizeof(DEVMODE));
+		devMode.dmSize = sizeof(DEVMODE);
+	}
+
 	for (i = 0; EnumDisplaySettings(NULL, i, &devMode); ++i)
 	{
 		INT idx = -1;
-		if (devMode.dmBitsPerPel >= 16)
+		if (devMode.dmBitsPerPel == bppCheck)
 		{
 			if (devMode.dmPelsWidth == 320 && devMode.dmPelsHeight == 240)
 				idx = 0;
@@ -1306,8 +1403,17 @@ HRESULT DirectDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceD
 		mode = &modesList[4];
 		for (i = 0; i < 2; ++i, ++mode)
 		{
-			mode->dwWidth = devMode.dmPelsWidth;
-			mode->dwHeight = devMode.dmPelsHeight;
+			if (configDisplayResolution.index <= 1)
+			{
+				mode->dwWidth = devMode.dmPelsWidth;
+				mode->dwHeight = devMode.dmPelsHeight;
+			}
+			else
+			{
+				mode->dwWidth = configDisplayResolution.width;
+				mode->dwHeight = configDisplayResolution.height;
+			}
+
 			mode->dwFrequency = devMode.dmDisplayFrequency;
 			mode->dwBPP = 8 << i;
 		}
@@ -1355,7 +1461,6 @@ HRESULT DirectDraw::SetCooperativeLevel(HWND hWnd, DWORD dwFlags)
 	if (hWnd && hWnd != this->hWnd)
 	{
 		this->hWnd = hWnd;
-		this->windowState = WinStateNone;
 		this->windowPlacement.length = sizeof(WINDOWPLACEMENT);
 		this->mbPressed = NULL;
 		this->wasPixelSet = FALSE;
@@ -1384,8 +1489,14 @@ HRESULT DirectDraw::SetDisplayMode(DWORD dwWidth, DWORD dwHeight, DWORD dwBPP)
 	this->virtualMode = &modesList[idx];
 	this->CheckDisplayMode();
 
-	if (windowState != WinStateWindowed)
-		this->SetInternalMode();
+	if (configDisplayWindowed)
+	{
+		if (this->isStylesLoaded)
+			GetWindowPlacement(hWnd, &this->windowPlacement);
+		this->SetWindowedMode();
+	}
+	else
+		this->SetFullscreenMode();
 
 	RedrawWindow(this->hWnd, NULL, NULL, RDW_INVALIDATE);
 

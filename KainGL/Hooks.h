@@ -35,10 +35,14 @@ namespace Hooks
 	VOID __fastcall PatchByte(DWORD addr, BYTE value);
 	DWORD __fastcall ReadDWord(DWORD addr);
 
-	VOID Load();
+	BOOL Load();
 
+	VOID Patch_Library();
 	VOID Patch_System();
 	VOID Patch_Window();
 	VOID Patch_Video();
 	VOID Patch_Mouse();
+	VOID Patch_Movie();
+	VOID Patch_NoCD();
+	VOID Patch_Language();
 }

@@ -26,6 +26,7 @@
 #include "GLib.h"
 #include "DirectDrawSurface.h"
 #include "DirectDraw.h"
+#include "Config.h"
 
 #pragma region Not Implemented
 HRESULT DirectDrawSurface::QueryInterface(REFIID riid, LPVOID* ppvObj) { return DD_OK; }
@@ -199,7 +200,7 @@ HRESULT DirectDrawSurface::Unlock(LPVOID lpRect)
 	QueryPerformanceFrequency((LARGE_INTEGER*)&qpf);
 	DOUBLE timerResolution = 0.001 * qpf;
 
-	DOUBLE endTime = oldTime + currentTimeout;
+	DOUBLE endTime = oldTime + configFpsLimit;
 	DOUBLE currentTime = 0;
 	do
 	{

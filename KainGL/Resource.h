@@ -27,6 +27,20 @@
 // Used by version.rc
 //
 
+#define IDD_DIALOGBAR                   102
+
+// LTEXT 1001
+#define IDC_COMBO_DRIVER				1002
+// LTEXT 1003
+#define IDC_COMBO_RESOLUTION			1004
+#define IDC_CHECK_WINDOWED				1005
+#define IDC_CHECK_ASPECT				1006
+#define IDC_CHECK_FILTER				1007
+#define IDC_CHECK_SKIP					1008
+// LTEXT 1009
+#define IDC_EDIT_FPS_LIMIT				1010
+#define IDC_EDIT_FPS_LIMIT_UPDOWND		1011
+#define IDC_CHECK_FPS_COUNTER			1012
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

@@ -65,6 +65,16 @@ struct Viewport
 	POINTFLOAT clipFactor;
 };
 
+struct Resolution {
+	DWORD width;
+	DWORD height;
+	union
+	{
+		DWORD bpp;
+		DWORD index;
+	};
+};
+
 struct DisplayMode
 {
 	DWORD dwWidth;
@@ -75,13 +85,6 @@ struct DisplayMode
 		DWORD dwFrequency;
 		BOOL dwExists;
 	};
-};
-
-enum WindowState
-{
-	WinStateNone,
-	WinStateFullScreen,
-	WinStateWindowed
 };
 
 #ifndef WH_MOUSE_LL

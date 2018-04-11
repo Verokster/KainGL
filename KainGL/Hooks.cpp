@@ -25,8 +25,6 @@
 #include "stdafx.h"
 #include "Hooks.h"
 
-BOOL patchCalled;
-
 namespace Hooks
 {
 	VOID __fastcall PatchHook(DWORD addr, VOID* hook)
@@ -129,19 +127,20 @@ namespace Hooks
 		return value;
 	}
 
-	VOID Load()
+	BOOL Load()
 	{
-		if (!patchCalled)
+		if (ReadDWord(0x0045F5DA + 1) == WS_POPUP)
 		{
-			if (ReadDWord(0x0045F5DA + 1) == WS_POPUP)
-			{
-				Patch_System();
-				Patch_Window();
-				Patch_Video();
-				Patch_Mouse();
-			}
-
-			patchCalled = TRUE;
+			Patch_Library();
+			Patch_System();
+			Patch_Window();
+			Patch_Video();
+			Patch_Mouse();
+			Patch_NoCD();
+			Patch_Language();
+			return TRUE;
 		}
+
+		return FALSE;
 	}
 }
