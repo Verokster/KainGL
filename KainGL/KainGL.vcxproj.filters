@@ -52,13 +52,16 @@
     <ClCompile Include="Library.cpp">
       <Filter>Source Files\Hooks</Filter>
     </ClCompile>
-    <ClCompile Include="Movie.cpp">
-      <Filter>Source Files\Hooks</Filter>
-    </ClCompile>
     <ClCompile Include="NoCD.cpp">
       <Filter>Source Files\Hooks</Filter>
     </ClCompile>
     <ClCompile Include="Language.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Zoom.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Movie.cpp">
       <Filter>Source Files\Hooks</Filter>
     </ClCompile>
   </ItemGroup>
@@ -100,6 +103,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Movie.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

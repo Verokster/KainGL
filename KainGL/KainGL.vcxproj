@@ -176,6 +176,7 @@
     <ClCompile Include="System.cpp" />
     <ClCompile Include="Video.cpp" />
     <ClCompile Include="Window.cpp" />
+    <ClCompile Include="Zoom.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
@@ -188,6 +189,7 @@
     <ClInclude Include="GLib.h" />
     <ClInclude Include="Hooks.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="Movie.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ShaderSource.h" />
     <ClInclude Include="StdAfx.h" />

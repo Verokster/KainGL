@@ -138,6 +138,7 @@ namespace Hooks
 			Patch_Mouse();
 			Patch_NoCD();
 			Patch_Language();
+			Patch_Zoom();
 			return TRUE;
 		}
 
