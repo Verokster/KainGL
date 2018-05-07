@@ -207,9 +207,6 @@ HRESULT DirectDrawSurface::Unlock(LPVOID lpRect)
 		LONGLONG qpc;
 		QueryPerformanceCounter((LARGE_INTEGER*)&qpc);
 		currentTime = (DOUBLE)qpc / timerResolution;
-
-		//if (endTime - currentTime > 3.0)
-		//	Sleep(1);
 	} while (currentTime < endTime);
 	oldTime = currentTime;
 

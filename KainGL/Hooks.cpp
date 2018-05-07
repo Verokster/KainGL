@@ -134,7 +134,7 @@ namespace Hooks
 			Patch_Library();
 			Patch_System();
 			Patch_Window();
-			Patch_Video();
+			Patch_Audio();
 			Patch_Mouse();
 			Patch_NoCD();
 			Patch_Language();

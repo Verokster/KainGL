@@ -38,8 +38,9 @@
 #define CONFIG_FPS_LIMIT "Limit"
 #define CONFIG_FPS_COUNTER "Counter"
 
-#define CONFIG_OTHER "OTHER"
-#define CONFIG_OTHER_SKIP_INTRO "SkipIntro"
+#define CONFIG_VIDEO "VIDEO"
+#define CONFIG_VIDEO_SKIP_INTRO "SkipIntro"
+#define CONFIG_VIDEO_SMOOTHER "Smoother"
 
 extern TCHAR iniFile[];
 
@@ -53,7 +54,8 @@ extern BOOL configDisplayAspect;
 extern FLOAT configFpsLimit;
 extern BOOL configFpsCounter;
 
-extern BOOL configOtherSkipIntro;
+extern BOOL configVideoSkipIntro;
+extern BOOL configVideoSmoother;
 
 namespace Config
 {

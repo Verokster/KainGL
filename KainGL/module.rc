@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2018,4,13,57
- PRODUCTVERSION 1,1,9,0
+ FILEVERSION 2018,4,27,63
+ PRODUCTVERSION 1,2,2,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -68,10 +68,10 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Legacy Of Kain Graphic Library"
-            VALUE "FileVersion", "2018.04.13.57"
+            VALUE "FileVersion", "2018.04.27.63"
             VALUE "LegalCopyright", "© 2018 Verok"
             VALUE "OriginalFilename", "ddraw.dll"
-            VALUE "ProductVersion", "1.1.9"
+            VALUE "ProductVersion", "1.2.2"
             VALUE "ProductName", "KainGL"
             VALUE "Author", "Verok (verokster@gmail.com)"
 			VALUE "Email", "verokster@gmail.com"
@@ -103,6 +103,7 @@ BEGIN
 	CONTROL "Filter textures", IDC_CHECK_FILTER, BUTTON, BS_AUTOCHECKBOX | WS_TABSTOP, 7, 114, 57, 15
 	CONTROL "Skip intro", IDC_CHECK_SKIP, BUTTON, BS_AUTOCHECKBOX | WS_TABSTOP, 111, 78, 47, 15
 	CONTROL "Show FPS", IDC_CHECK_FPS_COUNTER, BUTTON, BS_AUTOCHECKBOX | WS_TABSTOP, 111, 96, 45, 15
+	CONTROL "Smoother movies", IDC_CHECK_SMOOTH, BUTTON, BS_AUTOCHECKBOX | WS_TABSTOP, 111, 114, 68, 15
 	CONTROL "Frame rate", 1009, STATIC, SS_LEFT | WS_CHILD | WS_VISIBLE | WS_GROUP, 200, 82, 40, 8
 	CONTROL "", IDC_EDIT_FPS_LIMIT, EDIT, ES_AUTOHSCROLL, 200, 93, 64, 14, WS_EX_CLIENTEDGE
 	CONTROL "", IDC_EDIT_FPS_LIMIT_UPDOWND, "msctls_updown32", UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS | UDS_NOTHOUSANDS | UDS_HOTTRACK, 0, 0, 0, 0

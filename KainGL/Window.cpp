@@ -244,8 +244,14 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// Skip intro
 		{
-			if (Config::Get(CONFIG_OTHER, CONFIG_OTHER_SKIP_INTRO, FALSE))
+			if (Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SKIP_INTRO, FALSE))
 				SendDlgItemMessage(hDlg, IDC_CHECK_SKIP, BM_SETCHECK, BST_CHECKED, NULL);
+		}
+
+		// Smoother movies
+		{
+			if (Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SMOOTHER, TRUE))
+				SendDlgItemMessage(hDlg, IDC_CHECK_SMOOTH, BM_SETCHECK, BST_CHECKED, NULL);
 		}
 
 		return TRUE;
@@ -347,11 +353,18 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			// Skip intro
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_SKIP, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
-				if (Config::Set(CONFIG_OTHER, CONFIG_OTHER_SKIP_INTRO, val))
-					configOtherSkipIntro = val;
-
-				Hooks::Patch_Movie();
+				if (Config::Set(CONFIG_VIDEO, CONFIG_VIDEO_SKIP_INTRO, val))
+					configVideoSkipIntro = val;
 			}
+
+			// Smoother movies
+			{
+				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_SMOOTH, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
+				if (Config::Set(CONFIG_VIDEO, CONFIG_VIDEO_SMOOTHER, val))
+					configVideoSmoother = val;
+			}
+
+			Hooks::Patch_Video();
 
 			EndDialog(hDlg, LOWORD(wParam));
 			break;

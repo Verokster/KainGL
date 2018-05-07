@@ -41,8 +41,8 @@ namespace Hooks
 	VOID Patch_System();
 	VOID Patch_Window();
 	VOID Patch_Video();
+	VOID Patch_Audio();
 	VOID Patch_Mouse();
-	VOID Patch_Movie();
 	VOID Patch_NoCD();
 	VOID Patch_Language();
 	VOID Patch_Zoom();

@@ -53,7 +53,7 @@ HRESULT DirectDraw::QueryInterface(REFIID riid, LPVOID* ppvObj) { return DD_OK; 
 #define VK_I 0x49
 #define VK_F 0x46
 
-DisplayMode modesList[6];
+DisplayMode modesList[9];
 
 WNDPROC OldWindowProc;
 LPARAM mousePos;
@@ -400,7 +400,7 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 						else
 							GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, maxTexSize, maxTexSize, GL_NONE, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 					}
-					else if (glVersion > GL_VER_1_1)
+					else if (this->virtualMode->dwBPP == 16 && glVersion > GL_VER_1_1)
 						GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, maxTexSize, maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
 					else
 						GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, maxTexSize, maxTexSize, GL_NONE, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -440,7 +440,7 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 				DirectDrawSurface* surface = (DirectDrawSurface*)this->attachedSurface;
 				if (surface)
 				{
-					if (configFpsCounter && this->virtualMode->dwBPP != 8)
+					if (configFpsCounter && this->virtualMode->dwBPP == 16)
 					{
 						DWORD tick = GetTickCount();
 
@@ -520,70 +520,137 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 								GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
 							}
 						}
-						else if (glVersion > GL_VER_1_1)
+						else if (this->virtualMode->dwBPP == 16)
 						{
-							if (frameCount > 1)
+							if (glVersion > GL_VER_1_1)
 							{
-								WORD* pix = (WORD*)pixelBuffer;
-								for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
+								if (frameCount > 1)
 								{
-									WORD* idx = (WORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
-									memcpy(pix, idx, frame->rect.width * sizeof(WORD));
-									pix += frame->rect.width;
+									WORD* pix = (WORD*)pixelBuffer;
+									for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
+									{
+										WORD* idx = (WORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
+										memcpy(pix, idx, frame->rect.width * sizeof(WORD));
+										pix += frame->rect.width;
+									}
+								}
+								else
+									memcpy(pixelBuffer, surface->indexBuffer, frame->rect.width * frame->rect.height * sizeof(WORD));
+
+								GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
+
+								if (configFpsCounter && count == frameCount - 1)
+								{
+									DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
+
+									DWORD offset = FPS_X;
+
+									DWORD digCount = 0;
+									DWORD current = fps;
+									do
+									{
+										++digCount;
+										current = current / 10;
+									} while (current);
+
+									DWORD dcount = digCount;
+									current = fps;
+									do
+									{
+										DWORD digit = current % 10;
+										bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
+
+										for (DWORD y = 0; y < FPS_HEIGHT; ++y)
+										{
+											WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
+												FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+											WORD* pix = (WORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
+												(FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+											memcpy(pix, idx, FPS_STEP * sizeof(WORD));
+											pix += FPS_STEP;
+											idx += FPS_STEP;
+
+											DWORD width = FPS_WIDTH;
+											do
+											{
+												*pix++ = *lpDig++ ? 0xFFFF : *idx;
+												++idx;
+											} while (--width);
+										}
+
+										current = current / 10;
+									} while (--dcount);
+
+									GLPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+									GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
+									GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 								}
 							}
 							else
-								memcpy(pixelBuffer, surface->indexBuffer, frame->rect.width * frame->rect.height * sizeof(WORD));
-
-							GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
-
-							if (configFpsCounter && count == frameCount - 1)
 							{
-								DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
-
-								DWORD offset = FPS_X;
-
-								DWORD digCount = 0;
-								DWORD current = fps;
-								do
+								DWORD* pix = (DWORD*)pixelBuffer;
+								for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
 								{
-									++digCount;
-									current = current / 10;
-								} while (current);
-
-								DWORD dcount = digCount;
-								current = fps;
-								do
-								{
-									DWORD digit = current % 10;
-									bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
-
-									for (DWORD y = 0; y < FPS_HEIGHT; ++y)
+									WORD* idx = (WORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
+									for (DWORD x = frame->rect.x; x < frame->vSize.width; ++x)
 									{
-										WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
-											FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
-
-										WORD* pix = (WORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
-											(FPS_STEP + FPS_WIDTH) * (dcount - 1);
-
-										memcpy(pix, idx, FPS_STEP * sizeof(WORD));
-										pix += FPS_STEP;
-										idx += FPS_STEP;
-
-										DWORD width = FPS_WIDTH;
-										do
-										{
-											*pix++ = *lpDig++ ? 0xFFFF : *idx;
-											++idx;
-										} while (--width);
+										WORD px = *idx++;
+										*pix++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
 									}
+								}
 
-									current = current / 10;
-								} while (--dcount);
+								GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
 
-								GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-								GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
-								GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+								if (configFpsCounter && count == frameCount - 1)
+								{
+									DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
+
+									DWORD offset = FPS_X;
+
+									DWORD digCount = 0;
+									DWORD current = fps;
+									do
+									{
+										++digCount;
+										current = current / 10;
+									} while (current);
+
+									DWORD dcount = digCount;
+									current = fps;
+									do
+									{
+										DWORD digit = current % 10;
+										bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
+
+										for (DWORD y = 0; y < FPS_HEIGHT; ++y)
+										{
+											WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
+												FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+											DWORD* pix = (DWORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
+												(FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+											for (DWORD x = 0; x < FPS_STEP; ++x)
+											{
+												WORD px = *idx++;
+												*pix++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
+											}
+
+											DWORD width = FPS_WIDTH;
+											do
+											{
+												WORD px = *idx++;
+												*pix++ = *lpDig++ ? 0xFFFFFFFF : (((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19));
+											} while (--width);
+										}
+
+										current = current / 10;
+									} while (--dcount);
+
+									GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+								}
 							}
 						}
 						else
@@ -591,17 +658,14 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 							DWORD* pix = (DWORD*)pixelBuffer;
 							for (DWORD y = frame->rect.y; y < frame->vSize.height; ++y)
 							{
-								WORD* idx = (WORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
-								for (DWORD x = frame->rect.x; x < frame->vSize.width; ++x)
-								{
-									WORD px = *idx++;
-									*pix++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
-								}
+								DWORD* idx = (DWORD*)surface->indexBuffer + y * this->virtualMode->dwWidth + frame->rect.x;
+								memcpy(pix, idx, frame->rect.width * sizeof(DWORD));
+								pix += frame->rect.width;
 							}
 
 							GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frame->rect.width, frame->rect.height, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
 
-							if (configFpsCounter && count == frameCount - 1)
+							/*if (configFpsCounter && count == frameCount - 1)
 							{
 								DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
 
@@ -624,33 +688,29 @@ VOID DirectDraw::RenderOld(DWORD glMaxTexSize)
 
 									for (DWORD y = 0; y < FPS_HEIGHT; ++y)
 									{
-										WORD* idx = (WORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
+										DWORD* idx = (DWORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
 											FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
 
 										DWORD* pix = (DWORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
 											(FPS_STEP + FPS_WIDTH) * (dcount - 1);
 
-										for (DWORD x = 0; x < FPS_STEP; ++x)
-										{
-											WORD px = *idx++;
-											*pix++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
-										}
+										memcpy(pix, idx, FPS_STEP * sizeof(DWORD));
+										pix += FPS_STEP;
+										idx += FPS_STEP;
 
 										DWORD width = FPS_WIDTH;
 										do
 										{
-											WORD px = *idx++;
-											*pix++ = *lpDig++ ? 0xFFFFFFFF : (((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19));
+											*pix++ = *lpDig++ ? 0xFFFFFFFF : *idx;
+											++idx;
 										} while (--width);
 									}
 
 									current = current / 10;
 								} while (--dcount);
 
-								GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 								GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
-								GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-							}
+							}*/
 						}
 
 						GLBegin(GL_TRIANGLE_FAN);
@@ -803,7 +863,10 @@ VOID DirectDraw::RenderNew()
 					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
 					GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
 
-					GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, maxTexSize, maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+					if (this->virtualMode->dwBPP == 16)
+						GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, maxTexSize, maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+					else
+						GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, maxTexSize, maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 				}
 
 				GLGenVertexArrays(1, &arrayName);
@@ -847,7 +910,7 @@ VOID DirectDraw::RenderNew()
 											DirectDrawSurface* surface = (DirectDrawSurface*)this->attachedSurface;
 											if (surface)
 											{
-												if (configFpsCounter && this->virtualMode->dwBPP != 8)
+												if (configFpsCounter && this->virtualMode->dwBPP == 16)
 												{
 													DWORD tick = GetTickCount();
 
@@ -923,7 +986,7 @@ VOID DirectDraw::RenderNew()
 														GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_RED, GL_UNSIGNED_BYTE, surface->indexBuffer);
 													}
 												}
-												else
+												else if (this->virtualMode->dwBPP == 16)
 												{
 													if (this->isStateChanged)
 													{
@@ -979,10 +1042,69 @@ VOID DirectDraw::RenderNew()
 															current = current / 10;
 														} while (--dcount);
 
-														GLPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+														GLPixelStorei(GL_UNPACK_ALIGNMENT, 2);
 														GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelBuffer);
 														GLPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 													}
+												}
+												else
+												{
+													if (this->isStateChanged)
+													{
+														this->isStateChanged = FALSE;
+
+														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
+														GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
+													}
+
+													GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_RGBA, GL_UNSIGNED_BYTE, surface->indexBuffer);
+
+													/*if (configFpsCounter)
+													{
+														DWORD fps = Main::Round((FLOAT)fpsSum / fpsCount);
+
+														DWORD offset = FPS_X;
+
+														DWORD digCount = 0;
+														DWORD current = fps;
+														do
+														{
+															++digCount;
+															current = current / 10;
+														} while (current);
+
+														DWORD dcount = digCount;
+														current = fps;
+														do
+														{
+															DWORD digit = current % 10;
+															bool* lpDig = (bool*)counters + FPS_WIDTH * FPS_HEIGHT * digit;
+
+															for (DWORD y = 0; y < FPS_HEIGHT; ++y)
+															{
+																DWORD* idx = (DWORD*)surface->indexBuffer + (FPS_Y + y) * this->virtualMode->dwWidth +
+																	FPS_X + (FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+																DWORD* pix = (DWORD*)pixelBuffer + y * (FPS_STEP + FPS_WIDTH) * digCount +
+																	(FPS_STEP + FPS_WIDTH) * (dcount - 1);
+
+																memcpy(pix, idx, FPS_STEP * sizeof(DWORD));
+																pix += FPS_STEP;;
+																idx += FPS_STEP;
+
+																DWORD width = FPS_WIDTH;
+																do
+																{
+																	*pix++ = *lpDig++ ? 0xFFFFFFFF : *idx;
+																	++idx;
+																} while (--width);
+															}
+
+															current = current / 10;
+														} while (--dcount);
+
+														GLTexSubImage2D(GL_TEXTURE_2D, 0, FPS_X, FPS_Y, (FPS_WIDTH + FPS_STEP) * digCount, FPS_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+													}*/
 												}
 
 												GLDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -1161,10 +1283,12 @@ HRESULT DirectDraw::SetWindowedMode()
 		DWORD newHeght = 0.75 * (mi.rcWork.bottom - mi.rcWork.top);
 
 		FLOAT k = (FLOAT)this->virtualMode->dwWidth / this->virtualMode->dwHeight;
-		if (newWidth > newHeght * k)
-			newWidth = newHeght * k;
+
+		DWORD check = (FLOAT)newHeght * k;
+		if (newWidth > check)
+			newWidth = check;
 		else
-			newHeght = newWidth / k;
+			newHeght = (FLOAT)newWidth / k;
 
 		RECT* rect = &this->windowPlacement.rcNormalPosition;
 		rect->left = mi.rcWork.left + (monWidth - newWidth) / 2;
@@ -1260,7 +1384,7 @@ VOID DirectDraw::CheckDisplayMode()
 {
 	DisplayMode* mode = this->virtualMode;
 	if (configDisplayResolution.index)
-		this->realMode = &modesList[4 + (mode->dwBPP == 16 ? 1 : 0)];
+		this->realMode = &modesList[6 + (mode->dwBPP == 32 ? 2 : (mode->dwBPP == 16 ? 1 : 0))];
 	else
 	{
 		this->realMode = NULL;
@@ -1269,7 +1393,7 @@ VOID DirectDraw::CheckDisplayMode()
 			if (mode->dwExists)
 				this->realMode = mode;
 
-			mode += 2;
+			mode += 3;
 		} while (!this->realMode);
 	}
 }
@@ -1345,7 +1469,7 @@ HRESULT DirectDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceD
 	DWORD i;
 	for (i = 0; i < 2; ++i)
 	{
-		for (DWORD j = 0; j < 2; ++j, ++mode)
+		for (DWORD j = 0; j < 3; ++j, ++mode)
 		{
 			mode->dwWidth = 320 << i;
 			mode->dwHeight = 240 << i;
@@ -1375,18 +1499,14 @@ HRESULT DirectDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceD
 			if (devMode.dmPelsWidth == 320 && devMode.dmPelsHeight == 240)
 				idx = 0;
 			else if (devMode.dmPelsWidth == 640 && devMode.dmPelsHeight == 480)
-				idx = 2;
+				idx = 3;
 		}
 
 		if (idx >= 0)
 		{
-			mode = &modesList[idx + 1];
-			if (mode->dwFrequency < devMode.dmDisplayFrequency)
-				mode->dwFrequency = devMode.dmDisplayFrequency;
-
-			if (devMode.dmBitsPerPel != 8)
+			mode = &modesList[idx];
+			for (DWORD j = 0; j < 3; ++j, ++mode)
 			{
-				mode = &modesList[idx];
 				if (mode->dwFrequency < devMode.dmDisplayFrequency)
 					mode->dwFrequency = devMode.dmDisplayFrequency;
 			}
@@ -1400,8 +1520,8 @@ HRESULT DirectDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceD
 	devMode.dmSize = sizeof(DEVMODE);
 	if (EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devMode))
 	{
-		mode = &modesList[4];
-		for (i = 0; i < 2; ++i, ++mode)
+		mode = &modesList[6];
+		for (i = 0; i < 3; ++i, ++mode)
 		{
 			if (configDisplayResolution.index <= 1)
 			{
@@ -1426,7 +1546,7 @@ HRESULT DirectDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceD
 		ddSurfaceDesc.dwHeight = 240 << i;
 
 		BOOL isBreak = FALSE;
-		for (DWORD j = 0; j < 2; ++j)
+		for (DWORD j = 0; j < 3; ++j)
 		{
 			ddSurfaceDesc.ddpfPixelFormat.dwRGBBitCount = 8 << j;
 			if (!lpEnumModesCallback(&ddSurfaceDesc, NULL))
@@ -1480,11 +1600,11 @@ HRESULT DirectDraw::SetDisplayMode(DWORD dwWidth, DWORD dwHeight, DWORD dwBPP)
 	if (dwWidth == 320 && dwHeight == 240)
 		idx = 0;
 	else if (dwWidth == 640 && dwHeight == 480)
-		idx = 2;
+		idx = 3;
 	else
-		idx = 4;
+		idx = 6;
 
-	idx += dwBPP == 16 ? 1 : 0;
+	idx += dwBPP == 32 ? 2 : (dwBPP == 16 ? 1 : 0);
 
 	this->virtualMode = &modesList[idx];
 	this->CheckDisplayMode();

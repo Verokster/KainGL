@@ -154,6 +154,7 @@
     <Bscmake />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="DirectDraw.cpp" />
     <ClCompile Include="DirectDrawClipper.cpp" />
@@ -166,7 +167,6 @@
     <ClCompile Include="Language.cpp" />
     <ClCompile Include="Library.cpp" />
     <ClCompile Include="Mouse.cpp" />
-    <ClCompile Include="Movie.cpp" />
     <ClCompile Include="NoCD.cpp" />
     <ClCompile Include="ShaderSource.cpp" />
     <ClCompile Include="StdAfx.cpp">
@@ -189,7 +189,6 @@
     <ClInclude Include="GLib.h" />
     <ClInclude Include="Hooks.h" />
     <ClInclude Include="Main.h" />
-    <ClInclude Include="Movie.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ShaderSource.h" />
     <ClInclude Include="StdAfx.h" />

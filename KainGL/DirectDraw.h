@@ -47,11 +47,9 @@ public:
 
 	HANDLE hDrawThread;
 	HANDLE hDrawEvent;
-	BOOL isDraw;
 
 	Viewport viewport;
 	DWORD isStylesLoaded;
-	//WindowState windowState;
 	BOOL isStateChanged;
 	WINDOWPLACEMENT windowPlacement;
 	DWORD clearStage;

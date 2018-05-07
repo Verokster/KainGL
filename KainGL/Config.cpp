@@ -38,7 +38,8 @@ BOOL configDisplayAspect;
 BOOL configFpsCounter;
 FLOAT configFpsLimit;
 
-BOOL configOtherSkipIntro;
+BOOL configVideoSkipIntro;
+BOOL configVideoSmoother;
 
 namespace Config
 {
