@@ -50,7 +50,7 @@ namespace Main
 		DirectDraw* ddraw = ddrawList;
 		while (ddraw)
 		{
-			if (ddraw->hWnd == hWnd)
+			if (ddraw->hWnd == hWnd || ddraw->hDraw == hWnd)
 				return ddraw;
 
 			ddraw = ddraw->last;
@@ -59,25 +59,26 @@ namespace Main
 		return NULL;
 	}
 
-	DWORD __fastcall Round(FLOAT number)
-	{
-		FLOAT floorVal = floor(number);
-		return DWORD(floorVal + 0.5f > number ? floorVal : ceil(number));
-	}
-
 	VOID __fastcall ShowError(CHAR* message, CHAR* file, DWORD line)
 	{
 		CHAR dest[400];
-		sprintf(dest, "%s\n\n\nFILE %s\nLINE %d", message, file, line);
+		StrPrint(dest, "%s\n\n\nFILE %s\nLINE %d", message, file, line);
+
+		ULONG_PTR cookie = NULL;
+		if (hActCtx && hActCtx != INVALID_HANDLE_VALUE && !ActivateActCtxC(hActCtx, &cookie))
+			cookie = NULL;
+
 		MessageBox(NULL, dest, "Error", MB_OK | MB_ICONERROR);
 
-		exit(1);
+		if (cookie)
+			DeactivateActCtxC(0, cookie);
+
+		Exit(EXIT_FAILURE);
 	}
 
 #ifdef _DEBUG
 	VOID __fastcall CheckError(CHAR* file, DWORD line)
 	{
-		return;
 		DWORD statusCode = GLGetError();
 
 		CHAR* message;

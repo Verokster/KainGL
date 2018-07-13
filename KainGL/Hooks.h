@@ -27,13 +27,15 @@
 
 namespace Hooks
 {
-	VOID __fastcall PatchHook(DWORD addr, VOID* hook);
-	VOID __fastcall PatchNop(DWORD addr, DWORD size);
-	VOID __fastcall PatchWord(DWORD addr, WORD value);
-	VOID __fastcall PatchInt(DWORD addr, INT value);
-	VOID __fastcall PatchDWord(DWORD addr, DWORD value);
-	VOID __fastcall PatchByte(DWORD addr, BYTE value);
-	DWORD __fastcall ReadDWord(DWORD addr);
+	BOOL __fastcall PatchHook(DWORD addr, VOID* hook);
+	BOOL __fastcall PatchNop(DWORD addr, DWORD size);
+	BOOL __fastcall PatchWord(DWORD addr, WORD value);
+	BOOL __fastcall PatchInt(DWORD addr, INT value);
+	BOOL __fastcall PatchDWord(DWORD addr, DWORD value);
+	BOOL __fastcall PatchByte(DWORD addr, BYTE value);
+	BOOL __fastcall ReadWord(DWORD addr, WORD* value);
+	BOOL __fastcall ReadDWord(DWORD addr, DWORD* value);
+	BOOL __fastcall PatchFunction(const CHAR* function, VOID* addr);
 
 	BOOL Load();
 

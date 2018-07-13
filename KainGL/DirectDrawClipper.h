@@ -25,14 +25,18 @@
 #pragma once
 #include "ddraw.h"
 
+class DirectDraw;
+
 class DirectDrawClipper : IDirectDrawClipper
 {
 public:
-	DirectDrawClipper* prev;
-	LPDIRECTDRAW ddraw;
+	VOID * operator new(size_t size) { return MemoryAlloc(size); };
+	VOID operator delete(VOID *p) { MemoryFree(p); };
 
-	DirectDrawClipper(LPDIRECTDRAW);
-	~DirectDrawClipper();
+	DirectDrawClipper* prev;
+	DirectDraw* ddraw;
+
+	DirectDrawClipper(DirectDraw*);
 
 	HRESULT __stdcall QueryInterface(REFIID riid, LPVOID * ppvObj);
 	ULONG __stdcall AddRef();

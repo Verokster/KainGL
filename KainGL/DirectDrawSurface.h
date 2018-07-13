@@ -26,23 +26,27 @@
 #include "ddraw.h"
 #include "DirectDrawPalette.h"
 #include "DirectDrawClipper.h"
-#include "GLib.h"
+
+class DirectDraw;
 
 class DirectDrawSurface : IDirectDrawSurface
 {
 public:
-	DirectDrawSurface* prev;
-	LPDIRECTDRAW ddraw;
+	VOID * operator new(size_t size) { return MemoryAlloc(size); };
+	VOID operator delete(VOID *p) { MemoryFree(p); };
 
-	DirectDrawPalette* attachedPallete;
+	DirectDrawSurface* prev;
+	DirectDraw* ddraw;
+
 	DirectDrawSurface* attachedSurface;
+	DirectDrawPalette* attachedPallete;
 	DirectDrawClipper* attachedClipper;
 
 	DWORD index;
 	BYTE* indexBuffer;
 
-	DirectDrawSurface(LPDIRECTDRAW, BOOL);
-	DirectDrawSurface(LPDIRECTDRAW, DirectDrawSurface*, BYTE*);
+	DirectDrawSurface(DirectDraw*, BOOL);
+	DirectDrawSurface(DirectDraw*, DirectDrawSurface*, BYTE*);
 	~DirectDrawSurface();
 
 	// Inherited via IDirectDrawSurface

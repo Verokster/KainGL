@@ -38,8 +38,6 @@ namespace Main
 
 	VOID __fastcall ShowError(CHAR* message, CHAR* file, DWORD line);
 
-	DWORD __fastcall Round(FLOAT number);
-
 #ifdef _DEBUG
 	VOID __fastcall CheckError(CHAR* file, DWORD line);
 #endif

@@ -24,9 +24,8 @@
 
 #include "stdafx.h"
 #include "GLib.h"
-#include "DirectDrawSurface.h"
-#include "DirectDraw.h"
 #include "Config.h"
+#include "DirectDraw.h"
 
 #pragma region Not Implemented
 HRESULT DirectDrawSurface::QueryInterface(REFIID riid, LPVOID* ppvObj) { return DD_OK; }
@@ -54,30 +53,33 @@ HRESULT DirectDrawSurface::SetOverlayPosition(LONG, LONG) { return DD_OK; }
 HRESULT DirectDrawSurface::UpdateOverlay(LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD, LPDDOVERLAYFX) { return DD_OK; }
 HRESULT DirectDrawSurface::UpdateOverlayDisplay(DWORD) { return DD_OK; }
 HRESULT DirectDrawSurface::UpdateOverlayZOrder(DWORD, LPDIRECTDRAWSURFACE) { return DD_OK; }
+HRESULT DirectDrawSurface::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE lpDDSrcSurface, LPRECT lpSrcRect, DWORD dwFlags, LPDDBLTFX lpDDBltFx) { return DD_OK; }
+HRESULT DirectDrawSurface::Flip(LPDIRECTDRAWSURFACE lpDDSurfaceTargetOverride, DWORD dwFlags) { return DD_OK; }
+HRESULT DirectDrawSurface::Restore() { return DD_OK; }
 #pragma endregion
 
-DirectDrawSurface::DirectDrawSurface(LPDIRECTDRAW lpDD, BOOL isDouble)
+DirectDrawSurface::DirectDrawSurface(DirectDraw* lpDD, BOOL isDouble)
 {
 	this->ddraw = lpDD;
-	this->prev = (DirectDrawSurface*)((DirectDraw*)this->ddraw)->surfaceEntries;
-	((DirectDraw*)this->ddraw)->surfaceEntries = this;
+	this->prev = this->ddraw->surfaceEntries;
+	this->ddraw->surfaceEntries = this;
 
 	this->attachedPallete = NULL;
 	this->attachedClipper = NULL;
 
 	this->index = 0;
 
-	DisplayMode* dwMode = ((DirectDraw*)this->ddraw)->virtualMode;
+	DisplayMode* dwMode = this->ddraw->virtualMode;
 	DWORD bufferSize = dwMode->dwWidth * dwMode->dwHeight * (dwMode->dwBPP >> 3);
-	this->indexBuffer = (BYTE*)malloc(bufferSize * (isDouble ? 2 : 1));
+	this->indexBuffer = (BYTE*)MemoryAlloc(bufferSize * (isDouble ? 2 : 1));
 	this->attachedSurface = isDouble ? new DirectDrawSurface(lpDD, this, this->indexBuffer + bufferSize) : NULL;
 }
 
-DirectDrawSurface::DirectDrawSurface(LPDIRECTDRAW lpDD, DirectDrawSurface* attached, BYTE* indexBuffer)
+DirectDrawSurface::DirectDrawSurface(DirectDraw* lpDD, DirectDrawSurface* attached, BYTE* indexBuffer)
 {
 	this->ddraw = lpDD;
-	this->prev = (DirectDrawSurface*)((DirectDraw*)this->ddraw)->surfaceEntries;
-	((DirectDraw*)this->ddraw)->surfaceEntries = this;
+	this->prev = this->ddraw->surfaceEntries;
+	this->ddraw->surfaceEntries = this;
 
 	this->attachedPallete = NULL;
 	this->attachedClipper = NULL;
@@ -91,31 +93,23 @@ DirectDrawSurface::DirectDrawSurface(LPDIRECTDRAW lpDD, DirectDrawSurface* attac
 DirectDrawSurface::~DirectDrawSurface()
 {
 	if (!this->index)
-		free(this->indexBuffer);
+		MemoryFree(this->indexBuffer);
 }
-
-// CALLED
 
 ULONG DirectDrawSurface::Release()
 {
 	if (this->index == 0)
 	{
-		DirectDraw* mdraw = (DirectDraw*)this->ddraw;
-		mdraw->isFinish = TRUE;
-		SetEvent(mdraw->hDrawEvent);
-		WaitForSingleObject(mdraw->hDrawThread, INFINITE);
-
-		RedrawWindow(mdraw->hWnd, NULL, NULL, RDW_INVALIDATE);
-
-		mdraw->attachedSurface = NULL;
+		this->ddraw->RenderStop();
+		this->ddraw->attachedSurface = NULL;
 		this->attachedSurface->Release();
 	}
 
-	if (((DirectDraw*)this->ddraw)->surfaceEntries == this)
-		((DirectDraw*)this->ddraw)->surfaceEntries = NULL;
+	if (this->ddraw->surfaceEntries == this)
+		this->ddraw->surfaceEntries = NULL;
 	else
 	{
-		DirectDrawSurface* entry = (DirectDrawSurface*)((DirectDraw*)this->ddraw)->surfaceEntries;
+		DirectDrawSurface* entry = this->ddraw->surfaceEntries;
 		while (entry)
 		{
 			if (entry->prev == this)
@@ -132,16 +126,6 @@ ULONG DirectDrawSurface::Release()
 	return 0;
 }
 
-HRESULT DirectDrawSurface::Blt(LPRECT lpDestRect, LPDIRECTDRAWSURFACE lpDDSrcSurface, LPRECT lpSrcRect, DWORD dwFlags, LPDDBLTFX lpDDBltFx)
-{
-	return DD_OK;
-}
-
-HRESULT DirectDrawSurface::Flip(LPDIRECTDRAWSURFACE lpDDSurfaceTargetOverride, DWORD dwFlags)
-{
-	return DD_OK;
-}
-
 HRESULT DirectDrawSurface::GetAttachedSurface(LPDDSCAPS lpDDSCaps, LPDIRECTDRAWSURFACE* lplpDDAttachedSurface)
 {
 	*lplpDDAttachedSurface = this->attachedSurface;
@@ -156,24 +140,19 @@ HRESULT DirectDrawSurface::GetCaps(LPDDSCAPS lpDDSCaps)
 
 HRESULT DirectDrawSurface::GetPixelFormat(LPDDPIXELFORMAT lpDDPixelFormat)
 {
-	*((DWORD*)lpDDPixelFormat + 5) = 992; // 5 5 5
+	lpDDPixelFormat->dwGBitMask = 0x03E0;
 	return DD_OK;
 }
 
 HRESULT DirectDrawSurface::Lock(LPRECT lpDestRect, LPDDSURFACEDESC lpDDSurfaceDesc, DWORD dwFlags, HANDLE hEvent)
 {
-	DisplayMode* dwMode = ((DirectDraw*)this->ddraw)->virtualMode;
+	DisplayMode* dwMode = this->ddraw->virtualMode;
 
 	lpDDSurfaceDesc->dwWidth = dwMode->dwWidth;
 	lpDDSurfaceDesc->dwHeight = dwMode->dwHeight;
 	lpDDSurfaceDesc->lPitch = dwMode->dwWidth * (dwMode->dwBPP >> 3);
 	lpDDSurfaceDesc->lpSurface = this->indexBuffer;
 
-	return DD_OK;
-}
-
-HRESULT DirectDrawSurface::Restore()
-{
 	return DD_OK;
 }
 
@@ -192,9 +171,8 @@ HRESULT DirectDrawSurface::SetPalette(LPDIRECTDRAWPALETTE lpDDPalette)
 DOUBLE oldTime;
 HRESULT DirectDrawSurface::Unlock(LPVOID lpRect)
 {
-	DirectDraw* mdraw = (DirectDraw*)this->ddraw;
-	mdraw->attachedSurface = this;
- 	SetEvent(mdraw->hDrawEvent);
+	this->ddraw->attachedSurface = this;
+ 	SetEvent(this->ddraw->hDrawEvent);
 	
 	LONGLONG qpf;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&qpf);

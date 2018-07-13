@@ -27,6 +27,12 @@
 // Used by version.rc
 //
 
+#define IDM_MANIFEST                    2
+
+#define IDR_VERTEX						30
+#define IDR_FRAGMENT_WIN				31
+#define IDR_FRAGMENT_FULL				32
+
 #define IDD_DIALOGBAR                   102
 
 // LTEXT 1001
@@ -38,6 +44,7 @@
 #define IDC_CHECK_FILTER				1007
 #define IDC_CHECK_SKIP					1008
 #define IDC_CHECK_SMOOTH				1014
+#define IDC_CHECK_VSYNC					1015
 // LTEXT 1009
 #define IDC_EDIT_FPS_LIMIT				1010
 #define IDC_EDIT_FPS_LIMIT_UPDOWND		1011

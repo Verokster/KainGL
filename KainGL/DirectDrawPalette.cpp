@@ -23,6 +23,7 @@
 */
 
 #include "stdafx.h"
+#include "DirectDrawPalette.h"
 #include "DirectDraw.h"
 
 #pragma region Not Implemented
@@ -33,28 +34,19 @@ HRESULT DirectDrawPalette::Initialize(LPDIRECTDRAW, DWORD, LPPALETTEENTRY) { ret
 #pragma endregion
 
 
-DirectDrawPalette::DirectDrawPalette(LPDIRECTDRAW lpDD)
+DirectDrawPalette::DirectDrawPalette(DirectDraw* lpDD)
 {
 	this->ddraw = lpDD;
-	this->prev = (DirectDrawPalette*)((DirectDraw*)this->ddraw)->paletteEntries;
-
-	this->entries = (PALETTEENTRY*)malloc(256 * sizeof(PALETTEENTRY));
+	this->prev = this->ddraw->paletteEntries;
 }
-
-DirectDrawPalette::~DirectDrawPalette()
-{
-	free(this->entries);
-}
-
-// CALLED
 
 ULONG DirectDrawPalette::Release()
 {
-	if (((DirectDraw*)this->ddraw)->paletteEntries == this)
-		((DirectDraw*)this->ddraw)->paletteEntries = NULL;
+	if (this->ddraw->paletteEntries == this)
+		this->ddraw->paletteEntries = NULL;
 	else
 	{
-		DirectDrawPalette* entry = (DirectDrawPalette*)((DirectDraw*)this->ddraw)->paletteEntries;
+		DirectDrawPalette* entry = this->ddraw->paletteEntries;
 		while (entry)
 		{
 			if (entry->prev == this)
@@ -73,12 +65,12 @@ ULONG DirectDrawPalette::Release()
 
 HRESULT DirectDrawPalette::GetEntries(DWORD dwFlags, DWORD dwBase, DWORD dwNumEntries, LPPALETTEENTRY lpEntries)
 {
-	memcpy(lpEntries, this->entries, dwNumEntries * sizeof(PALETTEENTRY));
+	MemoryCopy(lpEntries, this->entries, dwNumEntries * sizeof(PALETTEENTRY));
 	return DD_OK;
 }
 
 HRESULT DirectDrawPalette::SetEntries(DWORD dwFlags, DWORD dwStartingEntry, DWORD dwCount, LPPALETTEENTRY lpEntries)
 {
-	memcpy(this->entries, lpEntries, dwCount * sizeof(PALETTEENTRY));
+	MemoryCopy(this->entries, lpEntries, dwCount * sizeof(PALETTEENTRY));
 	return DD_OK;
 }

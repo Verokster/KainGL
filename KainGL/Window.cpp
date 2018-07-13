@@ -27,6 +27,7 @@
 #include "Resource.h"
 #include "CommCtrl.h"
 #include "Config.h"
+#include "Main.h"
 
 #define WIN_STYLE DS_MODALFRAME | DS_CENTER | DS_CENTERMOUSE | WS_POPUP | WS_CAPTION | WS_SYSMENU
 
@@ -52,9 +53,9 @@ VOID GetMonitorRect(HWND hWnd, RECT* rectMon)
 	GetWindowRect(hWndDesctop, rectMon);
 }
 
-BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	switch (message)
+	switch (uMsg)
 	{
 	case WM_INITDIALOG:
 	{
@@ -79,7 +80,8 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// OpenGL
 		{
-			DISPLAY_DEVICE device = { NULL };
+			DISPLAY_DEVICE device;
+			MemoryZero(&device, sizeof(DISPLAY_DEVICE));
 			device.cb = sizeof(DISPLAY_DEVICE);
 			for (i = 0; EnumDisplayDevices(NULL, i, &device, NULL); ++i)
 			{
@@ -87,13 +89,13 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					if (*device.DeviceString)
 					{
-						sprintf(itemText, "%s: %s", device.DeviceString, STR_AUTO);
+						StrPrint(itemText, "%s: %s", device.DeviceString, STR_AUTO);
 						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
 
-						sprintf(itemText, "%s: %s", device.DeviceString, STR_OPENGL_1_1);
+						StrPrint(itemText, "%s: %s", device.DeviceString, STR_OPENGL_1_1);
 						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
 
-						sprintf(itemText, "%s: %s", device.DeviceString, STR_OPENGL_3_0);
+						StrPrint(itemText, "%s: %s", device.DeviceString, STR_OPENGL_3_0);
 						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
 					}
 					else
@@ -105,7 +107,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					break;
 				}
 
-				memset(&device, NULL, sizeof(DISPLAY_DEVICE));
+				MemoryZero(&device, sizeof(DISPLAY_DEVICE));
 				device.cb = sizeof(DISPLAY_DEVICE);
 			}
 
@@ -136,7 +138,8 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Game");
 			SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Desktop");
 
-			DEVMODE devMode = { NULL };
+			DEVMODE devMode;
+			MemoryZero(&devMode, sizeof(DEVMODE));
 			devMode.dmSize = sizeof(DEVMODE);
 
 			BOOL pSupport[3] = { FALSE };
@@ -147,7 +150,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				PIXELFORMATDESCRIPTOR pfd;
 				for (i = 0; i < 3; ++i)
 				{
-					memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+					MemoryZero(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
 					pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 					pfd.nVersion = 1;
 					pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
@@ -183,7 +186,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 							resList->height = devMode.dmPelsHeight;
 							resList->bpp = devMode.dmBitsPerPel;
 
-							sprintf(itemText, "Width: %d,  Height: %d,  Bit Depth: %d", resList->width, resList->height, resList->bpp);
+							StrPrint(itemText, "Width: %d,  Height: %d,  Bit Depth: %d", resList->width, resList->height, resList->bpp);
 							SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, 0, (LPARAM)itemText);
 							++idx;
 							if (resList->width == res.width && resList->height == res.height && resList->bpp == res.bpp)
@@ -198,7 +201,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 
-				memset(&devMode, NULL, sizeof(DEVMODE));
+				MemoryZero(&devMode, sizeof(DEVMODE));
 				devMode.dmSize = sizeof(DEVMODE);
 			}
 
@@ -220,6 +223,12 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				SendDlgItemMessage(hDlg, IDC_CHECK_ASPECT, BM_SETCHECK, BST_CHECKED, NULL);
 		}
 
+		// VSync
+		{
+			if (Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, TRUE))
+				SendDlgItemMessage(hDlg, IDC_CHECK_VSYNC, BM_SETCHECK, BST_CHECKED, NULL);
+		}
+
 		// Filter
 		{
 			if (Config::Get(CONFIG_GL, CONFIG_GL_FILTERING, TRUE))
@@ -228,9 +237,9 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// FPS limit
 		{
-			DWORD val = Config::Get(CONFIG_FPS, CONFIG_FPS_LIMIT, 60);
+			DWORD val = Config::Get(CONFIG_FPS, CONFIG_FPS_LIMIT, 50);
 			if (!val)
-				val = 60;
+				val = 50;
 
 			SendDlgItemMessage(hDlg, IDC_EDIT_FPS_LIMIT_UPDOWND, UDM_SETRANGE, NULL, MAKELPARAM(-100000, 1));
 			SendDlgItemMessage(hDlg, IDC_EDIT_FPS_LIMIT_UPDOWND, UDM_SETPOS, NULL, (LPARAM)val);
@@ -329,6 +338,13 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					configDisplayAspect = val;
 			}
 
+			// VSync
+			{
+				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_VSYNC, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
+				if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, val))
+					configDisplayVSync = val;
+			}
+
 			// Filter
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_FILTER, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
@@ -371,7 +387,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 
 		case IDCANCEL:
-			SendMessage(hDlg, WM_CLOSE, 0, 0);
+			SendMessage(hDlg, WM_CLOSE, NULL, NULL);
 			break;
 
 		default:
@@ -382,7 +398,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 
 	case WM_CLOSE:
-		DefWindowProc(hDlg, message, wParam, lParam);
+		DefWindowProc(hDlg, uMsg, wParam, lParam);
 		return FALSE;
 
 	default:
@@ -396,8 +412,18 @@ VOID __stdcall OpenWindow()
 	INITCOMMONCONTROLSEX cc = { sizeof(INITCOMMONCONTROLSEX), ICC_WIN95_CLASSES };
 	InitCommonControlsEx(&cc);
 
-	if (!DialogBoxParam(hDllModule, MAKEINTRESOURCE(102), NULL, DlgProc, 0))
-		exit(1);
+	INT_PTR res;
+	ULONG_PTR cookie = NULL;
+	if (hActCtx && hActCtx != INVALID_HANDLE_VALUE && !ActivateActCtxC(hActCtx, &cookie))
+		cookie = NULL;
+
+	res = DialogBoxParam(hDllModule, MAKEINTRESOURCE(IDD_DIALOGBAR), NULL, DlgProc, NULL);
+
+	if (cookie)
+		DeactivateActCtxC(0, cookie);
+
+	if (res <= 0)
+		Exit(EXIT_FAILURE);
 }
 
 DWORD back_0045F504 = 0x0045F504;
@@ -416,6 +442,38 @@ VOID __declspec(naked) hook_0045F4F8()
 	}
 }
 
+HWND __stdcall GetActiveWindowHook()
+{
+	HWND hWnd = GetActiveWindow();
+
+	DirectDraw* ddraw = Main::FindDirectDrawByWindow(hWnd);
+	if (ddraw)
+		hWnd = ddraw->hWnd;
+
+	return hWnd;
+}
+
+INT __stdcall MessageBoxHook(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
+{
+	INT res;
+
+	if (hActCtx && hActCtx != INVALID_HANDLE_VALUE)
+	{
+		ULONG_PTR cookie = NULL;
+		if (hActCtx && hActCtx != INVALID_HANDLE_VALUE && !ActivateActCtxC(hActCtx, &cookie))
+			cookie = NULL;
+
+		res = MessageBox(hWnd, lpText, lpCaption, uType);
+
+		if (cookie)
+			DeactivateActCtxC(0, cookie);
+	}
+	else
+		res = MessageBox(hWnd, lpText, lpCaption, uType);
+
+	return res;
+}
+
 namespace Hooks
 {
 	VOID Patch_Window()
@@ -428,5 +486,8 @@ namespace Hooks
 		PatchWord(0x0045F54B, 0x9050); // PUSH EAX
 
 		PatchHook(0x0045F4F8, hook_0045F4F8);
+
+		PatchFunction("GetActiveWindow", GetActiveWindowHook);
+		PatchFunction("MessageBoxA", MessageBoxHook);
 	}
 }

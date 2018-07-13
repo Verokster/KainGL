@@ -1,0 +1,11 @@
+#version 130
+precision lowp float;
+
+uniform sampler2D tex01;
+
+in vec2 fTexCoord;
+out vec4 fragColor;
+
+void main(void) {
+	fragColor = texture(tex01, fTexCoord);
+}

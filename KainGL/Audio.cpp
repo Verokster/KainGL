@@ -39,11 +39,11 @@ VOID __stdcall CheckFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* name)
 	WORD* nBlockAlign = (WORD*)0x004BD8D4;
 	WORD* wBitsPerSample = (WORD*)0x004BD8D6;
 
-	sprintf(dest, "%s\\%s.IMA", path, name);
-	FILE* file = fopen(dest, "r");
+	StrPrint(dest, "%s\\%s.IMA", path, name);
+	FILE* file = FileOpen(dest, "r");
 	if (file)
 	{
-		fclose(file);
+		FileClose(file);
 		isIma = TRUE;
 		*samplesRate = 37800; // sample rate 
 		*nChannels = 2; // nChannels
@@ -52,7 +52,7 @@ VOID __stdcall CheckFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* name)
 	}
 	else
 	{
-		sprintf(dest, format, path, name);
+		StrPrint(dest, format, path, name);
 		isIma = FALSE;
 		*nChannels = 1; // nChannels
 	}

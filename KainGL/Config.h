@@ -24,6 +24,7 @@
 
 #pragma once
 #include "windows.h"
+#include "ExtraTypes.h"
 
 #define CONFIG_GL "OPENGL"
 #define CONFIG_GL_VERSION "Version"
@@ -33,6 +34,7 @@
 #define CONFIG_DISPLAY_WINDOWED "Windowed"
 #define CONFIG_DISPLAY_RESOLUTION "Resolution"
 #define CONFIG_DISPLAY_ASPECT "Aspect"
+#define CONFIG_DISPLAY_VSYNC "VSync"
 
 #define CONFIG_FPS "FPS"
 #define CONFIG_FPS_LIMIT "Limit"
@@ -50,6 +52,7 @@ extern DWORD configGlFiltering;
 extern BOOL configDisplayWindowed;
 extern Resolution configDisplayResolution;
 extern BOOL configDisplayAspect;
+extern BOOL configDisplayVSync;
 
 extern FLOAT configFpsLimit;
 extern BOOL configFpsCounter;
@@ -59,7 +62,6 @@ extern BOOL configVideoSmoother;
 
 namespace Config
 {
-	VOID Load();
 	DWORD __fastcall Get(const CHAR* section, const CHAR* key, DWORD def);
 	BOOL __fastcall Set(const CHAR* section, const CHAR* key, DWORD value);
 }

@@ -24,6 +24,7 @@
 
 #include "stdafx.h"
 #include "DirectDrawClipper.h"
+#include "DirectDraw.h"
 
 #pragma region Not Implemented
 HRESULT DirectDrawClipper::QueryInterface(REFIID riid, LPVOID * ppvObj) { return DD_OK; }
@@ -33,26 +34,22 @@ HRESULT DirectDrawClipper::GetHWnd(HWND *) { return DD_OK; }
 HRESULT DirectDrawClipper::Initialize(LPDIRECTDRAW, DWORD) { return DD_OK; }
 HRESULT DirectDrawClipper::IsClipListChanged(BOOL *) { return DD_OK; }
 HRESULT DirectDrawClipper::SetClipList(LPRGNDATA, DWORD) { return DD_OK; }
-
+HRESULT DirectDrawClipper::SetHWnd(DWORD dwFlags, HWND hWnd) { return DD_OK; }
 #pragma endregion
 
-DirectDrawClipper::DirectDrawClipper(LPDIRECTDRAW lpDD)
+DirectDrawClipper::DirectDrawClipper(DirectDraw* lpDD)
 {
 	this->ddraw = lpDD;
-	this->prev = (DirectDrawClipper*)((DirectDraw*)this->ddraw)->clipperEntries;
-}
-
-DirectDrawClipper::~DirectDrawClipper()
-{
+	this->prev = this->ddraw->clipperEntries;
 }
 
 ULONG DirectDrawClipper::Release()
 {
-	if (((DirectDraw*)this->ddraw)->clipperEntries == this)
-		((DirectDraw*)this->ddraw)->clipperEntries = NULL;
+	if (this->ddraw->clipperEntries == this)
+		this->ddraw->clipperEntries = NULL;
 	else
 	{
-		DirectDrawClipper* entry = (DirectDrawClipper*)((DirectDraw*)this->ddraw)->clipperEntries;
+		DirectDrawClipper* entry = this->ddraw->clipperEntries;
 		while (entry)
 		{
 			if (entry->prev == this)
@@ -67,10 +64,4 @@ ULONG DirectDrawClipper::Release()
 
 	delete this;
 	return 0;
-}
-
-// CALLED 
-HRESULT DirectDrawClipper::SetHWnd(DWORD dwFlags, HWND hWnd)
-{
-	return DD_OK;
 }

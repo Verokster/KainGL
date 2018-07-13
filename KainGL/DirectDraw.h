@@ -25,20 +25,23 @@
 #pragma once
 #include "ddraw.h"
 #include "ExtraTypes.h"
-#include "DirectDrawPalette.h"
+#include "DirectDrawSurface.h"
 
 class DirectDraw : IDirectDraw
 {
 public:
-	DirectDraw* last;
-	LPDIRECTDRAWSURFACE surfaceEntries;
-	LPDIRECTDRAWPALETTE paletteEntries;
-	LPDIRECTDRAWCLIPPER clipperEntries;
+	VOID * operator new(size_t size) { return MemoryAlloc(size); };
+	VOID operator delete(VOID *p) { MemoryFree(p); };
 
-	LPDIRECTDRAWSURFACE attachedSurface;
+	DirectDraw* last;
+	DirectDrawSurface* surfaceEntries;
+	DirectDrawPalette* paletteEntries;
+	DirectDrawClipper* clipperEntries;
+
+	DirectDrawSurface* attachedSurface;
 
 	HWND hWnd;
-	HDC hDc;
+	HWND hDraw;
 	HGLRC hRc;
 	DisplayMode* virtualMode;
 	DisplayMode* realMode;
@@ -54,7 +57,6 @@ public:
 	WINDOWPLACEMENT windowPlacement;
 	DWORD clearStage;
 	DWORD frequency;
-	BOOL wasPixelSet;
 
 	DWORD tick;
 
@@ -69,8 +71,11 @@ public:
 	VOID ScaleMouseOut(LPARAM* lParam);
 	VOID CheckDisplayMode();
 
-	VOID RenderOld(DWORD glMaxTexSize);
-	VOID RenderNew();
+	VOID RenderStart();
+	VOID RenderStop();
+
+	VOID RenderOld(HDC hDc, DWORD glMaxTexSize);
+	VOID RenderNew(HDC hDc);
 
 	// Inherited via  IDirectDraw
 	HRESULT __stdcall QueryInterface(REFIID riid, LPVOID * ppvObj);

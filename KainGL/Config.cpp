@@ -34,6 +34,7 @@ DWORD configGlFiltering;
 BOOL configDisplayWindowed;
 Resolution configDisplayResolution;
 BOOL configDisplayAspect;
+BOOL configDisplayVSync;
 
 BOOL configFpsCounter;
 FLOAT configFpsLimit;
@@ -43,22 +44,52 @@ BOOL configVideoSmoother;
 
 namespace Config
 {
-	VOID Load()
-	{
-		GetModuleFileName(hDllModule, iniFile, MAX_PATH);
-		*strrchr(iniFile, '.') = NULL;
-		strcat(iniFile, ".ini");
-	}
-
 	DWORD __fastcall Get(const CHAR* section, const CHAR* key, DWORD def)
 	{
-		return GetPrivateProfileInt(section, key, def, iniFile);
+		HKEY regKeySoftware;
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, "Software", NULL, KEY_READ, &regKeySoftware) == ERROR_SUCCESS)
+		{
+			HKEY regKeyGame;
+			if (RegOpenKeyEx(regKeySoftware, "LegacyOfKain", NULL, KEY_READ, &regKeyGame) == ERROR_SUCCESS)
+			{
+				CHAR valName[50];
+				StrPrint(valName, "%s_%s", section, key);
+
+				BYTE data[256];
+				DWORD size = 256;
+				if (RegQueryValueEx(regKeyGame, valName, NULL, 0, data, &size) == ERROR_SUCCESS)
+					def = *(DWORD*)data;
+
+				RegCloseKey(regKeyGame);
+			}
+
+			RegCloseKey(regKeySoftware);
+		}
+
+		return def;
 	}
 
 	BOOL __fastcall Set(const CHAR* section, const CHAR* key, DWORD value)
 	{
-		TCHAR res[20];
-		sprintf(res, "%d", value);
-		return WritePrivateProfileString(section, key, res, iniFile);
+		BOOL res = FALSE;
+
+		HKEY regKeySoftware;
+		if (RegCreateKeyEx(HKEY_CURRENT_USER, "Software", NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &regKeySoftware, NULL) == ERROR_SUCCESS)
+		{
+			HKEY regKeyGame;
+			if (RegCreateKeyEx(regKeySoftware, "LegacyOfKain", NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &regKeyGame, NULL) == ERROR_SUCCESS)
+			{
+				CHAR valName[50];
+				StrPrint(valName, "%s_%s", section, key);
+
+				res = RegSetValueEx(regKeyGame, valName, NULL, REG_DWORD, (BYTE*)&value, sizeof(DWORD)) == ERROR_SUCCESS;
+
+				RegCloseKey(regKeyGame);
+			}
+
+			RegCloseKey(regKeySoftware);
+		}
+
+		return res;
 	}
 }

@@ -27,14 +27,12 @@
 #include "windows.h"
 #include "GL\gl.h"
 
-#if !defined(_PTRDIFF_T_DEFINED) && !defined(_PTRDIFF_T_) && !defined(__MINGW64__)
-#  ifdef _WIN64
+#ifndef ptrdiff_t
+#ifdef _WIN64
 typedef __int64 ptrdiff_t;
-#  else
+#else
 typedef _W64 int ptrdiff_t;
-#  endif
-#  define _PTRDIFF_T_DEFINED
-#  define _PTRDIFF_T_
+#endif
 #endif
 
 typedef ptrdiff_t GLintptr;
@@ -113,6 +111,7 @@ typedef HGLRC(__stdcall *WGLCREATECONTEXT)(HDC devContext);
 typedef BOOL(__stdcall *WGLDELETECONTEXT)(HGLRC glContext);
 typedef HGLRC(__stdcall *WGLCREATECONTEXTATTRIBSARB)(HDC hDC, HGLRC hshareContext, const DWORD *attribList);
 typedef BOOL(__stdcall *WGLCHOOSEPIXELFORMATARB) (HDC hDC, const INT* piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, INT *piFormats, UINT *nNumFormats);
+typedef BOOL(__stdcall *WGLSWAPINTERVAL)(INT interval);
 
 typedef const GLubyte* (__stdcall *GLGETSTRING)(GLenum name);
 typedef VOID(__stdcall *GLVERTEX2S)(GLshort x, GLshort y);
@@ -164,10 +163,12 @@ typedef VOID(__stdcall *GLENABLEVERTEXATTRIBARRAY)(GLuint index);
 typedef VOID(__stdcall *GLVERTEXATTRIBPOINTER)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer);
 
 typedef GLuint(__stdcall *GLCREATESHADER)(GLenum shaderType);
+typedef VOID(__stdcall *GLDELETESHADER)(GLuint shader);
 typedef GLuint(__stdcall *GLCREATEPROGRAM)(void);
 typedef VOID(__stdcall *GLSHADERSOURCE)(GLuint shader, GLsizei count, const GLchar** string, const GLint* length);
 typedef VOID(__stdcall *GLCOMPILESHADER)(GLuint shader);
 typedef VOID(__stdcall *GLATTACHSHADER)(GLuint program, GLuint shader);
+typedef VOID(__stdcall *GLDETACHSHADER)(GLuint program, GLuint shader);
 typedef VOID(__stdcall *GLLINKPROGRAM)(GLuint program);
 typedef VOID(__stdcall *GLUSEPROGRAM)(GLuint program);
 typedef VOID(__stdcall *GLDELETEPROGRAM)(GLuint program);
@@ -185,6 +186,7 @@ extern WGLMAKECURRENT WGLMakeCurrent;
 extern WGLCREATECONTEXT WGLCreateContext;
 extern WGLDELETECONTEXT WGLDeleteContext;
 extern WGLCREATECONTEXTATTRIBSARB WGLCreateContextAttribs;
+extern WGLSWAPINTERVAL WGLSwapInterval;
 
 extern GLGETSTRING GLGetString;
 extern GLVERTEX2S GLVertex2s;
@@ -231,10 +233,12 @@ extern GLENABLEVERTEXATTRIBARRAY GLEnableVertexAttribArray;
 extern GLVERTEXATTRIBPOINTER GLVertexAttribPointer;
 
 extern GLCREATESHADER GLCreateShader;
+extern GLDELETESHADER GLDeleteShader;
 extern GLCREATEPROGRAM GLCreateProgram;
 extern GLSHADERSOURCE GLShaderSource;
 extern GLCOMPILESHADER GLCompileShader;
 extern GLATTACHSHADER GLAttachShader;
+extern GLDETACHSHADER GLDetachShader;
 extern GLLINKPROGRAM GLLinkProgram;
 extern GLUSEPROGRAM GLUseProgram;
 extern GLDELETEPROGRAM GLDeleteProgram;
@@ -247,20 +251,17 @@ extern GLGETUNIFORMLOCATION GLGetUniformLocation;
 extern GLUNIFORM1I GLUniform1i;
 extern GLUNIFORMMATRIX4FV GLUniformMatrix4fv;
 
-extern WORD glVersion;
+extern DWORD glVersion;
+extern DWORD glPixelFormat;
 extern DWORD glCapsClampToEdge;
 
 namespace GL
 {
-	BOOL Load();
-
-	VOID Free();
-
-	VOID CreateContextAttribs(HDC devContext, HGLRC* glContext);
-
-	BOOL PreparePixelFormat(PIXELFORMATDESCRIPTOR* pfd, DWORD* pixelFormat, HWND hWnd);
-
-	GLuint __fastcall CompileShaderSource(const GLchar* source, GLenum type, HWND hWnd);
-
-	//GLuint __fastcall CompileShaderResource(DWORD name, GLenum shaderType, HWND hWnd);
+	BOOL __fastcall Load();
+	VOID __fastcall Free();
+	VOID __fastcall CreateContextAttribs(HDC hDc, HGLRC* hRc);
+	VOID __fastcall PreparePixelFormatDescription(PIXELFORMATDESCRIPTOR* pfd);
+	BOOL __fastcall PreparePixelFormat(PIXELFORMATDESCRIPTOR* pfd);
+	GLuint __fastcall CompileShaderSource(DWORD name, GLenum type);
+	VOID __fastcall ResetContext();
 }

@@ -27,6 +27,7 @@
 #include "Hooks.h"
 #include "Config.h"
 #include "DirectDrawSurface.h"
+#include "DirectDraw.h"
 
 DWORD frameBuffer[320 * 240];
 DWORD* palette = (DWORD*)0x008FB570;
@@ -34,7 +35,7 @@ LPDIRECTDRAWSURFACE* lpDDSurface = (LPDIRECTDRAWSURFACE*)0x004CD728;
 
 VOID __stdcall CopyFrame(LPVOID src, LPVOID dest, DWORD width, DWORD lPitch, DWORD height, DWORD offset)
 {
-	memcpy(dest, src, width * height);
+	MemoryCopy(dest, src, width * height);
 }
 
 VOID __stdcall RenderVideoFrame(DWORD* buffers, DWORD index, DWORD width, DWORD height)
@@ -126,9 +127,8 @@ VOID __stdcall RenderVideoFrame(DWORD* buffers, DWORD index, DWORD width, DWORD 
 			} while (--count);
 		}
 
-
-		DirectDraw* mdraw = (DirectDraw*)((DirectDrawSurface*)*lpDDSurface)->ddraw;
-		mdraw->attachedSurface = (LPDIRECTDRAWSURFACE)*lpDDSurface;
+		DirectDraw* mdraw = ((DirectDrawSurface*)*lpDDSurface)->ddraw;
+		mdraw->attachedSurface = (DirectDrawSurface*)*lpDDSurface;
 		SetEvent(mdraw->hDrawEvent);
 	}
 }
@@ -232,7 +232,7 @@ VOID ClearMovieDisplay()
 	LPDIRECTDRAWSURFACE* lpDDSurface = (LPDIRECTDRAWSURFACE*)0x004CD728;
 	if ((*lpDDSurface)->Lock(0, &desc, 0, NULL) == DD_OK)
 	{
-		memset(desc.lpSurface, NULL, desc.lPitch * desc.dwHeight);
+		MemoryZero(desc.lpSurface, desc.lPitch * desc.dwHeight);
 		(*lpDDSurface)->Unlock(NULL);
 	}
 }
