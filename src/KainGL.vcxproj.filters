@@ -1,0 +1,243 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="StdAfx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DllMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FpsCounter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mouse.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="System.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Video.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Library.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="NoCD.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Language.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Zoom.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="EagleEye.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Timers.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="TextRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Subtitles.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenSound.cpp">
+      <Filter>Source Files\Sound\Open</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenSoundBuffer.cpp">
+      <Filter>Source Files\Sound\Open</Filter>
+    </ClCompile>
+    <ClCompile Include="ALib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectSound.cpp">
+      <Filter>Source Files\Sound\Direct</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectSoundBuffer.cpp">
+      <Filter>Source Files\Sound\Direct</Filter>
+    </ClCompile>
+    <ClCompile Include="IOpenDirectSound.cpp">
+      <Filter>Source Files\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="Allocation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenDraw.cpp">
+      <Filter>Source Files\Draw\Open</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenDrawClipper.cpp">
+      <Filter>Source Files\Draw\Open</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenDrawPalette.cpp">
+      <Filter>Source Files\Draw\Open</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenDrawSurface.cpp">
+      <Filter>Source Files\Draw\Open</Filter>
+    </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Vibration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StdAfx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExtraTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FpsCounter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenSound.h">
+      <Filter>Header Files\Sound\Open</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenSoundBuffer.h">
+      <Filter>Header Files\Sound\Open</Filter>
+    </ClInclude>
+    <ClInclude Include="ALib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectSound.h">
+      <Filter>Header Files\Sound\Direct</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectSoundBuffer.h">
+      <Filter>Header Files\Sound\Direct</Filter>
+    </ClInclude>
+    <ClInclude Include="IOpenDirectSound.h">
+      <Filter>Header Files\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="Allocation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenDraw.h">
+      <Filter>Header Files\Draw\Open</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenDrawClipper.h">
+      <Filter>Header Files\Draw\Open</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenDrawPalette.h">
+      <Filter>Header Files\Draw\Open</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenDrawSurface.h">
+      <Filter>Header Files\Draw\Open</Filter>
+    </ClInclude>
+    <ClInclude Include="Vibration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{52949067-004a-4f89-954e-76cac391770d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{9894f9f1-3b2e-44c1-b85b-f89a3c64f6a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{b48440de-744c-470c-835a-b1527d1c4325}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Hooks">
+      <UniqueIdentifier>{d2492af4-726c-40c7-8e18-0c1f1513abb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders Files">
+      <UniqueIdentifier>{efa8630a-e188-4d3c-810b-a27ae430ae6a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Draw">
+      <UniqueIdentifier>{1010df66-062d-4efa-92b7-d45bf892cef0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Sound">
+      <UniqueIdentifier>{90cdcb0b-b537-471a-b630-bc082bb2e7fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Sound\Open">
+      <UniqueIdentifier>{321a26e2-99f1-4696-b9d0-2457b40c2d06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Sound">
+      <UniqueIdentifier>{64c783fc-73be-44ec-b989-ce81800e9afe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Draw">
+      <UniqueIdentifier>{492f8c8c-415d-4d43-8783-6a3196b9bf48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Sound\Open">
+      <UniqueIdentifier>{d1948e04-5adf-4c41-9d79-26844dc6b910}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Sound\Direct">
+      <UniqueIdentifier>{9c470aaf-198e-4581-8584-237a9de0d406}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Sound\Direct">
+      <UniqueIdentifier>{c002362a-b2ba-43fc-8e25-7accff817cf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Draw\Open">
+      <UniqueIdentifier>{d2c90e69-0edb-4521-9112-483f8832d09d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Draw\Open">
+      <UniqueIdentifier>{b645bb9c-2f42-4f77-a454-e225644b7ffe}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="module.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\vertex.vgl">
+      <Filter>Resource Files\Shaders Files</Filter>
+    </None>
+    <None Include="Shaders\bicubic.fgl">
+      <Filter>Resource Files\Shaders Files</Filter>
+    </None>
+    <None Include="Shaders\nearest.fgl">
+      <Filter>Resource Files\Shaders Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="module.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="module.manifest">
+      <Filter>Resource Files</Filter>
+    </Manifest>
+  </ItemGroup>
+</Project>
