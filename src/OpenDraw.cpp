@@ -52,8 +52,6 @@ HRESULT OpenDraw::WaitForVerticalBlank(DWORD dwFlags, HANDLE hEvent) { return DD
 
 #define WIN_STYLE WS_POPUPWINDOW | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CLIPSIBLINGS | WS_SIZEBOX
 #define FS_STYLE WS_POPUP | WS_SYSMENU | WS_CAPTION | WS_VISIBLE | WS_CLIPSIBLINGS
-#define VK_I 0x49
-#define VK_F 0x46
 
 DisplayMode modesList[12];
 
@@ -180,7 +178,6 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 
 	case WM_SYSKEYDOWN:
-	case WM_KEYDOWN:
 	{
 		if ((HIWORD(lParam) & KF_ALTDOWN))
 		{
@@ -238,7 +235,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			// FPS counter on/off
-			case VK_I:
+			case 'I':
 			{
 				configFpsCounter = !configFpsCounter;
 				Config::Set(CONFIG_FPS, CONFIG_FPS_COUNTER, configFpsCounter);
@@ -247,7 +244,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			// Filtering on/off
-			case VK_F:
+			case 'F':
 			{
 				configGlFiltering = configGlFiltering == GL_LINEAR ? GL_NEAREST : GL_LINEAR;
 				Config::Set(CONFIG_GL, CONFIG_GL_FILTERING, configGlFiltering == GL_LINEAR);
@@ -263,7 +260,75 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 		}
 
+		switch (wParam)
+		{
+		case 'W':
+			wParam = VK_UP;
+			break;
+
+		case 'S':
+			wParam = VK_DOWN;
+			break;
+
+		case 'A':
+			wParam = VK_LEFT;
+			break;
+
+		case 'D':
+			wParam = VK_RIGHT;
+			break;
+
+		default: break;
+		}
+
 		return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
+	}
+
+	case WM_SYSKEYUP:
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	{
+		switch (wParam)
+		{
+		case 'W':
+			wParam = VK_UP;
+			break;
+
+		case 'S':
+			wParam = VK_DOWN;
+			break;
+
+		case 'A':
+			wParam = VK_LEFT;
+			break;
+
+		case 'D':
+			wParam = VK_RIGHT;
+			break;
+
+		default: break;
+		}
+
+		return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
+	}
+
+
+	case WM_CHAR:
+	{
+		switch (wParam)
+		{
+		case 'w':
+		case 's':
+		case 'a':
+		case 'd':
+		case 'W':
+		case 'S':
+		case 'A':
+		case 'D':
+			return NULL;
+		default:
+			return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
+		}
 	}
 
 	case WM_SYSCOMMAND:
