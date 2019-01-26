@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@ LangFiles langFiles;
 
 DWORD* filesCount = (DWORD*)0x008E2E20;
 FileHeader* filesHeaders = (FileHeader*)0x00506AA4;
+FILE** filesHandlers = (FILE**)0x00501324;
 
 CHAR* pillBigPath = (CHAR*)0x005012A4;
 CHAR audioBigPath[MAX_PATH];
@@ -64,7 +65,7 @@ VOID __fastcall LoadLangBigFile(CHAR* filePath)
 						DWORD fCount = *filesCount;
 						while (fCount--)
 						{
-							if (dst->pathHash == src->pathHash)
+							if (dst->hash == src->hash)
 							{
 								dst->size = src->size;
 								dst->offset = src->offset;
@@ -106,6 +107,8 @@ VOID LoadBigFiles()
 
 	LoadLangBigFile(langFiles.voicesFile);
 	LoadLangBigFile(langFiles.interfaceFile);
+
+	Hooks::Patch_Credits();
 }
 
 VOID __declspec(naked) hook_00412856()
@@ -194,9 +197,11 @@ namespace Hooks
 {
 	VOID Patch_Language()
 	{
-		filesCount = (DWORD*)((DWORD)filesCount + baseAddress);
-		filesHeaders = (FileHeader*)((DWORD)filesHeaders +baseAddress);
-		pillBigPath = (CHAR*)((DWORD)pillBigPath +baseAddress);
+		filesCount = (DWORD*)((DWORD)filesCount + baseOffset);
+		filesHeaders = (FileHeader*)((DWORD)filesHeaders + baseOffset);
+		filesHandlers = (FILE**)((DWORD)filesHandlers + baseOffset);
+
+		pillBigPath = (CHAR*)((DWORD)pillBigPath + baseOffset);
 
 		PatchByte(0x0044E669, 0xEB); // remove language check
 
@@ -204,18 +209,18 @@ namespace Hooks
 
 		// retrive big pathes by files index
 		PatchHook(0x00412C89, hook_00412C89);
-		back_00412C8E += baseAddress;
+		back_00412C8E += baseOffset;
 
 		PatchHook(0x00412D6B, hook_00412D6B);
-		back_00412D70 += baseAddress;
+		back_00412D70 += baseOffset;
 
 		PatchHook(0x00412DD9, hook_00412DD9);
-		back_00412DDE += baseAddress;
+		back_00412DDE += baseOffset;
 
 		PatchHook(0x00412F87, hook_00412F87);
-		back_00412F8C += baseAddress;
+		back_00412F8C += baseOffset;
 
 		PatchHook(0x0041315E, hook_0041315E);
-		back_00413163 += baseAddress;
+		back_00413163 += baseOffset;
 	}
 }

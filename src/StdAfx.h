@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -33,42 +33,11 @@
 #include "dsound.h"
 #include "xinput.h"
 
-#if (_WIN32_WINNT <= 0x0501)
-#define MAX_LINKID_TEXT     48
-#define L_MAX_URL_LENGTH    (2048 + 32 + sizeof("://"))
-#define ACTCTX_FLAG_RESOURCE_NAME_VALID             (0x00000008)
-#define ACTCTX_FLAG_HMODULE_VALID                   (0x00000080)
+#define _USE_MATH_DEFINES
 
-typedef struct tagLITEM
-{
-	UINT        mask;
-	int         iLink;
-	UINT        state;
-	UINT        stateMask;
-	WCHAR       szID[MAX_LINKID_TEXT];
-	WCHAR       szUrl[L_MAX_URL_LENGTH];
-} LITEM, *PLITEM;
-
-typedef struct tagNMLINK
-{
-	NMHDR       hdr;
-	LITEM     item;
-} NMLINK, *PNMLINK;
-
-typedef struct ACTCTXC {
-	ULONG       cbSize;
-	DWORD       dwFlags;
-	LPCSTR      lpSource;
-	USHORT      wProcessorArchitecture;
-	LANGID      wLangId;
-	LPCSTR      lpAssemblyDirectory;
-	LPCSTR      lpResourceName;
-	LPCSTR      lpApplicationName;
-	HMODULE     hModule;
-} ACTCTXA, *PACTCTXA;
-typedef const ACTCTXA *PCACTCTXA;
-typedef ACTCTXA ACTCTX;
-#endif
+#define WC_DRAW "f02b3562-1990-42cd-a07f-c2e1c367facd"
+#define WIN_STYLE (WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPSIBLINGS)
+#define FS_STYLE (WS_POPUP | WS_SYSMENU | WS_VISIBLE | WS_CLIPSIBLINGS)
 
 #define SND_BATS 0
 #define SND_BLOODUP 1
@@ -131,18 +100,30 @@ typedef ACTCTXA ACTCTX;
 #define DIR_TOP_LEFT 7;
 #define DIR_NONE 9;
 
+extern HMODULE hDllModule;
+extern HANDLE hActCtx;
+
 typedef HANDLE(__stdcall *CREATEACTCTXA)(ACTCTX* pActCtx);
 typedef VOID(__stdcall *RELEASEACTCTX)(HANDLE hActCtx);
 typedef BOOL(__stdcall *ACTIVATEACTCTX)(HANDLE hActCtx, ULONG_PTR* lpCookie);
 typedef BOOL(__stdcall *DEACTIVATEACTCTX)(DWORD dwFlags, ULONG_PTR ulCookie);
 
-extern HMODULE hDllModule;
-extern HANDLE hActCtx;
-
 extern CREATEACTCTXA CreateActCtxC;
 extern RELEASEACTCTX ReleaseActCtxC;
 extern ACTIVATEACTCTX ActivateActCtxC;
 extern DEACTIVATEACTCTX DeactivateActCtxC;
+
+typedef INT(__stdcall *DRAWTEXTW)(HDC hdc, LPCWSTR lpchText, INT cchText, LPRECT lprc, UINT format);
+extern DRAWTEXTW DrawTextUni;
+
+typedef HRESULT(__stdcall *DWMISCOMPOSITIONENABLED)(BOOL* pfEnabled);
+extern DWMISCOMPOSITIONENABLED IsDwmCompositionEnabled;
+
+typedef INT(__stdcall *ADDFONTRESOURCEEXA)(LPCSTR name, DWORD fl, PVOID res);
+typedef BOOL(__stdcall *REMOVEFONTRESOURCEEXA)(LPCSTR name, DWORD fl, PVOID pdv);
+
+extern ADDFONTRESOURCEEXA AddFontResourceC;
+extern REMOVEFONTRESOURCEEXA RemoveFontResourceC;
 
 typedef VOID*(__cdecl *MALLOC)(size_t);
 typedef VOID(__cdecl *FREE)(VOID*);
@@ -157,15 +138,20 @@ typedef DOUBLE(__cdecl *SQRT)(DOUBLE);
 typedef DOUBLE(__cdecl *ATAN2)(DOUBLE, DOUBLE);
 typedef INT(__cdecl *SPRINTF)(CHAR*, const CHAR*, ...);
 typedef CHAR*(__cdecl *STRSTR)(const CHAR*, const CHAR*);
+typedef CHAR*(__cdecl *STRCHR)(const CHAR*, INT);
 typedef INT(__cdecl *STRCMP)(const CHAR*, const CHAR*);
 typedef CHAR*(__cdecl *STRCPY)(CHAR*, const CHAR*);
 typedef CHAR*(__cdecl *STRCAT)(CHAR*, const CHAR*);
+typedef CHAR*(__cdecl *STRDUP)(const CHAR*);
 typedef size_t(__cdecl *STRLEN)(const CHAR*);
 typedef CHAR*(__cdecl *STRRCHR)(const CHAR*, INT);
 typedef FILE*(__cdecl *FOPEN)(const CHAR*, const CHAR*);
 typedef INT(__cdecl *FCLOSE)(FILE*);
 typedef size_t(__cdecl *FREAD)(VOID*, size_t, size_t, FILE*);
+typedef size_t(__cdecl *FWRITE)(const VOID*, size_t, size_t, FILE*);
+typedef INT(__cdecl *FSEEK)(FILE*, LONG, INT);
 typedef INT(__cdecl *RAND)();
+typedef VOID(__cdecl *SRAND)(DWORD);
 typedef VOID(__cdecl *EXIT)(INT);
 
 extern MALLOC MemoryAlloc;
@@ -181,15 +167,20 @@ extern SQRT MathSqrt;
 extern ATAN2 MathAtan2;
 extern SPRINTF StrPrint;
 extern STRSTR StrStr;
+extern STRCHR StrChar;
 extern STRCMP StrCompare;
 extern STRCPY StrCopy;
 extern STRCAT StrCat;
+extern STRDUP StrDuplicate;
 extern STRLEN StrLength;
 extern STRRCHR StrRightChar;
 extern FOPEN FileOpen;
 extern FCLOSE FileClose;
 extern FREAD FileRead;
+extern FWRITE FileWrite;
+extern FSEEK FileSeek;
 extern RAND Random;
+extern SRAND SeedRandom;
 extern EXIT Exit;
 
 #define MemoryZero(Destination,Length) MemorySet((Destination),0,(Length))
@@ -211,10 +202,15 @@ extern HWND mousehWnd;
 extern FLOAT currentTimeout;
 
 VOID LoadKernel32();
+VOID LoadGdi32();
+VOID LoadUnicoWS();
+VOID LoadDwmAPI();
 VOID LoadMsvCRT();
 VOID LoadDDraw();
-VOID LoadDSound();
 VOID LoadXInput();
+
+WCHAR* __fastcall DecodeUtf8(BYTE* ptr, DWORD* count);
+WCHAR* __fastcall DecodeUtf8(BYTE* ptr, DWORD* count, DWORD* length);
 
 extern IDirectSoundBuffer* activeSoundBuffer;
 extern DWORD soundStartTime;
@@ -223,11 +219,12 @@ extern DWORD soundSuspendTime;
 extern SubtitlesItem* subtitlesList;
 extern SubtitlesItem* subtitlesCurrent;
 extern DWORD subtitlesType;
+extern SubtitlesFont subtitlesFonts[];
+extern CHAR fontFiles[][MAX_PATH];
 
 extern DWORD* scale;
 extern ALSoundOptions soundOptions;
 
-#define MAX_CONTROLLERS 4
 extern BOOL* xJoyListConnected;
 extern BOOL xJoyListCheck[];
 extern INT* gainVolume;

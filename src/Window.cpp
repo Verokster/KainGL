@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -30,15 +30,13 @@
 #include "Main.h"
 #include "ALib.h"
 
-#define WIN_STYLE DS_MODALFRAME | DS_CENTER | DS_CENTERMOUSE | WS_POPUP | WS_CAPTION | WS_SYSMENU
-
-#define STR_AUTO "Auto"
+#define STR_OPENGL_AUTO "OpenGL Auto"
 #define STR_OPENGL_1_1 "OpenGL 1.1"
 #define STR_OPENGL_3_0 "OpenGL 3.0"
-#define LEGACY_OF_KAIN "Legacy of Kain: Blood Omen"
 
 #define RECOUNT 64
-Resolution resolutionsList[RECOUNT];
+Resolution* resolutionsList;
+DWORD resolutionsListCount;
 
 struct LangIndexes
 {
@@ -50,18 +48,58 @@ struct LangIndexes
 
 DWORD langIndexesCount;
 
-VOID GetMonitorRect(HWND hWnd, RECT* rectMon)
+CHAR* GLInit(CHAR*(*callback)())
 {
-	MONITORINFO mi = { sizeof(mi) };
-	HMONITOR hMon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-	if (hMon && GetMonitorInfo(hMon, &mi))
+	CHAR* res = NULL;
+
+	HWND hWnd = CreateWindowEx(
+		WS_EX_APPWINDOW,
+		WC_DRAW,
+		NULL,
+		WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+		0, 0,
+		1, 1,
+		NULL,
+		NULL,
+		hDllModule,
+		NULL
+	);
+
+	if (hWnd)
 	{
-		*rectMon = mi.rcWork;
-		return;
+		HDC hDc = GetDC(hWnd);
+		if (hDc)
+		{
+			GL::SetPixelFormat(hDc);
+
+			HGLRC hRc = WGLCreateContext(hDc);
+			if (hRc)
+			{
+				if (WGLMakeCurrent(hDc, hRc))
+				{
+					GL::CreateContextAttribs(hDc, &hRc);
+					
+					if (callback)
+						res = callback();
+
+					WGLMakeCurrent(hDc, NULL);
+				}
+
+				WGLDeleteContext(hRc);
+			}
+
+			ReleaseDC(hWnd, hDc);
+		}
+
+		DestroyWindow(hWnd);
 	}
 
-	HWND hWndDesctop = GetDesktopWindow();
-	GetWindowRect(hWndDesctop, rectMon);
+	return res;
+}
+
+CHAR* GetRenderer()
+{
+	return GLGetString ? StrDuplicate((const CHAR*)GLGetString(GL_RENDERER)) : NULL;
 }
 
 BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -70,56 +108,43 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG:
 	{
-		SetWindowText(hDlg, LEGACY_OF_KAIN);
+		SetWindowText(hDlg, "Legacy of Kain Settings");
 
 		RECT rectDlg;
 		GetWindowRect(hDlg, &rectDlg);
 
-		RECT rectMon;
-		GetMonitorRect(hDlg, &rectMon);
+		DWORD monWidth = GetSystemMetrics(SM_CXSCREEN);
+		DWORD monHeight = GetSystemMetrics(SM_CYSCREEN);
 
 		rectDlg.right -= rectDlg.left;
 		rectDlg.bottom -= rectDlg.top;
-		rectDlg.left = rectMon.left + ((rectMon.right - rectMon.left) - rectDlg.right) / 2;
-		rectDlg.top = rectMon.top + ((rectMon.bottom - rectMon.top) - rectDlg.bottom) / 2;
+		rectDlg.left = (monWidth - rectDlg.right) >> 1;
+		rectDlg.top = (monHeight - rectDlg.bottom) >> 1;
+		SetWindowPos(hDlg, NULL, rectDlg.left, rectDlg.top, rectDlg.right, rectDlg.bottom, SWP_NOZORDER);
 
-		SetWindowPos(hDlg, NULL, rectDlg.left, (rectDlg.top >= rectMon.top ? rectDlg.top : rectMon.top), rectDlg.right, rectDlg.bottom, SWP_NOZORDER);
-
-		DWORD i;
 		CHAR itemText[256];
-		DWORD selIndex = 0;
 
 		// OpenGL
 		{
-			DISPLAY_DEVICE device;
-			MemoryZero(&device, sizeof(DISPLAY_DEVICE));
-			device.cb = sizeof(DISPLAY_DEVICE);
-			for (i = 0; EnumDisplayDevices(NULL, i, &device, NULL); ++i)
+			CHAR* renderer = GLInit(GetRenderer);
+			if (renderer)
 			{
-				if (device.StateFlags & (DISPLAY_DEVICE_PRIMARY_DEVICE | DISPLAY_DEVICE_ATTACHED_TO_DESKTOP))
-				{
-					if (*device.DeviceString)
-					{
-						StrPrint(itemText, "%s: %s", device.DeviceString, STR_AUTO);
-						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
+				StrPrint(itemText, "%s: %s", renderer, STR_OPENGL_AUTO);
+				SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
 
-						StrPrint(itemText, "%s: %s", device.DeviceString, STR_OPENGL_1_1);
-						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
+				StrPrint(itemText, "%s: %s", renderer, STR_OPENGL_1_1);
+				SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
 
-						StrPrint(itemText, "%s: %s", device.DeviceString, STR_OPENGL_3_0);
-						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
-					}
-					else
-					{
-						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)STR_AUTO);
-						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)STR_OPENGL_1_1);
-						SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)STR_OPENGL_3_0);
-					}
-					break;
-				}
+				StrPrint(itemText, "%s: %s", renderer, STR_OPENGL_3_0);
+				SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)itemText);
 
-				MemoryZero(&device, sizeof(DISPLAY_DEVICE));
-				device.cb = sizeof(DISPLAY_DEVICE);
+				MemoryFree(renderer);
+			}
+			else
+			{
+				SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)STR_OPENGL_AUTO);
+				SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)STR_OPENGL_1_1);
+				SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_ADDSTRING, NULL, (LPARAM)STR_OPENGL_3_0);
 			}
 
 			DWORD val = Config::Get(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_AUTO);
@@ -146,51 +171,56 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			res.height = (val >> 15) & 0x7FFF;
 			res.bpp = (((val >> 30) & 0x3) + 1) << 3;
 
-			SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Game");
-			SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Desktop");
-
-			DEVMODE devMode;
-			MemoryZero(&devMode, sizeof(DEVMODE));
-			devMode.dmSize = sizeof(DEVMODE);
-
 			BOOL pSupport[3] = { FALSE };
 
 			HDC hDc = GetDC(hDlg);
 			if (hDc)
 			{
 				PIXELFORMATDESCRIPTOR pfd;
-				for (i = 0; i < 3; ++i)
+				for (DWORD i = 0; i < 3; ++i)
 				{
 					GL::PreparePixelFormatDescription(&pfd);
 					pfd.cColorBits = 16 + (8 * LOBYTE(i));
 					pSupport[i] = ChoosePixelFormat(hDc, &pfd) != 0;
 				}
-			}
-			ReleaseDC(hDlg, hDc);
 
-			DWORD idx = 1;
-			for (i = 0; EnumDisplaySettings(NULL, i, &devMode); ++i)
+				ReleaseDC(hDlg, hDc);
+			}
+
+			resolutionsList = (Resolution*)MemoryAlloc(sizeof(Resolution) * RECOUNT);
+
+			DEVMODE devMode;
+			MemoryZero(&devMode, sizeof(DEVMODE));
+			devMode.dmSize = sizeof(DEVMODE);
+			for (DWORD i = 0; EnumDisplaySettings(NULL, i, &devMode); ++i)
 			{
-				if (devMode.dmPelsWidth >= 320 && devMode.dmPelsHeight >= 240 && (
-					pSupport[0] && devMode.dmBitsPerPel == 16 ||
-					pSupport[1] && devMode.dmBitsPerPel == 24 ||
-					pSupport[2] && devMode.dmBitsPerPel == 32))
+				if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) &&
+					devMode.dmPelsWidth >= 320 && devMode.dmPelsHeight >= 240 && (
+						pSupport[0] && devMode.dmBitsPerPel == 16 ||
+						pSupport[1] && devMode.dmBitsPerPel == 24 ||
+						pSupport[2] && devMode.dmBitsPerPel == 32))
 				{
 					Resolution* resList = resolutionsList;
 					for (DWORD j = 0; j < RECOUNT; ++j, ++resList)
 					{
 						if (!*(DWORD*)resList)
 						{
+							if (!resolutionsListCount)
+							{
+								SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Game");
+								SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Desktop");
+							}
+
 							resList->width = devMode.dmPelsWidth;
 							resList->height = devMode.dmPelsHeight;
 							resList->bpp = devMode.dmBitsPerPel;
 
 							StrPrint(itemText, "Width: %d,  Height: %d,  Bit Depth: %d", resList->width, resList->height, resList->bpp);
 							SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, 0, (LPARAM)itemText);
-							++idx;
+							++resolutionsListCount;
 
 							if (resList->width == res.width && resList->height == res.height && resList->bpp == res.bpp)
-								selIdx = idx;
+								selIdx = resolutionsListCount + 1;
 
 							break;
 						}
@@ -203,7 +233,12 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				devMode.dmSize = sizeof(DEVMODE);
 			}
 
-			if (val == 0 || val == 1)
+			if (!resolutionsListCount)
+			{
+				SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Desktop");
+				selIdx = 0;
+			}
+			else if (val <= 1)
 				selIdx = val;
 
 			SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_SETCURSEL, selIdx, NULL);
@@ -223,8 +258,16 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		// VSync
 		{
-			if (Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, TRUE))
-				SendDlgItemMessage(hDlg, IDC_CHECK_VSYNC, BM_SETCHECK, BST_CHECKED, NULL);
+			if (glCapsVSync)
+			{
+				if (Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, TRUE))
+					SendDlgItemMessage(hDlg, IDC_CHECK_VSYNC, BM_SETCHECK, BST_CHECKED, NULL);
+			}
+			else
+			{
+				HWND hCheck = GetDlgItem(hDlg, IDC_CHECK_VSYNC);
+				SetWindowLong(hCheck, GWL_STYLE, GetWindowLong(hCheck, GWL_STYLE) | WS_DISABLED);
+			}
 		}
 
 		// Filter
@@ -235,9 +278,9 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		// FPS limit
 		{
-			DWORD val = Config::Get(CONFIG_FPS, CONFIG_FPS_LIMIT, 50);
+			DWORD val = Config::Get(CONFIG_FPS, CONFIG_FPS_LIMIT, 60);
 			if (!val)
-				val = 50;
+				val = 60;
 
 			SendDlgItemMessage(hDlg, IDC_EDIT_FPS_LIMIT_UPDOWND, UDM_SETRANGE, NULL, MAKELPARAM(-100000, 1));
 			SendDlgItemMessage(hDlg, IDC_EDIT_FPS_LIMIT_UPDOWND, UDM_SETPOS, NULL, (LPARAM)val);
@@ -263,7 +306,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		// Static camera
 		{
-			if (Config::Get(CONFIG_OTHER, CONFIG_OTHER_STATIC_CAMERA, TRUE))
+			if (Config::Get(CONFIG_OTHER, CONFIG_OTHER_STATIC_CAMERA, FALSE))
 				SendDlgItemMessage(hDlg, IDC_CHECK_STATIC_CAMERA, BM_SETCHECK, BST_CHECKED, NULL);
 		}
 
@@ -378,15 +421,15 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				switch (SendDlgItemMessage(hDlg, IDC_COMBO_DRIVER, CB_GETCURSEL, NULL, NULL))
 				{
 				case 1:
-					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, 1))
+					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_1))
 						configGlVersion = GL_VER_1;
 					break;
 				case 2:
-					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, 3))
+					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_3))
 						configGlVersion = GL_VER_3;
 					break;
 				default:
-					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, 0))
+					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_AUTO))
 						configGlVersion = GL_VER_AUTO;
 					break;
 				}
@@ -394,35 +437,42 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			// Resolution
 			{
-				DWORD val = SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_GETCURSEL, NULL, NULL);
-				if (val < RECOUNT + 2)
+				if (resolutionsListCount)
 				{
-					switch (val)
+					DWORD val = SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_GETCURSEL, NULL, NULL);
+					if (val < RECOUNT + 2)
 					{
-					case 0:
-					case 1:
-						if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, val))
-							configDisplayResolution.index = val;
-						break;
-					default:
-					{
-						Resolution *res = &resolutionsList[val - 2];
-
-						DWORD val = (res->width & 0x7FFF) | ((res->height & 0x7FFF) << 15) | (((res->bpp >> 3) - 1) << 30);
-						if (val)
+						switch (val)
 						{
+						case 0:
+						case 1:
 							if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, val))
-								configDisplayResolution = *res;
-						}
-						else
+								configDisplayResolution.index = val;
+							break;
+						default:
 						{
-							if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, 0))
-								configDisplayResolution.index = 0;
+							Resolution *res = &resolutionsList[val - 2];
+
+							DWORD val = (res->width & 0x7FFF) | ((res->height & 0x7FFF) << 15) | (((res->bpp >> 3) - 1) << 30);
+							if (val)
+							{
+								if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, val))
+									configDisplayResolution = *res;
+							}
+							else
+							{
+								if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, 0))
+									configDisplayResolution.index = 0;
+							}
+							break;
 						}
-						break;
-					}
+						}
 					}
 				}
+				else if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, 1))
+					configDisplayResolution.index = 1;
+
+				MemoryFree(resolutionsList);
 			}
 
 			// Windowed
@@ -457,7 +507,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				DWORD val = SendDlgItemMessage(hDlg, IDC_EDIT_FPS_LIMIT_UPDOWND, UDM_GETPOS, NULL, NULL);
 				if (Config::Set(CONFIG_FPS, CONFIG_FPS_LIMIT, val))
-					configFpsLimit = FLOAT(1000.0 / val);
+					configFpsLimit = 1.0f / val;
 			}
 
 			// FPS counter
@@ -549,16 +599,10 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				}
 
 				if (!configOther3DSound)
-				{
 					AL::Free();
-					LoadDSound();
-				}
 			}
 
 			configOtherXboxConfig = Config::Get(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, TRUE);
-
-			Hooks::Patch_Video();
-			Hooks::Patch_Subtitles();
 
 			EndDialog(hDlg, LOWORD(wParam));
 			break;
@@ -584,49 +628,13 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
-VOID __stdcall OpenWindow()
-{
-	// Load Common Controls classes for UpDown
-	INITCOMMONCONTROLSEX cc = { sizeof(INITCOMMONCONTROLSEX), ICC_WIN95_CLASSES };
-	InitCommonControlsEx(&cc);
-
-	INT_PTR res;
-	ULONG_PTR cookie = NULL;
-	if (hActCtx && hActCtx != INVALID_HANDLE_VALUE && !ActivateActCtxC(hActCtx, &cookie))
-		cookie = NULL;
-
-	res = DialogBoxParam(hDllModule, MAKEINTRESOURCE(IDD_DIALOGBAR), NULL, DlgProc, NULL);
-
-	if (cookie)
-		DeactivateActCtxC(0, cookie);
-
-	if (res <= 0)
-		Exit(EXIT_FAILURE);
-}
-
-DWORD back_0045F504 = 0x0045F504;
-VOID __declspec(naked) hook_0045F4F8()
-{
-	_asm
-	{
-		PUSH EBX
-		PUSH ESI
-		PUSH EDI
-		PUSH EBP
-		MOV EBP, ESP
-		SUB ESP, 0x30
-		CALL OpenWindow
-		JMP back_0045F504
-	}
-}
-
 HWND __stdcall GetActiveWindowHook()
 {
 	HWND hWnd = GetActiveWindow();
 
-	OpenDraw* ddraw = Main::FindDrawByWindow(hWnd);
-	if (ddraw)
-		hWnd = ddraw->hWnd;
+	OpenDraw* ddraw = ddrawList;
+	if (ddraw && (ddraw->hWnd == hWnd || ddraw->hDraw == hWnd))
+		return ddraw->hWnd;
 
 	return hWnd;
 }
@@ -652,21 +660,225 @@ INT __stdcall MessageBoxHook(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uT
 	return res;
 }
 
+HICON __stdcall LoadIconHook(HINSTANCE hInstance, LPCSTR lpIconName)
+{
+	return LoadIcon(GetModuleHandle(NULL), "SETUP_ICON");
+}
+
+ATOM __stdcall RegisterClassHook(WNDCLASSA* lpWndClass)
+{
+	lpWndClass->hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	return RegisterClass(lpWndClass);
+}
+
+HWND __stdcall CreateWindowExHook(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, INT X, INT Y, INT nWidth, INT nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+{
+	INT monWidth = GetSystemMetrics(SM_CXSCREEN);
+	INT monHeight = GetSystemMetrics(SM_CYSCREEN);
+
+	if (configDisplayWindowed)
+	{
+		dwStyle = WIN_STYLE;
+
+		nWidth = (INT)MathRound(0.75f * monWidth);
+		nHeight = (INT)MathRound(0.75f * monHeight);
+
+		FLOAT k = 4.0f / 3.0f;
+
+		INT check = (INT)MathRound((FLOAT)nHeight * k);
+		if (nWidth > check)
+			nWidth = check;
+		else
+			nHeight = (INT)MathRound((FLOAT)nWidth / k);
+	}
+	else
+	{
+		dwStyle = FS_STYLE | WS_CAPTION;
+
+		nWidth = monWidth;
+		nHeight = monHeight;
+	}
+
+	X = (monWidth - nWidth) >> 1;
+	Y = (monHeight - nHeight) >> 1;
+
+	RECT rect = { X, Y, X + nWidth , Y + nHeight };
+	AdjustWindowRect(&rect, dwStyle, FALSE);
+
+	X = rect.left;
+	Y = rect.top;
+	nWidth = rect.right - rect.left;
+	nHeight = rect.bottom - rect.top;
+
+	Hooks::hMainWnd = CreateWindowEx(WS_EX_APPWINDOW, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+
+	if (!configDisplayWindowed)
+	{
+		dwStyle = FS_STYLE;
+		SetWindowLong(Hooks::hMainWnd, GWL_STYLE, dwStyle);
+
+		RECT rect = { 0, 0, monWidth, monHeight };
+		AdjustWindowRect(&rect, dwStyle, FALSE);
+
+		SetWindowPos(Hooks::hMainWnd, NULL, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
+	}
+
+	return Hooks::hMainWnd;
+}
+
 namespace Hooks
 {
 	VOID Patch_Window()
 	{
-		// Window text & icon
-		PatchDWord(0x0045F5DA + 1, WS_POPUP | WS_SYSMENU | WS_CAPTION);
-		PatchDWord(0x0045F546 + 1, (DWORD)"SETUP_ICON");
-		PatchWord(0x0045F5DF, 0x6890);
-		PatchDWord(0x0045F5DF + 2, (DWORD)LEGACY_OF_KAIN);
-		PatchWord(0x0045F54B, 0x9050); // PUSH EAX
+		BOOL noWindow = FALSE;
+		CHAR* line = GetCommandLine();
+		do
+		{
+			line = StrChar(line, ' ');
+			if (!line || !*(++line))
+				break;
 
-		PatchHook(0x0045F4F8, hook_0045F4F8);
-		back_0045F504 += baseAddress;
+			if (StrStr(line, "-noconfig") == line)
+			{
+				noWindow = TRUE;
+				break;
+			}
+		} while (TRUE);
+
+		if (!noWindow)
+		{
+			// Load Common Controls classes for UpDown
+			INITCOMMONCONTROLSEX cc = { sizeof(INITCOMMONCONTROLSEX), ICC_WIN95_CLASSES };
+			InitCommonControlsEx(&cc);
+
+			INT_PTR res;
+			ULONG_PTR cookie = NULL;
+			if (hActCtx && hActCtx != INVALID_HANDLE_VALUE && !ActivateActCtxC(hActCtx, &cookie))
+				cookie = NULL;
+
+			res = DialogBoxParam(hDllModule, MAKEINTRESOURCE(IDD_DIALOGBAR), NULL, DlgProc, NULL);
+
+			if (cookie)
+				DeactivateActCtxC(0, cookie);
+
+			if (res <= 0)
+				Exit(EXIT_FAILURE);
+		}
+		else
+		{
+			// OpenGL
+			configGlVersion = Config::Get(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_AUTO);
+			if (configGlVersion != GL_VER_1 && configGlVersion != GL_VER_3)
+				configGlVersion = GL_VER_AUTO;
+
+			// Resolution
+			DWORD val = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, 1);
+			if (val > 1)
+			{
+				configDisplayResolution.width = val & 0x7FFF;
+				configDisplayResolution.height = (val >> 15) & 0x7FFF;
+				configDisplayResolution.bpp = (((val >> 30) & 0x3) + 1) << 3;
+
+				BOOL found = FALSE;
+				DEVMODE devMode;
+				MemoryZero(&devMode, sizeof(DEVMODE));
+				devMode.dmSize = sizeof(DEVMODE);
+				for (DWORD i = 0; EnumDisplaySettings(NULL, i, &devMode); ++i)
+				{
+					if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) &&
+						devMode.dmPelsWidth == configDisplayResolution.width && devMode.dmPelsHeight == configDisplayResolution.height && devMode.dmBitsPerPel == configDisplayResolution.bpp)
+					{
+						found = TRUE;
+						break;
+					}
+
+					MemoryZero(&devMode, sizeof(DEVMODE));
+					devMode.dmSize = sizeof(DEVMODE);
+				}
+
+				if (!found)
+				{
+					configDisplayResolution.width = 0;
+					configDisplayResolution.height = 0;
+					configDisplayResolution.index = 1;
+				}
+			}
+			else
+				configDisplayResolution.index = val;
+
+			// Windowed
+			configDisplayWindowed = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_WINDOWED, FALSE);
+
+			// Aspect
+			configDisplayAspect = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_ASPECT, TRUE);
+
+			// VSync
+			{
+				configDisplayVSync = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, TRUE);
+				if (configDisplayVSync)
+				{
+					GLInit(NULL);
+					if (!glCapsVSync)
+						configDisplayVSync = FALSE;
+				}
+			}
+
+			// Filter
+			configGlFiltering = Config::Get(CONFIG_GL, CONFIG_GL_FILTERING, TRUE) ? GL_LINEAR : GL_NEAREST;
+
+			// FPS limit
+			configFpsLimit = 1.0f / Config::Get(CONFIG_FPS, CONFIG_FPS_LIMIT, 60);
+
+			// FPS counter
+			configFpsCounter = Config::Get(CONFIG_FPS, CONFIG_FPS_COUNTER, FALSE);
+
+			// Skip intro
+			configVideoSkipIntro = Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SKIP_INTRO, FALSE);
+
+			// Smoother movies
+			configVideoSmoother = Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SMOOTHER, TRUE);
+
+			// Static camera
+			*configOtherStaticCamera = Config::Get(CONFIG_OTHER, CONFIG_OTHER_STATIC_CAMERA, FALSE);
+
+			// 3D audio
+			configOther3DSound = Config::Get(CONFIG_OTHER, CONFIG_OTHER_3D_SOUND, TRUE);
+			if (configOther3DSound && !AL::Load())
+				configOther3DSound = FALSE;
+		}
 
 		PatchFunction("GetActiveWindow", GetActiveWindowHook);
 		PatchFunction("MessageBoxA", MessageBoxHook);
+		PatchFunction("LoadIconA", LoadIconHook);
+		PatchFunction("RegisterClassA", RegisterClassHook);
+		PatchFunction("CreateWindowExA", CreateWindowExHook);
+
+		configSingleThread = TRUE;
+		DWORD processMask, systemMask;
+		if (GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask))
+		{
+			BOOL isSingle = FALSE;
+			DWORD count = sizeof(DWORD) << 3;
+			do
+			{
+				if (processMask & 1)
+				{
+					if (isSingle)
+					{
+						configSingleThread = FALSE;
+						break;
+					}
+					else
+						isSingle = TRUE;
+				}
+
+				processMask >>= 1;
+			} while (--count);
+		}
+
+		DEVMODE devMode;
+		MemoryZero(&devMode, sizeof(DEVMODE));
+		devMode.dmSize = sizeof(DEVMODE);
+		configFpsSync = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devMode) && (devMode.dmFields & DM_DISPLAYFREQUENCY) ? 1.0f / devMode.dmDisplayFrequency : 0.0;
 	}
 }

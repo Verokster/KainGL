@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,13 @@ RELEASEACTCTX ReleaseActCtxC;
 ACTIVATEACTCTX ActivateActCtxC;
 DEACTIVATEACTCTX DeactivateActCtxC;
 
+DRAWTEXTW DrawTextUni;
+
+DWMISCOMPOSITIONENABLED IsDwmCompositionEnabled;
+
+ADDFONTRESOURCEEXA AddFontResourceC;
+REMOVEFONTRESOURCEEXA RemoveFontResourceC;
+
 MALLOC MemoryAlloc;
 FREE MemoryFree;
 MEMSET MemorySet;
@@ -45,15 +52,20 @@ SQRT MathSqrt;
 ATAN2 MathAtan2;
 SPRINTF StrPrint;
 STRSTR StrStr;
+STRCHR StrChar;
 STRCMP StrCompare;
 STRCPY StrCopy;
 STRCAT StrCat;
+STRDUP StrDuplicate;
 STRLEN StrLength;
 STRRCHR StrRightChar;
 FOPEN FileOpen;
 FCLOSE FileClose;
 FREAD FileRead;
+FWRITE FileWrite;
+FSEEK FileSeek;
 RAND Random;
+SRAND SeedRandom;
 EXIT Exit;
 
 XINPUTGETSTATE InputGetState;
@@ -86,29 +98,29 @@ pSetAppCompatData;
 
 DIRECTSOUNDCREATE DSCreate;
 
-#define LIBEXP __declspec(naked,nothrow) __stdcall
-VOID LIBEXP AcquireDDThreadLock() { _asm { JMP pAcquireDDThreadLock } }
-VOID LIBEXP CompleteCreateSysmemSurface() { _asm { JMP pCompleteCreateSysmemSurface } }
-VOID LIBEXP D3DParseUnknownCommand() { _asm { JMP pD3DParseUnknownCommand } }
-VOID LIBEXP DDGetAttachedSurfaceLcl() { _asm { JMP pDDGetAttachedSurfaceLcl } }
-VOID LIBEXP DDInternalLock() { _asm { JMP pDDInternalLock } }
-VOID LIBEXP DDInternalUnlock() { _asm { JMP pDDInternalUnlock } }
-VOID LIBEXP DSoundHelp() { _asm { JMP pDSoundHelp } }
-VOID LIBEXP DirectDrawCreate() { _asm { JMP pDirectDrawCreate } }
-VOID LIBEXP DirectDrawCreateClipper() { _asm { JMP pDirectDrawCreateClipper } }
-VOID LIBEXP DirectDrawCreateEx() { _asm { JMP pDirectDrawCreateEx } }
-VOID LIBEXP DirectDrawEnumerateA() { _asm { JMP pDirectDrawEnumerateA } }
-VOID LIBEXP DirectDrawEnumerateExA() { _asm { JMP pDirectDrawEnumerateExA } }
-VOID LIBEXP DirectDrawEnumerateExW() { _asm { JMP pDirectDrawEnumerateExW } }
-VOID LIBEXP DirectDrawEnumerateW() { _asm { JMP pDirectDrawEnumerateW } }
-//VOID LIBEXP DllCanUnloadNow() { _asm { JMP pDllCanUnloadNow } }
-//VOID LIBEXP DllGetClassObject() { _asm { JMP pDllGetClassObject } }
-VOID LIBEXP GetDDSurfaceLocal() { _asm { JMP pGetDDSurfaceLocal } }
-VOID LIBEXP GetOLEThunkData() { _asm { JMP pGetOLEThunkData } }
-VOID LIBEXP GetSurfaceFromDC() { _asm { JMP pGetSurfaceFromDC } }
-VOID LIBEXP RegisterSpecialCase() { _asm { JMP pRegisterSpecialCase } }
-VOID LIBEXP ReleaseDDThreadLock() { _asm { JMP pReleaseDDThreadLock } }
-VOID LIBEXP SetAppCompatData() { _asm { JMP pSetAppCompatData } }
+#define LIBEXP VOID __declspec(naked,nothrow) __stdcall
+LIBEXP AcquireDDThreadLock() { _asm { JMP pAcquireDDThreadLock } }
+LIBEXP CompleteCreateSysmemSurface() { _asm { JMP pCompleteCreateSysmemSurface } }
+LIBEXP D3DParseUnknownCommand() { _asm { JMP pD3DParseUnknownCommand } }
+LIBEXP DDGetAttachedSurfaceLcl() { _asm { JMP pDDGetAttachedSurfaceLcl } }
+LIBEXP DDInternalLock() { _asm { JMP pDDInternalLock } }
+LIBEXP DDInternalUnlock() { _asm { JMP pDDInternalUnlock } }
+LIBEXP DSoundHelp() { _asm { JMP pDSoundHelp } }
+LIBEXP DirectDrawCreate() { _asm { JMP pDirectDrawCreate } }
+LIBEXP DirectDrawCreateClipper() { _asm { JMP pDirectDrawCreateClipper } }
+LIBEXP DirectDrawCreateEx() { _asm { JMP pDirectDrawCreateEx } }
+LIBEXP DirectDrawEnumerateA() { _asm { JMP pDirectDrawEnumerateA } }
+LIBEXP DirectDrawEnumerateExA() { _asm { JMP pDirectDrawEnumerateExA } }
+LIBEXP DirectDrawEnumerateExW() { _asm { JMP pDirectDrawEnumerateExW } }
+LIBEXP DirectDrawEnumerateW() { _asm { JMP pDirectDrawEnumerateW } }
+//LIBEXP DllCanUnloadNow() { _asm { JMP pDllCanUnloadNow } }
+//LIBEXP DllGetClassObject() { _asm { JMP pDllGetClassObject } }
+LIBEXP GetDDSurfaceLocal() { _asm { JMP pGetDDSurfaceLocal } }
+LIBEXP GetOLEThunkData() { _asm { JMP pGetOLEThunkData } }
+LIBEXP GetSurfaceFromDC() { _asm { JMP pGetSurfaceFromDC } }
+LIBEXP RegisterSpecialCase() { _asm { JMP pRegisterSpecialCase } }
+LIBEXP ReleaseDDThreadLock() { _asm { JMP pReleaseDDThreadLock } }
+LIBEXP SetAppCompatData() { _asm { JMP pSetAppCompatData } }
 
 double __cdecl round(double number)
 {
@@ -126,6 +138,36 @@ VOID LoadKernel32()
 		ActivateActCtxC = (ACTIVATEACTCTX)GetProcAddress(hLib, "ActivateActCtx");
 		DeactivateActCtxC = (DEACTIVATEACTCTX)GetProcAddress(hLib, "DeactivateActCtx");
 	}
+}
+
+VOID LoadGdi32()
+{
+	HMODULE hLib = GetModuleHandle("GDI32.dll");
+	if (hLib)
+	{
+		AddFontResourceC = (ADDFONTRESOURCEEXA)GetProcAddress(hLib, "AddFontResourceExA");
+		RemoveFontResourceC = (REMOVEFONTRESOURCEEXA)GetProcAddress(hLib, "RemoveFontResourceExA");
+	}
+}
+
+VOID LoadUnicoWS()
+{
+	if ((GetVersion() & 0xFF) < 5)
+	{
+		HMODULE hLib = LoadLibrary("UNICOWS.dll");
+		if (hLib)
+			DrawTextUni = (DRAWTEXTW)GetProcAddress(hLib, "DrawTextW");
+	}
+
+	if (!DrawTextUni)
+		DrawTextUni = DrawTextW;
+}
+
+VOID LoadDwmAPI()
+{
+	HMODULE hLib = LoadLibrary("DWMAPI.dll");
+	if (hLib)
+		IsDwmCompositionEnabled = (DWMISCOMPOSITIONENABLED)GetProcAddress(hLib, "DwmIsCompositionEnabled");
 }
 
 VOID LoadMsvCRT()
@@ -165,17 +207,22 @@ VOID LoadMsvCRT()
 		MathAtan2 = (ATAN2)GetProcAddress(hLib, "atan2");
 
 		StrStr = (STRSTR)GetProcAddress(hLib, "strstr");
+		StrChar = (STRCHR)GetProcAddress(hLib, "strchr");
 		StrCompare = (STRCMP)GetProcAddress(hLib, "strcmp");
 		StrCopy = (STRCPY)GetProcAddress(hLib, "strcpy");
 		StrCat = (STRCAT)GetProcAddress(hLib, "strcat");
+		StrDuplicate = (STRDUP)GetProcAddress(hLib, "_strdup");
 		StrLength = (STRLEN)GetProcAddress(hLib, "strlen");
 		StrRightChar = (STRRCHR)GetProcAddress(hLib, "strrchr");
 
 		FileOpen = (FOPEN)GetProcAddress(hLib, "fopen");
 		FileClose = (FCLOSE)GetProcAddress(hLib, "fclose");
 		FileRead = (FREAD)GetProcAddress(hLib, "fread");
+		FileWrite = (FWRITE)GetProcAddress(hLib, "fwrite");
+		FileSeek = (FSEEK)GetProcAddress(hLib, "fseek");
 
 		Random = (RAND)GetProcAddress(hLib, "rand");
+		SeedRandom = (SRAND)GetProcAddress(hLib, "srand");
 
 		Exit = (EXIT)GetProcAddress(hLib, "exit");
 	}
@@ -216,17 +263,12 @@ VOID LoadDDraw()
 	}
 }
 
-VOID LoadDSound()
-{
-	HMODULE hLib = LoadLibrary("DSOUND.dll");
-	if (hLib)
-		DSCreate = (DIRECTSOUNDCREATE)GetProcAddress(hLib, "DirectSoundCreate");
-}
-
 VOID LoadXInput()
 {
 	CHAR libName[MAX_PATH];
-	for (INT i = 4; i >= 0; --i)
+
+	INT i = 4;
+	do
 	{
 		StrPrint(libName, "XInput%s1_%d.dll", i ? "" : "9_", i);
 		HMODULE hLib = LoadLibrary(libName);
@@ -237,5 +279,90 @@ VOID LoadXInput()
 			InputGetCapabilities = (XINPUTGETCAPABILITIES)GetProcAddress(hLib, "XInputGetCapabilities");
 			return;
 		}
+	} while (i--);
+}
+
+WCHAR* __fastcall DecodeUtf8(BYTE* ptr, DWORD* count)
+{
+	DWORD length;
+	return DecodeUtf8(ptr, count, &length);
+}
+
+WCHAR* __fastcall DecodeUtf8(BYTE* ptr, DWORD* count, DWORD* length)
+{
+	*length = 0;
+	DWORD idx = 0;
+	BYTE* ch = ptr;
+
+	if (*count)
+	{
+		while (idx != *count)
+		{
+			if (!(*ch & 0x80) || (*ch & 0xC0) == 0xC0)
+				++*length;
+
+			++idx;
+			++ch;
+		}
 	}
+	else
+	{
+		while (*ch)
+		{
+			if (!(*ch & 0x80) || (*ch & 0xC0) == 0xC0)
+				++*length;
+
+			++idx;
+			++ch;
+		}
+
+		*count = idx;
+	}
+
+	WCHAR* text = (WCHAR*)MemoryAlloc((*length + 1) << 1);
+	*(text + *length) = 0;
+
+	DWORD code = 0;
+	idx = 0;
+	ch = ptr;
+	WORD* str = (WORD*)text;
+	while (idx != *count)
+	{
+		DWORD check = 0x80;
+		if (*ch & check)
+		{
+			check >>= 1;
+			if (*ch & check)
+			{
+				if (idx)
+					*str++ = LOWORD(code);
+
+				INT mask = 0xFFFFFFC0;
+				do
+				{
+					check >>= 1;
+					mask >>= 1;
+				} while (*ch & check);
+
+				code = *ch & (~mask);
+			}
+			else
+				code = (code << 6) | (*ch & 0x3F);
+		}
+		else
+		{
+			if (idx)
+				*str++ = LOWORD(code);
+
+			code = *ch;
+		}
+
+		++idx;
+		++ch;
+	}
+
+	if (idx)
+		*str++ = LOWORD(code);
+
+	return text;
 }

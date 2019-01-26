@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include "stdafx.h"
 #include "Hooks.h"
 #include "Config.h"
+#include "Main.h"
 
 IDirectSoundBuffer* activeSoundBuffer;
 DWORD soundStartTime;
@@ -34,6 +35,8 @@ BOOL soundIsInventory;
 SubtitlesItem* subtitlesList;
 SubtitlesItem* subtitlesCurrent;
 DWORD subtitlesCount;
+SubtitlesFont subtitlesFonts[2];
+CHAR fontFiles[2][MAX_PATH];
 
 VOID __stdcall CheckPlay(CHAR* fileName)
 {
@@ -171,8 +174,6 @@ VOID __declspec(naked) hook_0044099E()
 	}
 }
 
-// 0044099E
-
 namespace Hooks
 {
 	VOID Patch_Subtitles()
@@ -182,163 +183,219 @@ namespace Hooks
 
 		// Check for subtitles
 		PatchHook(0x00447831, hook_00447831);
-		sub_00448834 += baseAddress;
-		back_00447836 += baseAddress;
+		sub_00448834 += baseOffset;
+		back_00447836 += baseOffset;
 
 		PatchHook(0x00445890, hook_00445890);
-		sub_00446988 += baseAddress;
-		back_00445895 += baseAddress;
+		sub_00446988 += baseOffset;
+		back_00445895 += baseOffset;
 
 		// Option music - release subtitles
 		PatchHook(0x00458D80, hook_00458D80);
-		back_00458D86 += baseAddress;
+		back_00458D86 += baseOffset;
 
 		PatchHook(0x0045ABD4, hook_0045ABD4);
-		back_0045ABD9 += baseAddress;
-		sub_00438B70 += baseAddress;
-		some_004C0A28 += baseAddress;
+		back_0045ABD9 += baseOffset;
+		sub_00438B70 += baseOffset;
+		some_004C0A28 += baseOffset;
 
 		// Set flags for display rectangle
-		sub_004386F0 += baseAddress;
+		sub_004386F0 += baseOffset;
 
 		PatchHook(0x004458EE, hook_004458EE);
-		back_004458F3 += baseAddress;
+		back_004458F3 += baseOffset;
 
 		PatchHook(0x0044099E, hook_0044099E);
-		back_004409A3 += baseAddress;
+		back_004409A3 += baseOffset;
 
-		FILE* hFile = FileOpen(langFiles.subtitlesFile, "rb");
+		HANDLE hFile = CreateFile(langFiles.subtitlesFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 		if (hFile)
 		{
-			VOID* fileBuffer = MemoryAlloc(256 * 1024);
+			DWORD dwSize = GetFileSize(hFile, NULL);
+			CloseHandle(hFile);
+
+			FILE* hFile = FileOpen(langFiles.subtitlesFile, "rb");
+			if (hFile)
 			{
-				DWORD count = FileRead(fileBuffer, 256 * 1024, 1, hFile);
-				BYTE* ptr = (BYTE*)fileBuffer;
-
-				if (*(DWORD*)ptr == 0x00425553)
+				BYTE* fileBuffer = (BYTE*)MemoryAlloc(dwSize);
+				if (fileBuffer)
 				{
-					ptr += sizeof(DWORD);
+					DWORD count = FileRead(fileBuffer, dwSize, 1, hFile);
+					BYTE* ptr = fileBuffer;
 
-					DWORD keysCount = subtitlesCount = *(WORD*)ptr;
-					ptr += sizeof(WORD);
-
-					subtitlesList = (SubtitlesItem*)MemoryAlloc(sizeof(SubtitlesItem) * keysCount);
-
-					SubtitlesItem* subItem = subtitlesList;
-					while (keysCount--)
+					if (*(DWORD*)ptr == 0x00425553) // STR
 					{
-						DWORD length = StrLength((CHAR*)ptr);
-						subItem->key = (CHAR*)MemoryAlloc(length + 1);
-						MemoryCopy(subItem->key, ptr, length + 1);
-						ptr += length + 1;
+						ptr += sizeof(DWORD);
 
-						if (StrStr(subItem->key, "ACT") == subItem->key)
-							subItem->type = SubtitlesVideo;
-						else if (StrStr(subItem->key, "AV") == subItem->key)
-							subItem->type = SubtitlesWalk;
-						else if (StrStr(subItem->key, "DES") == subItem->key)
-							subItem->type = SubtitlesDescription;
-						else if (StrStr(subItem->key, "INV") == subItem->key)
-							subItem->type = SubtitlesInventory;
-						else
-							subItem->type = SubtitlesOther;
-
-						DWORD linesCount = subItem->count = *(WORD*)ptr;
+						DWORD keysCount = subtitlesCount = *(WORD*)ptr;
 						ptr += sizeof(WORD);
 
-						subItem->lines = (SubtitlesLine*)MemoryAlloc(sizeof(SubtitlesLine) * linesCount);
+						subtitlesList = (SubtitlesItem*)MemoryAlloc(sizeof(SubtitlesItem) * keysCount);
 
-						SubtitlesLine* prevLine = NULL;
-						SubtitlesLine* subLine = subItem->lines;
-						while (linesCount--)
+						SubtitlesItem* subItem = subtitlesList;
+						while (keysCount--)
 						{
-							subLine->startTick = *(DWORD*)ptr;
-							ptr += sizeof(DWORD);
-
-							subLine->endTick = *(DWORD*)ptr;
-							ptr += sizeof(DWORD);
-
-							DWORD length = 0;
-							BYTE* ch = ptr;
-							while (*ch)
-							{
-								if (!(*ch & 0x80) || (*ch & 0xC0) == 0xC0)
-									++length;
-
-								++ch;
-							}
-
-							subLine->text = (WCHAR*)MemoryAlloc((length << 1) + sizeof(WORD));
-							*(subLine->text + length) = 0;
-
-							DWORD code = 0;
-							length = 0;
-							ch = ptr;
-							WORD* str = (WORD*)subLine->text;
-							while (*ch)
-							{
-								DWORD check = 0x80;
-								if (*ch & check)
-								{
-									check >>= 1;
-									if (*ch & check)
-									{
-										if (length)
-											*str++ = LOWORD(code);
-
-										INT mask = 0xFFFFFFC0;
-										do
-										{
-											check >>= 1;
-											mask >>= 1;
-										} while (*ch & check);
-
-										code = *ch & (~mask);
-									}
-									else
-										code = (code << 6) | (*ch & 0x3F);
-								}
-								else
-								{
-									if (length)
-										*str++ = LOWORD(code);
-
-									code = *ch;
-								}
-
-								++length;
-								++ch;
-							}
-							if (length)
-								*str++ = LOWORD(code);
-
+							DWORD length = StrLength((CHAR*)ptr);
+							StrCopy(subItem->key, (CHAR*)ptr);
 							ptr += length + 1;
+
+							if (StrStr(subItem->key, "ACT") == subItem->key)
+								subItem->type = SubtitlesVideo;
+							else if (StrStr(subItem->key, "AV") == subItem->key)
+								subItem->type = SubtitlesWalk;
+							else if (StrStr(subItem->key, "DES") == subItem->key)
+								subItem->type = SubtitlesDescription;
+							else if (StrStr(subItem->key, "INV") == subItem->key)
+								subItem->type = SubtitlesInventory;
+							else
+								subItem->type = SubtitlesOther;
+
+							DWORD linesCount = subItem->count = *(WORD*)ptr;
+							ptr += sizeof(WORD);
+
+							subItem->lines = (SubtitlesLine*)MemoryAlloc(sizeof(SubtitlesLine) * linesCount);
+
+							SubtitlesLine* prevLine = NULL;
+							SubtitlesLine* subLine = subItem->lines;
+							while (linesCount--)
+							{
+								subLine->startTick = *(DWORD*)ptr;
+								ptr += sizeof(DWORD);
+
+								subLine->endTick = *(DWORD*)ptr;
+								ptr += sizeof(DWORD);
+
+								DWORD dataLength = 0;
+								subLine->text = DecodeUtf8(ptr, &dataLength);
+								ptr += dataLength + 1;
+
+								if (prevLine)
+								{
+									if (prevLine->endTick && !(prevLine->endTick & 0x80000000))
+										prevLine->endTick += prevLine->startTick - 1;
+									else
+										prevLine->endTick = subLine->startTick + *(INT*)&prevLine->endTick - 1;
+								}
+
+								prevLine = subLine++;
+							}
 
 							if (prevLine)
 							{
 								if (prevLine->endTick && !(prevLine->endTick & 0x80000000))
 									prevLine->endTick += prevLine->startTick - 1;
 								else
-									prevLine->endTick = subLine->startTick + *(INT*)&prevLine->endTick - 1;
+									prevLine->endTick = 0xFFFFFFFF;
 							}
 
-							prevLine = subLine++;
+							++subItem;
 						}
 
-						if (prevLine)
+						if (AddFontResourceC && ptr - fileBuffer != dwSize)
 						{
-							if (prevLine->endTick && !(prevLine->endTick & 0x80000000))
-								prevLine->endTick += prevLine->startTick - 1;
-							else
-								prevLine->endTick = 0xFFFFFFFF;
-						}
+							BYTE* fontPtr = ptr;
+							ptr += 16;
 
-						++subItem;
+							CHAR tempPath[MAX_PATH];
+							GetTempPath(MAX_PATH - 1, tempPath);
+							DWORD tempLength = StrLength(tempPath);
+
+							// prepare random
+							SeedRandom(GetTickCount());
+
+							CHAR familiesList[2][MAX_PATH];
+							CHAR* filePath = fontFiles[0];
+							DWORD filesCount = *ptr++;
+							DWORD fCount = filesCount;
+							CHAR* family = familiesList[0];
+							do
+							{
+								DWORD length = StrLength((CHAR*)ptr);
+								MemoryCopy(family, ptr, length + 1);
+								ptr += length + 1;
+
+								MemoryCopy(filePath, tempPath, tempLength);
+								CHAR* ch = filePath + tempLength;
+								DWORD count = 10;
+								do
+								{
+									BYTE random = (BYTE)(Random() % ('Z' - 'A' + 11));
+
+									*ch = '0' + random;
+									if (*ch > '9')
+										*ch = 'A' + (random - 10);
+
+									++ch;
+								} while (--count);
+								*ch = NULL;
+								StrCat(filePath, ".FNT");
+
+								DWORD fileSize = *(DWORD*)ptr;
+								ptr += sizeof(DWORD);
+
+								FILE* hFontFIle = FileOpen(filePath, "wb");
+								if (hFontFIle)
+								{
+									FileWrite(ptr, fileSize, 1, hFontFIle);
+									FileClose(hFontFIle);
+
+									AddFontResourceC(filePath, FR_PRIVATE, NULL);
+								}
+
+								ptr += fileSize;
+
+								family += MAX_PATH;
+								filePath += MAX_PATH;
+							} while (--fCount);
+
+							SubtitlesFont* fontItem = subtitlesFonts;
+							DWORD idx = 0;
+							DWORD count = 2;
+							do
+							{
+								DWORD fontSize = *fontPtr++;
+								DWORD fontType = *fontPtr++;
+
+								BYTE r = *fontPtr++;
+								BYTE g = *fontPtr++;
+								BYTE b = *fontPtr++;
+								fontItem->color = RGB(r, g, b);
+
+								r = *fontPtr++;
+								g = *fontPtr++;
+								b = *fontPtr++;
+								fontItem->background = RGB(r, g, b);
+
+								fontItem->font = CreateFont(fontSize, 0, 0, 0, (fontType & 0x1) ? 700 : 0, fontType & 0x10, FALSE, FALSE, ANSI_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, familiesList[idx]);
+								
+								if (filesCount != 1)
+									++idx;
+
+								++fontItem;
+							} while (--count);
+						}
+						else
+						{
+							SubtitlesFont* fontItem = subtitlesFonts;
+							DWORD idx = 0;
+							DWORD count = 2;
+							do
+							{
+								fontItem->color = RGB(255, 255, 255);
+								fontItem->background = RGB(0, 0, 0);
+
+								fontItem->font = CreateFont(count == 1 ? 24 : 13, 0, 0, 0, 0, 0, FALSE, FALSE, ANSI_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, "Arial");
+								
+								++fontItem;
+							}  while (--count);
+						}
 					}
+
+					MemoryFree(fileBuffer);
 				}
+
+				FileClose(hFile);
 			}
-			MemoryFree(fileBuffer);
-			FileClose(hFile);
 		}
 	}
 }

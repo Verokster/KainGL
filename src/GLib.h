@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -43,11 +43,11 @@ typedef char GLchar;
 #define GL_VER_1 0x0001
 #define GL_VER_3 0x0003
 
-#define GL_VER_1_1 0x0110
-#define GL_VER_1_2 0x0120
-#define GL_VER_1_3 0x0130
-#define GL_VER_1_4 0x0140
-#define GL_VER_3_0 0x0300
+#define GL_VER_1_1 0x01010000
+#define GL_VER_1_2 0x01020000
+#define GL_VER_1_3 0x01030000
+#define GL_VER_1_4 0x01040000
+#define GL_VER_3_0 0x03000000
 
 #define WGL_DRAW_TO_WINDOW_ARB         0x2001
 #define WGL_SUPPORT_OPENGL_ARB         0x2010
@@ -61,6 +61,7 @@ typedef char GLchar;
 #define WGL_DRAW_TO_BITMAP_ARB         0x2002
 #define WGL_SUPPORT_GDI_ARB            0x200F
 #define WGL_SWAP_METHOD_ARB            0x2007
+#define WGL_SWAP_COPY_ARB              0x2029
 #define WGL_SWAP_EXCHANGE_ARB          0x2028
 #define WGL_STENCIL_BITS_ARB           0x2023
 #define WGL_ACCUM_BITS_ARB             0x201D
@@ -70,7 +71,7 @@ typedef char GLchar;
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
 #define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
 #define WGL_CONTEXT_FLAGS_ARB 0x2094
-#define WGL_CONTEXT_DEBUG_BIT_ARB               0x0001
+#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
 #define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x0002
 #define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
@@ -100,7 +101,7 @@ typedef char GLchar;
 
 #define GL_RGB565 0x8D62
 #define GL_UNSIGNED_SHORT_5_6_5 0x8363
-//#define GL_UNSIGNED_SHORT_5_5_5_1 0x8034
+#define GL_UNSIGNED_SHORT_5_5_5_1 0x8034
 #define GL_UNSIGNED_SHORT_1_5_5_5_REV 0x8366
 
 #define ERROR_INVALID_VERSION_ARB 0x2095
@@ -110,8 +111,9 @@ typedef PROC(__stdcall *WGLGETPROCADDRESS)(LPCSTR name);
 typedef BOOL(__stdcall *WGLMAKECURRENT)(HDC devContext, HGLRC glContext);
 typedef HGLRC(__stdcall *WGLCREATECONTEXT)(HDC devContext);
 typedef BOOL(__stdcall *WGLDELETECONTEXT)(HGLRC glContext);
-typedef HGLRC(__stdcall *WGLCREATECONTEXTATTRIBSARB)(HDC hDC, HGLRC hshareContext, const DWORD *attribList);
-typedef BOOL(__stdcall *WGLCHOOSEPIXELFORMATARB) (HDC hDC, const INT* piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, INT *piFormats, UINT *nNumFormats);
+typedef HGLRC(__stdcall *WGLCREATECONTEXTATTRIBS)(HDC hDC, HGLRC hshareContext, const DWORD *attribList);
+typedef BOOL(__stdcall *WGLCHOOSEPIXELFORMAT) (HDC hDC, const INT* piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, INT *piFormats, UINT *nNumFormats);
+//typedef const CHAR*(__stdcall *WGLGETEXTENSIONSSTRING)();
 typedef BOOL(__stdcall *WGLSWAPINTERVAL)(INT interval);
 
 typedef const GLubyte* (__stdcall *GLGETSTRING)(GLenum name);
@@ -124,7 +126,7 @@ typedef VOID(__stdcall *GLVIEWPORT)(GLint x, GLint y, GLsizei width, GLsizei hei
 typedef VOID(__stdcall *GLMATRIXMODE)(GLenum mode);
 typedef VOID(__stdcall *GLLOADIDENTITY)();
 typedef VOID(__stdcall *GLORTHO)(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
-typedef VOID(__stdcall *GLFINISH)();
+//typedef VOID(__stdcall *GLFINISH)();
 typedef VOID(__stdcall *GLENABLE)(GLenum cap);
 typedef VOID(__stdcall *GLDISABLE)(GLenum cap);
 typedef VOID(__stdcall *GLBINDTEXTURE)(GLenum target, GLuint texture);
@@ -166,14 +168,14 @@ typedef VOID(__stdcall *GLVERTEXATTRIBPOINTER)(GLuint index, GLint size, GLenum 
 
 typedef GLuint(__stdcall *GLCREATESHADER)(GLenum shaderType);
 typedef VOID(__stdcall *GLDELETESHADER)(GLuint shader);
-typedef GLuint(__stdcall *GLCREATEPROGRAM)(void);
+typedef GLuint(__stdcall *GLCREATEPROGRAM)();
+typedef VOID(__stdcall *GLDELETEPROGRAM)(GLuint program);
 typedef VOID(__stdcall *GLSHADERSOURCE)(GLuint shader, GLsizei count, const GLchar** string, const GLint* length);
 typedef VOID(__stdcall *GLCOMPILESHADER)(GLuint shader);
 typedef VOID(__stdcall *GLATTACHSHADER)(GLuint program, GLuint shader);
 typedef VOID(__stdcall *GLDETACHSHADER)(GLuint program, GLuint shader);
 typedef VOID(__stdcall *GLLINKPROGRAM)(GLuint program);
 typedef VOID(__stdcall *GLUSEPROGRAM)(GLuint program);
-typedef VOID(__stdcall *GLDELETEPROGRAM)(GLuint program);
 typedef VOID(__stdcall *GLGETSHADERIV)(GLuint shader, GLenum pname, GLint* params);
 typedef VOID(__stdcall *GLGETSHADERINFOLOG)(GLuint shader, GLsizei maxLength, GLsizei* length, GLchar* infoLog);
 
@@ -187,7 +189,9 @@ extern WGLGETPROCADDRESS WGLGetProcAddress;
 extern WGLMAKECURRENT WGLMakeCurrent;
 extern WGLCREATECONTEXT WGLCreateContext;
 extern WGLDELETECONTEXT WGLDeleteContext;
-extern WGLCREATECONTEXTATTRIBSARB WGLCreateContextAttribs;
+extern WGLCREATECONTEXTATTRIBS WGLCreateContextAttribs;
+extern WGLCHOOSEPIXELFORMAT WGLChoosePixelFormat;
+//extern WGLGETEXTENSIONSSTRING WGLGetExtensionsString;
 extern WGLSWAPINTERVAL WGLSwapInterval;
 
 extern GLGETSTRING GLGetString;
@@ -200,7 +204,7 @@ extern GLVIEWPORT GLViewport;
 extern GLMATRIXMODE GLMatrixMode;
 extern GLLOADIDENTITY GLLoadIdentity;
 extern GLORTHO GLOrtho;
-extern GLFINISH GLFinish;
+//extern GLFINISH GLFinish;
 extern GLENABLE GLEnable;
 extern GLDISABLE GLDisable;
 extern GLBINDTEXTURE GLBindTexture;
@@ -239,13 +243,13 @@ extern GLVERTEXATTRIBPOINTER GLVertexAttribPointer;
 extern GLCREATESHADER GLCreateShader;
 extern GLDELETESHADER GLDeleteShader;
 extern GLCREATEPROGRAM GLCreateProgram;
+extern GLDELETEPROGRAM GLDeleteProgram;
 extern GLSHADERSOURCE GLShaderSource;
 extern GLCOMPILESHADER GLCompileShader;
 extern GLATTACHSHADER GLAttachShader;
 extern GLDETACHSHADER GLDetachShader;
 extern GLLINKPROGRAM GLLinkProgram;
 extern GLUSEPROGRAM GLUseProgram;
-extern GLDELETEPROGRAM GLDeleteProgram;
 extern GLGETSHADERIV GLGetShaderiv;
 extern GLGETSHADERINFOLOG GLGetShaderInfoLog;
 
@@ -256,18 +260,20 @@ extern GLUNIFORM1I GLUniform1i;
 extern GLUNIFORMMATRIX4FV GLUniformMatrix4fv;
 
 extern DWORD glVersion;
-extern DWORD glPixelFormat;
 extern DWORD glCapsClampToEdge;
 extern BOOL glCapsMultitex;
 extern BOOL glCapsBGR;
+extern INT glCapsVSync;
 
 namespace GL
 {
 	BOOL __fastcall Load();
 	VOID __fastcall Free();
 	VOID __fastcall CreateContextAttribs(HDC hDc, HGLRC* hRc);
+	VOID __fastcall ResetPixelFormatDescription(PIXELFORMATDESCRIPTOR* pfd);
 	VOID __fastcall PreparePixelFormatDescription(PIXELFORMATDESCRIPTOR* pfd);
-	BOOL __fastcall PreparePixelFormat(PIXELFORMATDESCRIPTOR* pfd);
+	INT __fastcall PreparePixelFormat(PIXELFORMATDESCRIPTOR* pfd);
+	VOID __fastcall SetPixelFormat(HDC hDc);
 	GLuint __fastcall CompileShaderSource(DWORD name, GLenum type);
 	VOID __fastcall ResetContext();
 }

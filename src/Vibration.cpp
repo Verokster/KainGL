@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,12 @@ struct {
 	FLOAT left;
 	FLOAT right;
 } totalValue;
+
 namespace Vibration
 {
 	VOID Set()
 	{
-		for (DWORD i = 0; i < MAX_CONTROLLERS; ++i)
+		for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
 		{
 			if (xJoyListConnected[i] && xJoyListCheck[i])
 			{

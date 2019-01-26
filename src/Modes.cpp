@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -72,15 +72,15 @@ namespace Hooks
 {
 	VOID Patch_Modes()
 	{
-		flags.hiRes = (BOOL*)((DWORD)flags.hiRes + baseAddress);
-		flags.hiColor = (BOOL*)((DWORD)flags.hiColor + baseAddress);
-		flags.window = (BOOL*)((DWORD)flags.window + baseAddress);
-		flags.interlaced = (BOOL*)((DWORD)flags.interlaced + baseAddress);
-		flags.upscale = (BOOL*)((DWORD)flags.upscale + baseAddress);
+		flags.hiRes = (BOOL*)((DWORD)flags.hiRes + baseOffset);
+		flags.hiColor = (BOOL*)((DWORD)flags.hiColor + baseOffset);
+		flags.window = (BOOL*)((DWORD)flags.window + baseOffset);
+		flags.interlaced = (BOOL*)((DWORD)flags.interlaced + baseOffset);
+		flags.upscale = (BOOL*)((DWORD)flags.upscale + baseOffset);
 
-		MemoryCopy((VOID*)(0x004BCF90 + baseAddress), modes, sizeof(modes));
+		MemoryCopy((VOID*)(0x004BCF90 + baseOffset), modes, sizeof(modes));
 		PatchHook(0x0042785B, hook_0042785B);
-		back_0042789C += baseAddress;
+		back_0042789C += baseOffset;
 
 		//PatchByte(0x0044E6B1 + 1, 0x1B);
 		PatchNop(0x00429AFF, 0x00429B0F - 0x00429AFF);

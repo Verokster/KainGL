@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -64,7 +64,8 @@ extern Resolution configDisplayResolution;
 extern BOOL configDisplayAspect;
 extern BOOL configDisplayVSync;
 
-extern FLOAT configFpsLimit;
+extern DOUBLE configFpsLimit;
+extern DOUBLE configFpsSync;
 extern BOOL configFpsCounter;
 
 extern BOOL configVideoSkipIntro;
@@ -77,6 +78,8 @@ extern INT configLangSubtitles;
 extern BOOL* configOtherStaticCamera;
 extern BOOL configOther3DSound;
 extern BOOL configOtherXboxConfig;
+
+extern BOOL configSingleThread;
 
 namespace Config
 {

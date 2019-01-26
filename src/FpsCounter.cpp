@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -30,51 +30,88 @@ BOOL isFpsChanged;
 FpsCounter::FpsCounter(DWORD accuracy)
 {
 	this->accuracy = accuracy;
-	this->fpsQueue = (FLOAT*)MemoryAlloc(accuracy * sizeof(FLOAT));
-	this->tickQueue = (DWORD*)MemoryAlloc(accuracy * sizeof(DWORD));
+	this->count = accuracy * 10;
+	this->tickQueue = (FrameItem*)MemoryAlloc(this->count * sizeof(FrameItem));
 	this->Reset();
 }
 
 FpsCounter::~FpsCounter()
 {
-	MemoryFree(this->fpsQueue);
 	MemoryFree(this->tickQueue);
 }
 
 VOID FpsCounter::Reset()
 {
-	this->index = 0;
-	this->total = 0;
-	this->count = 0;
-	this->summary = 0.0f;
-
-	MemoryZero(fpsQueue, this->accuracy * sizeof(FLOAT));
-	MemoryZero(tickQueue, this->accuracy * sizeof(DWORD));
+	this->checkIndex = 0;
+	this->currentIndex = 0;
+	this->summary = 0;
+	this->lastTick = 0;
+	MemoryZero(this->tickQueue, this->count * sizeof(FrameItem));
 }
 
 VOID FpsCounter::Calculate()
 {
-	DWORD tick = GetTickCount();
+	FrameItem* tickItem = &tickQueue[this->currentIndex];
+	tickItem->tick = GetTickCount();
 
-	++this->total;
-	if (this->count < this->accuracy)
-		++this->count;
+	if (this->lastTick)
+	{
+		tickItem->span = tickItem->tick - this->lastTick;
+		this->summary += tickItem->span;
+	}
+	this->lastTick = tickItem->tick;
 
-	DWORD diff = tick - tickQueue[this->total != this->count ? this->index : 0];
-	tickQueue[this->index] = tick;
+	DWORD check = tickItem->tick - accuracy;
 
-	FLOAT fps = diff ? 1000.0f / diff * this->count : 0.0f;
+	DWORD total = 0;
+	if (this->checkIndex > this->currentIndex)
+	{
+		FrameItem* checkPtr = &this->tickQueue[this->checkIndex];
+		while (this->checkIndex < this->count)
+		{
+			if (checkPtr->tick > check)
+			{
+				total = this->count - this->checkIndex + this->currentIndex + 1;
+				break;
+			}
 
-	FLOAT* queue = &fpsQueue[this->index];
-	this->summary -= *queue - fps;
-	*queue = fps;
+			this->summary -= checkPtr->span;
 
-	++this->index;
-	if (this->index == this->accuracy)
-		this->index = 0;
+			++checkPtr;
+			++this->checkIndex;
+		}
+
+		if (this->checkIndex == this->count)
+			this->checkIndex = 0;
+	}
+
+	if (!total)
+	{
+		FrameItem* checkPtr = &this->tickQueue[this->checkIndex];
+		while (this->checkIndex <= this->currentIndex)
+		{
+			if (checkPtr->tick > check)
+			{
+				total = this->currentIndex - this->checkIndex + 1;
+				break;
+			}
+
+			this->summary -= checkPtr->span;
+
+			++checkPtr;
+			++this->checkIndex;
+		}
+	}
+
+	if (this->currentIndex != this->count - 1)
+		++this->currentIndex;
+	else
+		this->currentIndex = 0;
+
+	this->value = this->summary ? 1000.0f * total / this->summary : 0.0f;
 }
 
 FLOAT FpsCounter::GetValue()
 {
-	return this->summary / this->count;
+	return this->value;
 }

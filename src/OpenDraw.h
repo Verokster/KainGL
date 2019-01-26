@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -32,8 +32,12 @@
 
 class OpenDraw : IDirectDraw, public Allocation
 {
+private:
+	VOID(OpenDraw::*pRenderStartScene)();
+	VOID(OpenDraw::*pRenderEndScene)();
+	VOID(OpenDraw::*pRenderFrame)();
+
 public:
-	OpenDraw* last;
 	OpenDrawSurface* surfaceEntries;
 	OpenDrawPalette* paletteEntries;
 	OpenDrawClipper* clipperEntries;
@@ -43,16 +47,20 @@ public:
 	HWND hWnd;
 	HWND hDraw;
 	HDC hDc;
+	HGLRC hRc;
 	DisplayMode* virtualMode;
 	DisplayMode* realMode;
 	BOOL isFinish;
 	DWORD mbPressed;
 
+	DOUBLE nextSyncTime;
+
 	HANDLE hDrawThread;
 	HANDLE hDrawEvent;
+	BOOL hDrawFlag;
 
 	Viewport viewport;
-	DWORD isStylesLoaded;
+	BOOL isStylesLoaded;
 	BOOL isStateChanged;
 	BOOL isTakeSnapshot;
 	WINDOWPLACEMENT windowPlacement;
@@ -60,11 +68,11 @@ public:
 
 	FpsCounter* fpsCounter;
 	TextRenderer* textRenderer;
-	HFONT hFontSubtitles;
+	SubtitlesFont* subtitlesFont;
 	HFONT hFontFps;
 	DWORD mult;
  
-	OpenDraw(OpenDraw* lastObj);
+	OpenDraw();
 	~OpenDraw();
 
 	VOID CalcView();
@@ -77,10 +85,29 @@ public:
 
 	VOID RenderStart();
 	VOID RenderStop();
-	OpenDrawSurface* PreRender();
 
-	VOID RenderOld();
-	VOID RenderNew();
+	VOID RenderStartInternal();
+	VOID RenderStopinternal();
+
+	VOID RenderStartScene();
+	VOID RenderEndScene();
+	VOID RenderFrame();
+
+	VOID RenderStartSceneOld();
+	VOID RenderEndSceneOld();
+	VOID RenderFrameOld();
+
+	VOID RenderStartSceneNew();
+	VOID RenderEndSceneNew();
+	VOID RenderFrameNew();
+
+	OpenDrawSurface* PreRender();
+	VOID CheckVSync();
+
+	VOID SetSyncDraw();
+	VOID CheckSyncDraw();
+
+	SceneData* sceneData;
 
 	// Inherited via  IDirectDraw
 	HRESULT __stdcall QueryInterface(REFIID riid, LPVOID * ppvObj);

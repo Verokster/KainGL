@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -89,11 +89,13 @@ namespace AL
 {
 	VOID __fastcall LoadFunction(CHAR* buffer, const CHAR* prefix, const CHAR* name, PROC* func)
 	{
+		if (*func)
+			return;
+
 		StrCopy(buffer, prefix);
 		StrCat(buffer, name);
 
-		if (!*func)
-			*func = GetProcAddress(hALModule, buffer);
+		*func = GetProcAddress(hALModule, buffer);
 	}
 
 	BOOL __fastcall Load()
@@ -176,7 +178,7 @@ namespace AL
 
 	VOID __fastcall Free()
 	{
-		if (FreeLibrary(hALModule))
+		if (hALModule && FreeLibrary(hALModule))
 			hALModule = NULL;
 	}
 

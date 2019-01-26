@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -69,7 +69,7 @@ OpenDrawSurface::OpenDrawSurface(OpenDraw* lpDD, BOOL isDouble)
 	this->attachedClipper = NULL;
 
 	this->index = 0;
-	this->oldTime = 0.0;
+	this->lastTime = 0.0;
 
 	DisplayMode* dwMode = this->ddraw->virtualMode;
 	DWORD bufferSize = dwMode->dwWidth * dwMode->dwHeight * (dwMode->dwBPP >> 3);
@@ -87,7 +87,7 @@ OpenDrawSurface::OpenDrawSurface(OpenDraw* lpDD, OpenDrawSurface* attached, BYTE
 	this->attachedClipper = NULL;
 
 	this->index = 1;
-	this->oldTime = 0.0;
+	this->lastTime = 0.0;
 
 	this->indexBuffer = indexBuffer;
 	this->attachedSurface = attached;
@@ -174,22 +174,26 @@ HRESULT OpenDrawSurface::SetPalette(LPDIRECTDRAWPALETTE lpDDPalette)
 HRESULT OpenDrawSurface::Unlock(LPVOID lpRect)
 {
 	this->ddraw->attachedSurface = this;
-	SetEvent(this->ddraw->hDrawEvent);
+
+	this->ddraw->SetSyncDraw();
+	if (configSingleThread)
+		this->ddraw->CheckSyncDraw();
 
 	if (!lpRect)
 	{
 		LONGLONG qp;
 		QueryPerformanceFrequency((LARGE_INTEGER*)&qp);
-		DOUBLE timerResolution = 0.001 * qp;
+		DOUBLE timerResolution = (DOUBLE)qp;
 
-		DOUBLE endTime = this->oldTime + configFpsLimit;
+		this->lastTime += configFpsLimit;
 		DOUBLE currTime;
 		do
 		{
 			QueryPerformanceCounter((LARGE_INTEGER*)&qp);
 			currTime = (DOUBLE)qp / timerResolution;
-		} while (currTime < endTime);
-		this->oldTime = endTime + configFpsLimit * DWORD((currTime - endTime) / configFpsLimit);
+		} while (currTime < this->lastTime);
+
+		this->lastTime += configFpsLimit * DWORD((currTime - this->lastTime) / configFpsLimit);
 	}
 
 	return DD_OK;

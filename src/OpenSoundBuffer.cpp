@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 #include "OpenSound.h"
 #include "Main.h"
 #include "Vibration.h"
+#include "Hooks.h"
 
 HRESULT __stdcall OpenSoundBuffer::QueryInterface(REFIID riid, LPVOID* ppvObj) { return DS_OK; }
 ULONG __stdcall OpenSoundBuffer::AddRef() { return 0; }
@@ -189,7 +190,10 @@ OpenSoundBuffer::~OpenSoundBuffer()
 ULONG __stdcall OpenSoundBuffer::Release()
 {
 	if (this->isSubtitled && activeSoundBuffer == this)
+	{
 		activeSoundBuffer = NULL;
+		Main::SetSyncDraw();
+	}
 
 	delete this;
 
@@ -218,6 +222,18 @@ VOID OpenSoundBuffer::CheckPositionalGain()
 HRESULT __stdcall OpenSoundBuffer::GetStatus(LPDWORD pdwStatus)
 {
 	*pdwStatus = this->IsPlaying() || this->isStream && !this->isManualStopped;
+
+	if (this->isSubtitled && activeSoundBuffer == this && subtitlesCurrent)
+	{
+		DWORD nextSync = this->lastSyncTime + 66;
+		DOUBLE currTime = GetTickCount();
+		if (currTime >= nextSync)
+		{
+			this->lastSyncTime = nextSync;
+			Main::SetSyncDraw();
+		}
+	}
+
 	return DS_OK;
 }
 
@@ -317,6 +333,8 @@ HRESULT __stdcall OpenSoundBuffer::Play(DWORD dwReserved1, DWORD dwPriority, DWO
 			soundStartTime += GetTickCount() - soundSuspendTime;
 
 		activeSoundBuffer = this;
+		Main::SetSyncDraw();
+		this->lastSyncTime = GetTickCount();
 	}
 
 	if (!this->dataWrote)
@@ -338,6 +356,7 @@ HRESULT __stdcall OpenSoundBuffer::Stop()
 	{
 		soundSuspendTime = GetTickCount();
 		activeSoundBuffer = NULL;
+		Main::SetSyncDraw();
 	}
 
 	ALSourcePause(this->source);

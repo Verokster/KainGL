@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,7 @@ namespace Hooks
 	VOID Patch_EagleEye()
 	{
 		PatchHook(0x00423E96, hook_00423E96); // Clear object after initialization
-		back_00423E9B += baseAddress;
-		sub_0045DE6C += baseAddress;
+		back_00423E9B += baseOffset;
+		sub_0045DE6C += baseOffset;
 	}
 }

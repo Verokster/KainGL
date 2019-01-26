@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,8 @@ namespace Hooks
 		LONGLONG qpf, qpc;
 		QueryPerformanceFrequency((LARGE_INTEGER*)&qpf);
 		QueryPerformanceCounter((LARGE_INTEGER*)&qpc);
-		DOUBLE timerResolution = 0.001 * qpf;
-		return (DWORD)MathRound((DOUBLE)qpc / timerResolution);
+		DOUBLE timerResolution = 0.001f * qpf;
+		return (DWORD)((DOUBLE)qpc / timerResolution);
 	}
 
 	VOID Patch_Timers()

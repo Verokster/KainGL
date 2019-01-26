@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -80,11 +80,8 @@ struct DisplayMode
 	DWORD dwWidth;
 	DWORD dwHeight;
 	DWORD dwBPP;
-	union
-	{
-		DWORD dwFrequency;
-		BOOL dwExists;
-	};
+	DWORD dwFrequency;
+	BOOL dwExists;
 };
 
 struct ShaderProgram
@@ -94,12 +91,6 @@ struct ShaderProgram
 	DWORD fragmentName;
 	GLfloat* mvp;
 	BOOL interlaced;
-};
-
-struct ShaderProgramsList
-{
-	ShaderProgram nearest;
-	ShaderProgram bicubic;
 };
 
 struct SubtitlesLine
@@ -120,11 +111,18 @@ enum SubtitlesType
 
 struct SubtitlesItem
 {
-	CHAR* key;
+	CHAR key[16];
 	DWORD count;
 	SubtitlesType type;
 	DWORD flags;
 	SubtitlesLine* lines;
+};
+
+struct SubtitlesFont
+{
+	HFONT font;
+	COLORREF color;
+	COLORREF background;
 };
 
 struct ALBuffer
@@ -158,14 +156,64 @@ struct VibrationOptions
 	DWORD duration;
 };
 
-#ifndef WH_MOUSE_LL
-#define WH_MOUSE_LL        14
+struct SceneData
+{
+	BOOL isVSync;
+};
 
-typedef struct tagMSLLHOOKSTRUCT {
-	POINT   pt;
-	DWORD   mouseData;
-	DWORD   flags;
-	DWORD   time;
-	ULONG_PTR dwExtraInfo;
-} MSLLHOOKSTRUCT, FAR *LPMSLLHOOKSTRUCT, *PMSLLHOOKSTRUCT;
-#endif
+struct SceneDataOld : SceneData
+{
+	GLuint scalelineId;
+	Frame* frames;
+	DWORD frameCount;
+	VOID* pixelBuffer;
+};
+
+struct SceneDataNew : SceneData
+{
+	GLuint arrayName;
+	GLuint bufferName;
+	FLOAT buffer[4][4];
+	FLOAT mvpMatrix[4][4];
+	struct {
+		ShaderProgram nearest;
+		ShaderProgram bicubic;
+	} shaders;
+	struct {
+		GLuint normalId;
+		GLuint scalelineId;
+	} textures;
+};
+
+#define STRINGS_SIZE 29
+
+struct StringsItem
+{
+	WCHAR* table;
+	CHAR text[STRINGS_SIZE];
+};
+
+struct Strings
+{
+	StringsItem strYouAre;
+	StringsItem strVictorious;
+	StringsItem strYouHave;
+	StringsItem strPerished;
+	StringsItem strSlayings;
+	StringsItem strMeals;
+	StringsItem strMutilations;
+	StringsItem strSecrets;
+	StringsItem strPrestige;
+	StringsItem strWhelp;
+	StringsItem strGimp;
+	StringsItem strPrincess;
+	StringsItem strBride;
+	StringsItem strPrince;
+	StringsItem strBloodHunter;
+	StringsItem strCount;
+	StringsItem strBaron;
+	StringsItem strOverloard;
+	StringsItem strSaint;
+	StringsItem strDevourerOfWorlds;
+	StringsItem strPage;
+};

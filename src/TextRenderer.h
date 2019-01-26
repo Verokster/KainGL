@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,10 @@
 #define TR_BOTTOM		0x0020
 
 #define TR_SHADOW		0x0040
-#define TR_CALCULATE	0x0080
+#define TR_BACKGROUND	0x0080
+#define TR_CALCULATE	0x0100
+
+#define ALPHA_BIAS		0xA0
 
 typedef INT(__stdcall *DRAWTEXT)(HDC, VOID*, INT, LPRECT, UINT);
 
@@ -45,7 +48,9 @@ private:
 	HDC hDc;
 	DWORD width;
 	DWORD height;
-	VOID Draw(DRAWTEXT TextDraw, VOID* text, HFONT hFont, COLORREF color, RECT* rect, DWORD flags);
+	BOOL swapColor;
+
+	VOID Draw(DRAWTEXT TextDraw, VOID* text, HFONT hFont, COLORREF color, COLORREF backColor, RECT* rect, RECT* padding, DWORD flags);
 
 public:
 	VOID* dibData;
@@ -53,7 +58,7 @@ public:
 	TextRenderer(HDC hDc, DWORD width, DWORD height);
 	~TextRenderer();
 
-	VOID DrawA(CHAR* text, HFONT hFont, COLORREF color, RECT* rect, DWORD flags);
-	VOID DrawW(WCHAR* text, HFONT hFont, COLORREF color, RECT* rect, DWORD flags);
+	VOID DrawA(CHAR* text, HFONT hFont, COLORREF color, COLORREF backColor, RECT* rect, RECT* padding, DWORD flags);
+	VOID DrawW(WCHAR* text, HFONT hFont, COLORREF color, COLORREF backColor, RECT* rect, RECT* padding, DWORD flags);
 };
 

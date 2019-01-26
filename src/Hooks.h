@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 #pragma once
 #include "windows.h"
 
-extern CHAR* kainDirPath;
+extern CHAR kainDirPath[];
 
 struct LangFiles
 {
@@ -36,7 +36,7 @@ struct LangFiles
 
 struct FileHeader
 {
-	DWORD pathHash;
+	DWORD hash;
 	DWORD size;
 	DWORD offset;
 };
@@ -45,20 +45,30 @@ extern LangFiles langFiles;
 extern FileHeader* filesHeaders;
 extern DWORD* filesCount;
 
+extern FILE** filesHandlers;
+extern CHAR* bigPathes[];
+
 namespace Hooks
 {
-	extern INT baseAddress;
+	extern INT baseOffset;
+	extern HWND hMainWnd;
 
+	extern DWORD sub_GetHash;
+
+	extern const CHAR* trailersList[2];
+
+	BOOL __fastcall PatchJump(DWORD addr, DWORD dest);
 	BOOL __fastcall PatchHook(DWORD addr, VOID* hook);
 	BOOL __fastcall PatchCall(DWORD addr, VOID* hook);
 	BOOL __fastcall PatchNop(DWORD addr, DWORD size);
+	BOOL __fastcall PatchBlock(DWORD addr, VOID* block, DWORD size);
 	BOOL __fastcall PatchWord(DWORD addr, WORD value);
 	BOOL __fastcall PatchInt(DWORD addr, INT value);
 	BOOL __fastcall PatchDWord(DWORD addr, DWORD value);
 	BOOL __fastcall PatchByte(DWORD addr, BYTE value);
 	BOOL __fastcall ReadWord(DWORD addr, WORD* value);
 	BOOL __fastcall ReadDWord(DWORD addr, DWORD* value);
-	BOOL __fastcall PatchFunction(const CHAR* function, VOID* addr);
+	DWORD __fastcall PatchFunction(const CHAR* function, VOID* addr);
 
 	BOOL Load();
 
@@ -67,6 +77,7 @@ namespace Hooks
 	VOID Patch_Timers();
 	VOID Patch_Window();
 	VOID Patch_Video();
+	VOID Patch_Trailer();
 	VOID Patch_Audio();
 	VOID Patch_Mouse();
 	VOID Patch_NoCD();
@@ -76,4 +87,5 @@ namespace Hooks
 	VOID Patch_Modes();
 	VOID Patch_Subtitles();
 	VOID Patch_Input();
+	VOID Patch_Credits();
 }

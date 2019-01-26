@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,7 @@
 #include "Hooks.h"
 #include "Mmsystem.h"
 #include "Config.h"
-
-#define M_PI       3.14159265358979323846
+#include "Math.h"
 
 #define STICK_CENTER 1
 #define STICK_LEFT 0
@@ -35,14 +34,20 @@
 #define STICK_TOP 0
 #define STICK_BOTTOM 2
 
-BOOL* xJoyListConnected = (BOOL*)0x0058CCF8;
-BOOL xJoyListCheck[MAX_CONTROLLERS];
+struct LabelShadow
+{
+	BYTE left;
+	BYTE right;
+} * labelShadowsList = (LabelShadow*)0x00496918;
 
-DWORD __stdcall joyGetNumDevsHook() { return MAX_CONTROLLERS; }
+BOOL* xJoyListConnected = (BOOL*)0x0058CCF8;
+BOOL xJoyListCheck[XUSER_MAX_COUNT];
+
+DWORD __stdcall joyGetNumDevsHook() { return XUSER_MAX_COUNT; }
 
 MMRESULT __stdcall joyGetPosHook(UINT uJoyID, LPJOYINFO pji)
 {
-	if (uJoyID >= MAX_CONTROLLERS)
+	if (uJoyID >= XUSER_MAX_COUNT)
 		return MMSYSERR_NODRIVER;
 
 	XINPUT_STATE state;
@@ -163,7 +168,7 @@ MMRESULT __stdcall joyGetPosHook(UINT uJoyID, LPJOYINFO pji)
 
 MMRESULT __stdcall joyGetDevCapsAHook(UINT_PTR uJoyID, LPJOYCAPSA pjc, UINT cbjc)
 {
-	if (uJoyID >= MAX_CONTROLLERS)
+	if (uJoyID >= XUSER_MAX_COUNT)
 		return MMSYSERR_NODRIVER;
 
 	XINPUT_CAPABILITIES caps;
@@ -180,7 +185,7 @@ MMRESULT __stdcall joyGetDevCapsAHook(UINT_PTR uJoyID, LPJOYCAPSA pjc, UINT cbjc
 
 DWORD __stdcall GetJoyID()
 {
-	for (DWORD i = 0; i < MAX_CONTROLLERS; ++i)
+	for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
 	{
 		if (xJoyListConnected[i] && xJoyListCheck[i])
 			return i;
@@ -372,27 +377,26 @@ namespace Hooks
 	{
 		if (InputGetState)
 		{
-			XINPUT_STATE state;
-			for (DWORD i = 0; i < MAX_CONTROLLERS; ++i)
+			for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
 			{
-				if (InputGetState(i, &state) == ERROR_SUCCESS)
+				XINPUT_STATE xstate;
+				if (InputGetState(i, &xstate) == ERROR_SUCCESS)
 				{
 					isController = TRUE;
 
-					// Chnage icon position
+					// Change icon position
 					PatchHook(0x0041443B, hook_0041443B);
-					back_00414478 += baseAddress;
+					back_00414478 += baseOffset;
 
 					PatchFunction("joyGetNumDevs", joyGetNumDevsHook);
 					PatchFunction("joyGetPos", joyGetPosHook);
 					PatchFunction("joyGetDevCapsA", joyGetDevCapsAHook);
-					PatchByte(0x0042747F + 2, MAX_CONTROLLERS);
+					PatchByte(0x0042747F + 2, XUSER_MAX_COUNT);
 					PatchHook(0x00427536, hook_00427536);
-					back_00427552 += baseAddress;
+					back_00427552 += baseOffset;
 
 					// Accept joy controls
 					PatchHook(0x00413F0B, hook_00413F0B);
-
 					break;
 				}
 			}
@@ -404,17 +408,39 @@ namespace Hooks
 
 		// Add PS / XBOX switch
 		PatchHook(0x00413A12, hook_00413A12);
-		back_00413A18 += baseAddress;
+		back_00413A18 += baseOffset;
 
-		sub_004467FC += baseAddress;
+		sub_004467FC += baseOffset;
 
 		PatchHook(0x00413BBA, hook_00413BBA);
 		PatchHook(0x00413BF5, hook_00413BF5);
-		back_00413DCD += baseAddress;
+		back_00413DCD += baseOffset;
 
 		PatchHook(0x00413CF7, hook_00413CF7);
-		back_00413D08 += baseAddress;
+		back_00413D08 += baseOffset;
 		PatchHook(0x00413D76, hook_00413D76);
-		back_00413D87 += baseAddress;
+		back_00413D87 += baseOffset;
+
+		// Correct label shadows
+		labelShadowsList = (LabelShadow*)((DWORD)labelShadowsList + baseOffset);
+		LabelShadow* shadowItem = labelShadowsList;
+		DWORD count = 10;
+		do
+		{
+			shadowItem->left = 40;
+			shadowItem->right = 84;
+			++shadowItem;
+		} while (--count);
+
+		xJoyListConnected = (BOOL*)((DWORD)xJoyListConnected + baseOffset);
+
+		joyList = (DWORD*)((DWORD)joyList + baseOffset);
+		joyPsList = (DWORD*)((DWORD)joyPsList + baseOffset);
+		joyXboxList = (DWORD*)((DWORD)joyXboxList + baseOffset);
+		joyTempList = (DWORD*)((DWORD)joyTempList + baseOffset);
+
+		keyList = (BYTE*)((DWORD)keyList + baseOffset);
+		keyDefaultList = (BYTE*)((DWORD)keyDefaultList + baseOffset);
+		keyTempList = (BYTE*)((DWORD)keyTempList + baseOffset);
 	}
 }

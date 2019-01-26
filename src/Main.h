@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -32,13 +32,13 @@ extern IOpenDirectSound* dsoundList;
 
 namespace Main
 {
+	VOID __stdcall SetSyncDraw();
+
 	HRESULT __stdcall DirectDrawCreate(GUID* lpGUID, LPDIRECTDRAW* lplpDD, IUnknown* pUnkOuter);
 
 	HRESULT __stdcall DirectDrawEnumerate(LPDDENUMCALLBACK lpCallback, LPVOID lpContext);
 
 	HRESULT __stdcall DirectSoundCreate(GUID* lpGUID, LPDIRECTSOUND *lplpDS, LPUNKNOWN pUnkOuter);
-
-	OpenDraw* FindDrawByWindow(HWND hWnd);
 
 	VOID __fastcall ShowError(CHAR* message, CHAR* file, DWORD line);
 

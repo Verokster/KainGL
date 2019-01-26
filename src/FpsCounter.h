@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -24,22 +24,30 @@
 
 #pragma once
 #include "Allocation.h"
+#include "ExtraTypes.h"
 
-#define FPS_ACCURACY 120
+#define FPS_ACCURACY 2000
 
 extern BOOL isFpsChanged;
+
+struct FrameItem
+{
+	DWORD tick;
+	DWORD span;
+};
 
 class FpsCounter : public Allocation
 {
 private:
 	DWORD accuracy;
-	DWORD index;
-	DWORD total;
 	DWORD count;
-	FLOAT summary;
-	FLOAT* fpsQueue;
-	DWORD* tickQueue;
-
+	DWORD checkIndex;
+	DWORD currentIndex;
+	DWORD summary;
+	DWORD lastTick;
+	FrameItem* tickQueue;
+	FLOAT value;
+	
 public:
 	FpsCounter(DWORD accuracy);
 	~FpsCounter();

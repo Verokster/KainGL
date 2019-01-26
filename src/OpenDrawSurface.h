@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ public:
 
 	DWORD index;
 	BYTE* indexBuffer;
-	DOUBLE oldTime;
+	DOUBLE lastTime;
 
 	OpenDrawSurface(OpenDraw*, BOOL);
 	OpenDrawSurface(OpenDraw*, OpenDrawSurface*, BYTE*);

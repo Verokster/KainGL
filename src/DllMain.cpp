@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -41,13 +41,12 @@ LRESULT __stdcall WindowKeyHook(INT nCode, WPARAM wParam, LPARAM lParam)
 		if (phs->vkCode == VK_SNAPSHOT)
 		{
 			HWND hWnd = GetActiveWindow();
-			OpenDraw* draw = Main::FindDrawByWindow(hWnd);
-			if (draw && !configDisplayWindowed)
-			{
-				draw->isTakeSnapshot = TRUE;
-				if (draw)
-					SetEvent(draw->hDrawEvent);
 
+			OpenDraw* ddraw = ddrawList;
+			if (ddraw && (ddraw->hWnd == hWnd || ddraw->hDraw == hWnd) && !configDisplayWindowed)
+			{
+				ddraw->isTakeSnapshot = TRUE;
+				Main::SetSyncDraw();
 				return TRUE;
 			}
 		}
@@ -63,17 +62,31 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		LoadMsvCRT();
 		LoadDDraw();
-		LoadDSound();
 		LoadXInput();
 
 		hDllModule = hModule;
 		if (Hooks::Load())
 		{
 			LoadKernel32();
-
-			AL::Load();
+			LoadGdi32();
+			LoadUnicoWS();
+			LoadDwmAPI();
 
 			OldWindowKeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, WindowKeyHook, NULL, 0);
+
+			{
+				WNDCLASS wc = {
+					CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS,
+					DefWindowProc,
+					0, 0,
+					hDllModule,
+					NULL, NULL,
+					(HBRUSH)GetStockObject(BLACK_BRUSH), NULL,
+					WC_DRAW
+				};
+
+				RegisterClass(&wc);
+			}
 
 			if (CreateActCtxC)
 			{
@@ -92,7 +105,7 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 		}
 		else
 			hDllModule = NULL;
-		
+
 		break;
 
 	case DLL_PROCESS_DETACH:
@@ -100,6 +113,24 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 		{
 			if (hActCtx && hActCtx != INVALID_HANDLE_VALUE)
 				ReleaseActCtxC(hActCtx);
+
+			UnregisterClass(WC_DRAW, hDllModule);
+
+			CHAR* filePath = fontFiles[0];
+			DWORD filesCount = 2;
+			do
+			{
+				if (*filePath)
+				{
+					RemoveFontResourceC(filePath, FR_PRIVATE, NULL);
+					DeleteFile(filePath);
+				}
+
+				filePath += MAX_PATH;
+			} while (--filesCount);
+
+			DeleteObject(subtitlesFonts[0].font);
+			DeleteObject(subtitlesFonts[1].font);
 
 			UnhookWindowsHookEx(OldWindowKeyHook);
 			ChangeDisplaySettings(NULL, NULL);

@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -69,18 +69,18 @@ namespace Hooks
 		PatchDWord((DWORD)minScale, LARGE_SCALE);
 		PatchDWord(0x008E2B94, NORMAL_SCALE); // unknown
 
-		flagHires = (BOOL*)((BOOL)flagHires + baseAddress);
-		scale = (DWORD*)((DWORD)scale + baseAddress);
+		flagHires = (BOOL*)((BOOL)flagHires + baseOffset);
+		scale = (DWORD*)((DWORD)scale + baseOffset);
 
-		//maxScale = (DWORD*)((DWORD)maxScale + baseAddress);
-		//minScale = (DWORD*)((DWORD)minScale + baseAddress);
-		advScale = (DWORD*)((DWORD)advScale + baseAddress);
+		//maxScale = (DWORD*)((DWORD)maxScale + baseOffset);
+		//minScale = (DWORD*)((DWORD)minScale + baseOffset);
+		advScale = (DWORD*)((DWORD)advScale + baseOffset);
 
-		roomSize = (DWORD*)((DWORD)roomSize + baseAddress);
-		roomClip = (DWORD*)((DWORD)roomClip + baseAddress);
+		roomSize = (DWORD*)((DWORD)roomSize + baseOffset);
+		roomClip = (DWORD*)((DWORD)roomClip + baseOffset);
 
-		shiftScale = (DWORD*)((DWORD)shiftScale + baseAddress);
-		shiftTile = (DWORD*)((DWORD)shiftTile + baseAddress);
+		shiftScale = (DWORD*)((DWORD)shiftScale + baseOffset);
+		shiftTile = (DWORD*)((DWORD)shiftTile + baseOffset);
 
 		PatchHook(0x0042C8BC, hook_0042C8BC);
 

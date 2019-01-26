@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include "stdafx.h"
 #include "Hooks.h"
 #include "Main.h"
+#include "Config.h"
 
 BOOL isIma;
 INT imaIndex[2];
@@ -33,20 +34,17 @@ INT imaValue[2];
 // Check file
 DWORD* samplesRate = (DWORD*)0x004BF1EC;
 WAVEFORMATEX* waveFormat = (WAVEFORMATEX*)0x004BD8C8;
-DWORD sub_0041279C = 0x0041279C;
-VOID __stdcall CheckFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* name)
+VOID __cdecl CheckAudioFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* name)
 {
 	BOOL found = FALSE;
-	DWORD index;
 	StrPrint(dest, "GAME/%s.IMA", name);
-	DWORD hash = ((DWORD(__cdecl*)(CHAR*))sub_0041279C)(dest);
+	DWORD hash = ((DWORD(__cdecl*)(CHAR*))Hooks::sub_GetHash)(dest);
 	FileHeader* file = filesHeaders;
 	DWORD count = *filesCount;
 	while (count--)
 	{
-		if (file->pathHash == hash)
+		if (file->hash == hash)
 		{
-			index = *filesCount - count - 1;
 			found = TRUE;
 			break;
 		}
@@ -73,16 +71,6 @@ VOID __stdcall CheckFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* name)
 	waveFormat->nSamplesPerSec = *samplesRate;
 	waveFormat->nBlockAlign = waveFormat->nChannels * waveFormat->wBitsPerSample / 8;
 	waveFormat->nAvgBytesPerSec = waveFormat->nSamplesPerSec * waveFormat->nBlockAlign;
-}
-
-DWORD back_004519CC = 0x004519CC;
-VOID __declspec(naked) hook_004519C4()
-{
-	__asm
-	{
-		CALL CheckFile
-		JMP back_004519CC
-	}
 }
 
 DWORD back_00451A6F = 0x00451A6F;
@@ -494,50 +482,48 @@ namespace Hooks
 {
 	VOID Patch_Audio()
 	{
-		isCameraStatic = (BOOL*)((DWORD)isCameraStatic + baseAddress);
+		isCameraStatic = (BOOL*)((DWORD)isCameraStatic + baseOffset);
 
-		gainVolume = (INT*)((DWORD)gainVolume + baseAddress);
-		isKainInside = (bool*)((DWORD)isKainInside + baseAddress);
-		isKainSpeaking = (BOOL*)((DWORD)isKainSpeaking + baseAddress);
+		gainVolume = (INT*)((DWORD)gainVolume + baseOffset);
+		isKainInside = (bool*)((DWORD)isKainInside + baseOffset);
+		isKainSpeaking = (BOOL*)((DWORD)isKainSpeaking + baseOffset);
 
-		worldObject = (DWORD*)((DWORD)worldObject + baseAddress);
+		worldObject = (DWORD*)((DWORD)worldObject + baseOffset);
 
-		samplesRate = (DWORD*)((DWORD)samplesRate + baseAddress);
-		waveFormat = (WAVEFORMATEX*)((DWORD)waveFormat + baseAddress);
-		sub_0041279C += baseAddress;
-		sub_004453E8 += baseAddress;
+		samplesRate = (DWORD*)((DWORD)samplesRate + baseOffset);
+		waveFormat = (WAVEFORMATEX*)((DWORD)waveFormat + baseOffset);
+		sub_004453E8 += baseOffset;
 
-		indexTable = (INT*)((DWORD)indexTable + baseAddress);
-		stepsizeTable = (INT*)((DWORD)stepsizeTable + baseAddress);
-		lastIndex = (BYTE*)((DWORD)lastIndex + baseAddress);
-		lastValue = (SHORT*)((DWORD)lastValue + baseAddress);
+		indexTable = (INT*)((DWORD)indexTable + baseOffset);
+		stepsizeTable = (INT*)((DWORD)stepsizeTable + baseOffset);
+		lastIndex = (BYTE*)((DWORD)lastIndex + baseOffset);
+		lastValue = (SHORT*)((DWORD)lastValue + baseOffset);
 
-		offsetListX = (BYTE*)((DWORD)offsetListX + baseAddress);
-		offsetListY = (BYTE*)((DWORD)offsetListY + baseAddress);
+		offsetListX = (BYTE*)((DWORD)offsetListX + baseOffset);
+		offsetListY = (BYTE*)((DWORD)offsetListY + baseOffset);
 
-		PatchHook(0x004519C4, hook_004519C4); // check file
-		back_004519CC += baseAddress;
+		PatchCall(0x004519C4, CheckAudioFile); // check file
 
 		PatchHook(0x00451A69, hook_00451A69); // restore
-		back_00451A6F += baseAddress;
-		some_008E81E0 += baseAddress;
+		back_00451A6F += baseOffset;
+		some_008E81E0 += baseOffset;
 
 		PatchNop(0x0044778E, 0x0044779A - 0x0044778E); // 
 		PatchHook(0x00447064, hook_00447064);
 
 		PatchHook(0x00451A01, hook_00451A01); // Do not check if audio file for video exists
-		back_00451A09 += baseAddress;
-		back_00451AF6 += baseAddress;
+		back_00451A09 += baseOffset;
+		back_00451AF6 += baseOffset;
 
 		PatchHook(0x00444846, hook_00444846);
-		back_0044484E += baseAddress;
+		back_0044484E += baseOffset;
 
 		// Increase wave pool 46 -> 49
 		PatchDWord(0x004453BC + 1, 49 * 4);
 		PatchNop(0x004453CF, 6);
 
 		// Move inventory index 45 -> 48
-		DWORD val = 0x005915EC + 48 * 4;
+		DWORD val = 0x005915EC + 48 * 4 + baseOffset;
 		PatchDWord(0x00446988 + 2, val);
 		PatchDWord(0x004469AF + 1, val);
 		PatchDWord(0x004458C0 + 2, val);
@@ -545,21 +531,26 @@ namespace Hooks
 		PatchDWord(0x004469DF + 2, val);
 
 		PatchHook(0x00445530, hook_00445530); // Load Flash audio
-		back_00445561 += baseAddress;
+		back_00445561 += baseOffset;
 
 		// 3d audio
 		PatchHook(0x00445D58, hook_00445D58); // Get sound cell position
-		back_00445D60 += baseAddress;
+		back_00445D60 += baseOffset;
 
 		PatchHook(0x00445340, hook_00445340); // Check sound index for positioning
-		PatchByte(0x00445DBB, 0xEB);
-		back_00445348 += baseAddress;
+		back_00445348 += baseOffset;
+
+		if (configOther3DSound) // remove max distance
+			PatchByte(0x00445DBB, 0xEB);
 
 		// Check listener position
 		PatchHook(0x00416A68, hook_00416A68);
-		back_00416A6E += baseAddress;
+		back_00416A6E += baseOffset;
 
 		PatchHook(0x00416848, hook_00416848);
-		back_0041684F += baseAddress;
+		back_0041684F += baseOffset;
+
+		// Prevent "Coffee Guy"
+		PatchJump(0x00419C5F, 0x00419C92 + baseOffset);
 	}
 }

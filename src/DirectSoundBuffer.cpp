@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include "stdafx.h"
 #include "DirectSoundBuffer.h"
 #include "Vibration.h"
+#include "Main.h"
 
 DirectSoundBuffer::DirectSoundBuffer(LPDIRECTSOUNDBUFFER lpDSBuffer)
 {
@@ -104,7 +105,10 @@ ULONG __stdcall DirectSoundBuffer::AddRef()
 ULONG __stdcall DirectSoundBuffer::Release()
 {
 	if (this->isSubtitled && activeSoundBuffer == this)
+	{
 		activeSoundBuffer = NULL;
+		Main::SetSyncDraw();
+	}
 
 	ULONG res = this->dsBuffer->Release();
 	delete this;
@@ -146,6 +150,17 @@ HRESULT __stdcall DirectSoundBuffer::GetStatus(LPDWORD pdwStatus)
 	if (this->vibration.duration && GetTickCount() - this->vibration.start > this->vibration.duration)
 		Vibration::Remove(&this->vibration);
 
+	if (this->isSubtitled && activeSoundBuffer == this && subtitlesCurrent)
+	{
+		DWORD nextSync = this->lastSyncTime + 66;
+		DOUBLE currTime = GetTickCount();
+		if (currTime >= nextSync)
+		{
+			this->lastSyncTime = nextSync;
+			Main::SetSyncDraw();
+		}
+	}
+
 	return this->dsBuffer->GetStatus(pdwStatus);
 }
 
@@ -167,6 +182,8 @@ HRESULT __stdcall DirectSoundBuffer::Play(DWORD dwReserved1, DWORD dwPriority, D
 			soundStartTime += GetTickCount() - soundSuspendTime;
 
 		activeSoundBuffer = this;
+		Main::SetSyncDraw();
+		this->lastSyncTime = GetTickCount();
 	}
 
 	Vibration::Add(&this->vibration);
@@ -205,6 +222,7 @@ HRESULT __stdcall DirectSoundBuffer::Stop()
 	{
 		soundSuspendTime = GetTickCount();
 		activeSoundBuffer = NULL;
+		Main::SetSyncDraw();
 	}
 
 	Vibration::Remove(&this->vibration);

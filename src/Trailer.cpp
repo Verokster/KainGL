@@ -23,45 +23,69 @@
 */
 
 #include "stdafx.h"
-#include "OpenDrawClipper.h"
-#include "OpenDraw.h"
+#include "Hooks.h"
+#include "Config.h"
 
-#pragma region Not Implemented
-HRESULT OpenDrawClipper::QueryInterface(REFIID riid, LPVOID * ppvObj) { return DD_OK; }
-ULONG OpenDrawClipper::AddRef() { return 0; }
-HRESULT OpenDrawClipper::GetClipList(LPRECT, LPRGNDATA, LPDWORD) { return DD_OK; }
-HRESULT OpenDrawClipper::GetHWnd(HWND *) { return DD_OK; }
-HRESULT OpenDrawClipper::Initialize(LPDIRECTDRAW, DWORD) { return DD_OK; }
-HRESULT OpenDrawClipper::IsClipListChanged(BOOL *) { return DD_OK; }
-HRESULT OpenDrawClipper::SetClipList(LPRGNDATA, DWORD) { return DD_OK; }
-HRESULT OpenDrawClipper::SetHWnd(DWORD dwFlags, HWND hWnd) { return DD_OK; }
-#pragma endregion
-
-OpenDrawClipper::OpenDrawClipper(OpenDraw* lpDD)
+namespace Hooks
 {
-	this->ddraw = lpDD;
-	this->prev = this->ddraw->clipperEntries;
-}
+	const CHAR* logoList[3] = {
+		"ACTL001",
+		"LOGO001",
+		"SK"
+	};
 
-ULONG OpenDrawClipper::Release()
-{
-	if (this->ddraw->clipperEntries == this)
-		this->ddraw->clipperEntries = NULL;
-	else
+	const CHAR* trailersList[2] = {
+		"TRAILERA",
+		"TRAILERB"
+	};
+
+	const CHAR* __stdcall CheckTrailer(DWORD index)
 	{
-		OpenDrawClipper* entry = this->ddraw->clipperEntries;
-		while (entry)
+		if (!index)
 		{
-			if (entry->prev == this)
-			{
-				entry->prev = this->prev;
-				break;
-			}
+			SeedRandom(GetTickCount());
+			return trailersList[Random() % (sizeof(trailersList) / sizeof(CHAR*))];
+		}
+		else
+			return logoList[index - 1];
+	}
 
-			entry = entry->prev;
+	DWORD back_004518C6 = 0x004518C6;
+	VOID __declspec(naked) hook_004518BF()
+	{
+		__asm
+		{
+			PUSH EAX
+			CALL CheckTrailer
+			MOV EBX, EAX
+			JMP back_004518C6
 		}
 	}
 
-	delete this;
-	return 0;
+	DWORD back_004518FA = 0x004518FA;
+	VOID __declspec(naked) hook_004518F3()
+	{
+		__asm
+		{
+			PUSH EAX
+			CALL CheckTrailer
+			MOV EDX, EAX
+			JMP back_004518FA
+		}
+	}
+
+	VOID Patch_Trailer()
+	{
+		// Replace trailers
+		PatchHook(0x004518BF, hook_004518BF);
+		back_004518C6 += baseOffset;
+
+		PatchHook(0x004518F3, hook_004518F3);
+		back_004518FA += baseOffset;
+
+		if (configVideoSkipIntro)
+			PatchByte(0x0043DAA3, 0xEB);
+		else
+			PatchCall(0x0043DAAE, (VOID*)(0x004518DC + baseOffset));
+	}
 }

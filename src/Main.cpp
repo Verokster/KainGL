@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2018 Oleksiy Ryabchun
+	Copyright (c) 2019 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -36,9 +36,16 @@ IOpenDirectSound* dsoundList;
 
 namespace Main
 {
+	VOID __stdcall SetSyncDraw()
+	{
+		OpenDraw* ddraw = ddrawList;
+		if (ddraw)
+			ddraw->SetSyncDraw();
+	}
+
 	HRESULT __stdcall DirectDrawCreate(GUID* lpGUID, LPDIRECTDRAW* lplpDD, IUnknown* pUnkOuter)
 	{
-		ddrawList = new OpenDraw(ddrawList);
+		ddrawList = new OpenDraw();
 		*(OpenDraw**)lplpDD = ddrawList;
 		return DD_OK;
 	}
@@ -68,20 +75,6 @@ namespace Main
 			}
 			return res;
 		}
-	}
-
-	OpenDraw* FindDrawByWindow(HWND hWnd)
-	{
-		OpenDraw* ddraw = ddrawList;
-		while (ddraw)
-		{
-			if (ddraw->hWnd == hWnd || ddraw->hDraw == hWnd)
-				return ddraw;
-
-			ddraw = ddraw->last;
-		}
-
-		return NULL;
 	}
 
 	VOID __fastcall ShowError(CHAR* message, CHAR* file, DWORD line)
