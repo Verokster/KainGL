@@ -23,7 +23,7 @@ IDM_MANIFEST            RT_MANIFEST             "module.manifest"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2019,1,31,437
+ FILEVERSION 2019,1,31,440
  PRODUCTVERSION 1,5,3,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
@@ -40,7 +40,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Legacy Of Kain Graphic Library"
-            VALUE "FileVersion", "2019.01.31.437"
+            VALUE "FileVersion", "2019.01.31.440"
             VALUE "LegalCopyright", "© 2019 Verok (verokster@gmail.com)"
             VALUE "OriginalFilename", "ddraw.dll"
             VALUE "ProductVersion", "1.5.3"
@@ -101,9 +101,10 @@ END
 // RCDATA
 //
 
-IDR_VERTEX					RCDATA					".\\Shaders\\vertex.vgl"
-IDR_FRAGMENT_NEAREST		RCDATA					".\\Shaders\\nearest.fgl"
-IDR_FRAGMENT_BICUBIC		RCDATA					".\\Shaders\\bicubic.fgl"
+IDR_VERTEX_NEAREST				RCDATA				".\\shaders\\nearest.vgl"
+IDR_FRAGMENT_NEAREST			RCDATA				".\\shaders\\nearest.fgl"
+IDR_VERTEX_CUBIC				RCDATA				".\\shaders\\cubic.vgl"
+IDR_FRAGMENT_CUBIC				RCDATA				".\\shaders\\cubic.fgl"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

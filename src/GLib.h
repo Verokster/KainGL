@@ -126,7 +126,6 @@ typedef VOID(__stdcall *GLVIEWPORT)(GLint x, GLint y, GLsizei width, GLsizei hei
 typedef VOID(__stdcall *GLMATRIXMODE)(GLenum mode);
 typedef VOID(__stdcall *GLLOADIDENTITY)();
 typedef VOID(__stdcall *GLORTHO)(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
-//typedef VOID(__stdcall *GLFINISH)();
 typedef VOID(__stdcall *GLENABLE)(GLenum cap);
 typedef VOID(__stdcall *GLDISABLE)(GLenum cap);
 typedef VOID(__stdcall *GLBINDTEXTURE)(GLenum target, GLuint texture);
@@ -183,6 +182,7 @@ typedef GLuint(__stdcall *GLGETATTRIBLOCATION)(GLuint program, const GLchar* nam
 typedef GLuint(__stdcall *GLGETUNIFORMLOCATION)(GLuint program, const GLchar* name);
 
 typedef VOID(__stdcall *GLUNIFORM1I)(GLint location, GLint v0);
+typedef VOID(__stdcall *GLUNIFORM2F)(GLint location, GLfloat v0, GLfloat v1);
 typedef GLuint(__stdcall *GLUNIFORMMATRIX4FV)(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
 
 extern WGLGETPROCADDRESS WGLGetProcAddress;
@@ -204,7 +204,6 @@ extern GLVIEWPORT GLViewport;
 extern GLMATRIXMODE GLMatrixMode;
 extern GLLOADIDENTITY GLLoadIdentity;
 extern GLORTHO GLOrtho;
-//extern GLFINISH GLFinish;
 extern GLENABLE GLEnable;
 extern GLDISABLE GLDisable;
 extern GLBINDTEXTURE GLBindTexture;
@@ -257,6 +256,7 @@ extern GLGETATTRIBLOCATION GLGetAttribLocation;
 extern GLGETUNIFORMLOCATION GLGetUniformLocation;
 
 extern GLUNIFORM1I GLUniform1i;
+extern GLUNIFORM2F GLUniform2f;
 extern GLUNIFORMMATRIX4FV GLUniformMatrix4fv;
 
 extern DWORD glVersion;

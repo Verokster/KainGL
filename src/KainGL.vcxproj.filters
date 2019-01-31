@@ -226,13 +226,16 @@
     <None Include="module.def">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Shaders\vertex.vgl">
-      <Filter>Resource Files\Shaders Files</Filter>
-    </None>
-    <None Include="Shaders\bicubic.fgl">
-      <Filter>Resource Files\Shaders Files</Filter>
-    </None>
     <None Include="Shaders\nearest.fgl">
+      <Filter>Resource Files\Shaders Files</Filter>
+    </None>
+    <None Include="Shaders\cubic.fgl">
+      <Filter>Resource Files\Shaders Files</Filter>
+    </None>
+    <None Include="Shaders\nearest.vgl">
+      <Filter>Resource Files\Shaders Files</Filter>
+    </None>
+    <None Include="Shaders\cubic.vgl">
       <Filter>Resource Files\Shaders Files</Filter>
     </None>
   </ItemGroup>

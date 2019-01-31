@@ -29,9 +29,10 @@
 
 #define IDM_MANIFEST                    2
 
-#define IDR_VERTEX						30
+#define IDR_VERTEX_NEAREST				30
 #define IDR_FRAGMENT_NEAREST			31
-#define IDR_FRAGMENT_BICUBIC			32
+#define IDR_VERTEX_CUBIC				32
+#define IDR_FRAGMENT_CUBIC				33
 
 #define IDD_DIALOGBAR                   102
 

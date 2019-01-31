@@ -183,6 +183,7 @@ struct SceneDataNew : SceneData
 		GLuint normalId;
 		GLuint scalelineId;
 	} textures;
+	DWORD maxTexSize;
 };
 
 #define STRINGS_SIZE 29

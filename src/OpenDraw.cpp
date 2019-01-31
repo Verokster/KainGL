@@ -412,7 +412,7 @@ LRESULT __stdcall PanelProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
-VOID __fastcall UseShaderProgram(ShaderProgram* program)
+VOID __fastcall UseShaderProgram(ShaderProgram* program, FLOAT texSize)
 {
 	if (!program->id)
 	{
@@ -436,8 +436,12 @@ VOID __fastcall UseShaderProgram(ShaderProgram* program)
 		GLUseProgram(program->id);
 		GLUniformMatrix4fv(GLGetUniformLocation(program->id, "mvp"), 1, GL_FALSE, program->mvp);
 		GLUniform1i(GLGetUniformLocation(program->id, "isscl"), program->interlaced);
-		GLUniform1i(GLGetUniformLocation(program->id, "tex01"), 0);
-		GLUniform1i(GLGetUniformLocation(program->id, "scl01"), 1);
+		GLUniform1i(GLGetUniformLocation(program->id, "tex01"), GL_TEXTURE0 - GL_TEXTURE0);
+		GLUniform1i(GLGetUniformLocation(program->id, "scl01"), GL_TEXTURE1 - GL_TEXTURE0);
+
+		GLint loc = GLGetUniformLocation(program->id, "texSize");
+		if (loc >= 0)
+			GLUniform2f(loc, texSize, texSize);
 	}
 	else
 		GLUseProgram(program->id);
@@ -891,10 +895,10 @@ VOID OpenDraw::RenderStartSceneNew()
 	this->sceneData = renderData;
 
 	DWORD maxSize = this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight;
-	DWORD maxTexSize = 1;
-	while (maxTexSize < maxSize) maxTexSize <<= 1;
-	FLOAT texWidth = this->virtualMode->dwWidth == maxTexSize ? 1.0f : FLOAT((FLOAT)this->virtualMode->dwWidth / maxTexSize);
-	FLOAT texHeight = this->virtualMode->dwHeight == maxTexSize ? 1.0f : FLOAT((FLOAT)this->virtualMode->dwHeight / maxTexSize);
+	renderData->maxTexSize = 1;
+	while (renderData->maxTexSize < maxSize) renderData->maxTexSize <<= 1;
+	FLOAT texWidth = this->virtualMode->dwWidth == renderData->maxTexSize ? 1.0f : FLOAT((FLOAT)this->virtualMode->dwWidth / renderData->maxTexSize);
+	FLOAT texHeight = this->virtualMode->dwHeight == renderData->maxTexSize ? 1.0f : FLOAT((FLOAT)this->virtualMode->dwHeight / renderData->maxTexSize);
 
 	FLOAT bufferTemp[4][4] = {
 		{ 0.0, 0.0,																	0.0, 0.0 },
@@ -913,14 +917,14 @@ VOID OpenDraw::RenderStartSceneNew()
 	MemoryCopy(renderData->mvpMatrix, mvpTemp, sizeof(mvpTemp));
 
 	renderData->shaders.nearest.id = 0;
-	renderData->shaders.nearest.vertexName = IDR_VERTEX;
+	renderData->shaders.nearest.vertexName = IDR_VERTEX_NEAREST;
 	renderData->shaders.nearest.fragmentName = IDR_FRAGMENT_NEAREST;
 	renderData->shaders.nearest.mvp = (GLfloat*)renderData->mvpMatrix;
 	renderData->shaders.nearest.interlaced = *flags.interlaced;
 
 	renderData->shaders.bicubic.id = 0;
-	renderData->shaders.bicubic.vertexName = IDR_VERTEX;
-	renderData->shaders.bicubic.fragmentName = IDR_FRAGMENT_BICUBIC;
+	renderData->shaders.bicubic.vertexName = IDR_VERTEX_CUBIC;
+	renderData->shaders.bicubic.fragmentName = IDR_FRAGMENT_CUBIC;
 	renderData->shaders.bicubic.mvp = (GLfloat*)renderData->mvpMatrix;
 	renderData->shaders.bicubic.interlaced = *flags.interlaced;
 
@@ -953,7 +957,7 @@ VOID OpenDraw::RenderStartSceneNew()
 			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-			GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, maxTexSize, maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+			GLTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, renderData->maxTexSize, renderData->maxTexSize, GL_NONE, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 		}
 
 		GLGenVertexArrays(1, &renderData->arrayName);
@@ -968,7 +972,7 @@ VOID OpenDraw::RenderStartSceneNew()
 
 						ShaderProgram* program = configGlFiltering == GL_LINEAR ? &renderData->shaders.bicubic : &renderData->shaders.nearest;
 
-						UseShaderProgram(program);
+						UseShaderProgram(program, renderData->maxTexSize);
 
 						GLint attrCoordsLoc = GLGetAttribLocation(program->id, "vCoord");
 						GLEnableVertexAttribArray(attrCoordsLoc);
@@ -1252,9 +1256,6 @@ VOID OpenDraw::RenderFrameOld()
 
 	if (!configSingleThread)
 		WaitForSingleObject(this->hDrawEvent, INFINITE);
-
-	//if (renderData->isVSync)
-	//	GLFinish();
 }
 
 VOID OpenDraw::RenderFrameNew()
@@ -1268,7 +1269,7 @@ VOID OpenDraw::RenderFrameNew()
 	if (this->isStateChanged)
 	{
 		this->isStateChanged = FALSE;
-		UseShaderProgram(configGlFiltering == GL_LINEAR ? &renderData->shaders.bicubic : &renderData->shaders.nearest);
+		UseShaderProgram(configGlFiltering == GL_LINEAR ? &renderData->shaders.bicubic : &renderData->shaders.nearest, renderData->maxTexSize);
 
 		if (*flags.interlaced)
 		{
@@ -1290,9 +1291,6 @@ VOID OpenDraw::RenderFrameNew()
 
 	if (!configSingleThread)
 		WaitForSingleObject(this->hDrawEvent, INFINITE);
-
-	//if (renderData->isVSync)
-	//	GLFinish();
 }
 
 // ------------------------------------------------

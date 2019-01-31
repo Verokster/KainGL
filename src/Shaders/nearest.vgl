@@ -25,13 +25,12 @@
 #version 130
 precision lowp float;
 
-uniform bool isscl;
-uniform sampler2D tex01;
-uniform sampler2D scl01;
+uniform mat4 mvp;
 
-in vec4 fCoord;
-out vec4 fragColor;
+in vec4 vCoord;
+out vec4 fCoord;
 
 void main() {
-	fragColor = texture(tex01, fCoord.zw) * (isscl ? texture(scl01, fCoord.xy).r : 1.0);
+	gl_Position = mvp * vec4(vCoord.xy, 0.0, 1.0);
+	fCoord = vCoord;
 }

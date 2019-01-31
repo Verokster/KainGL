@@ -49,7 +49,6 @@ GLVIEWPORT GLViewport;
 GLMATRIXMODE GLMatrixMode;
 GLLOADIDENTITY GLLoadIdentity;
 GLORTHO GLOrtho;
-//GLFINISH GLFinish;
 GLENABLE GLEnable;
 GLDISABLE GLDisable;
 GLBINDTEXTURE GLBindTexture;
@@ -106,6 +105,7 @@ GLGETATTRIBLOCATION GLGetAttribLocation;
 GLGETUNIFORMLOCATION GLGetUniformLocation;
 
 GLUNIFORM1I GLUniform1i;
+GLUNIFORM2F GLUniform2f;
 GLUNIFORMMATRIX4FV GLUniformMatrix4fv;
 
 HMODULE hGLModule;
@@ -234,7 +234,6 @@ namespace GL
 		LoadFunction(buffer, PREFIX_GL, "MatrixMode", (PROC*)&GLMatrixMode);
 		LoadFunction(buffer, PREFIX_GL, "LoadIdentity", (PROC*)&GLLoadIdentity);
 		LoadFunction(buffer, PREFIX_GL, "Ortho", (PROC*)&GLOrtho);
-		//LoadFunction(buffer, PREFIX_GL, "Finish", (PROC*)&GLFinish);
 		LoadFunction(buffer, PREFIX_GL, "Enable", (PROC*)&GLEnable);
 		LoadFunction(buffer, PREFIX_GL, "Disable", (PROC*)&GLDisable);
 		LoadFunction(buffer, PREFIX_GL, "BindTexture", (PROC*)&GLBindTexture);
@@ -291,6 +290,7 @@ namespace GL
 		LoadFunction(buffer, PREFIX_GL, "GetUniformLocation", (PROC*)&GLGetUniformLocation);
 
 		LoadFunction(buffer, PREFIX_GL, "Uniform1i", (PROC*)&GLUniform1i);
+		LoadFunction(buffer, PREFIX_GL, "Uniform2f", (PROC*)&GLUniform2f);
 		LoadFunction(buffer, PREFIX_GL, "UniformMatrix4fv", (PROC*)&GLUniformMatrix4fv);
 
 		glCapsClampToEdge = GL_CLAMP;

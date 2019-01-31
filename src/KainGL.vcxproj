@@ -236,9 +236,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def" />
+    <None Include="Shaders\cubic.vgl" />
     <None Include="Shaders\nearest.fgl" />
-    <None Include="Shaders\vertex.vgl" />
-    <None Include="Shaders\bicubic.fgl" />
+    <None Include="Shaders\nearest.vgl" />
+    <None Include="Shaders\cubic.fgl" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="module.manifest" />
