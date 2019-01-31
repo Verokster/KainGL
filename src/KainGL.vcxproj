@@ -93,7 +93,6 @@
     <Link>
       <ModuleDefinitionFile>$(ProjectDir)\module.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <GenerateMapFile>false</GenerateMapFile>
       <MapExports>true</MapExports>
       <BaseAddress>0x60000000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>

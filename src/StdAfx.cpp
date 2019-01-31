@@ -73,54 +73,54 @@ XINPUTSETSTATE InputSetState;
 XINPUTGETCAPABILITIES InputGetCapabilities;
 
 DWORD
-pAcquireDDThreadLock,
-pCompleteCreateSysmemSurface,
-pD3DParseUnknownCommand,
-pDDGetAttachedSurfaceLcl,
-pDDInternalLock,
-pDDInternalUnlock,
-pDSoundHelp,
-pDirectDrawCreate,
-pDirectDrawCreateClipper,
-pDirectDrawCreateEx,
-pDirectDrawEnumerateA,
-pDirectDrawEnumerateExA,
-pDirectDrawEnumerateExW,
-pDirectDrawEnumerateW,
-//pDllCanUnloadNow,
-//pDllGetClassObject,
-pGetDDSurfaceLocal,
-pGetOLEThunkData,
-pGetSurfaceFromDC,
-pRegisterSpecialCase,
-pReleaseDDThreadLock,
-pSetAppCompatData;
+	pAcquireDDThreadLock,
+	pCompleteCreateSysmemSurface,
+	pD3DParseUnknownCommand,
+	pDDGetAttachedSurfaceLcl,
+	pDDInternalLock,
+	pDDInternalUnlock,
+	pDSoundHelp,
+	pDirectDrawCreate,
+	pDirectDrawCreateClipper,
+	pDirectDrawCreateEx,
+	pDirectDrawEnumerateA,
+	pDirectDrawEnumerateExA,
+	pDirectDrawEnumerateExW,
+	pDirectDrawEnumerateW,
+	pDllCanUnloadNow,
+	pDllGetClassObject,
+	pGetDDSurfaceLocal,
+	pGetOLEThunkData,
+	pGetSurfaceFromDC,
+	pRegisterSpecialCase,
+	pReleaseDDThreadLock,
+	pSetAppCompatData;
 
 DIRECTSOUNDCREATE DSCreate;
 
 #define LIBEXP VOID __declspec(naked,nothrow) __stdcall
-LIBEXP AcquireDDThreadLock() { _asm { JMP pAcquireDDThreadLock } }
-LIBEXP CompleteCreateSysmemSurface() { _asm { JMP pCompleteCreateSysmemSurface } }
-LIBEXP D3DParseUnknownCommand() { _asm { JMP pD3DParseUnknownCommand } }
-LIBEXP DDGetAttachedSurfaceLcl() { _asm { JMP pDDGetAttachedSurfaceLcl } }
-LIBEXP DDInternalLock() { _asm { JMP pDDInternalLock } }
-LIBEXP DDInternalUnlock() { _asm { JMP pDDInternalUnlock } }
-LIBEXP DSoundHelp() { _asm { JMP pDSoundHelp } }
-LIBEXP DirectDrawCreate() { _asm { JMP pDirectDrawCreate } }
-LIBEXP DirectDrawCreateClipper() { _asm { JMP pDirectDrawCreateClipper } }
-LIBEXP DirectDrawCreateEx() { _asm { JMP pDirectDrawCreateEx } }
-LIBEXP DirectDrawEnumerateA() { _asm { JMP pDirectDrawEnumerateA } }
-LIBEXP DirectDrawEnumerateExA() { _asm { JMP pDirectDrawEnumerateExA } }
-LIBEXP DirectDrawEnumerateExW() { _asm { JMP pDirectDrawEnumerateExW } }
-LIBEXP DirectDrawEnumerateW() { _asm { JMP pDirectDrawEnumerateW } }
-//LIBEXP DllCanUnloadNow() { _asm { JMP pDllCanUnloadNow } }
-//LIBEXP DllGetClassObject() { _asm { JMP pDllGetClassObject } }
-LIBEXP GetDDSurfaceLocal() { _asm { JMP pGetDDSurfaceLocal } }
-LIBEXP GetOLEThunkData() { _asm { JMP pGetOLEThunkData } }
-LIBEXP GetSurfaceFromDC() { _asm { JMP pGetSurfaceFromDC } }
-LIBEXP RegisterSpecialCase() { _asm { JMP pRegisterSpecialCase } }
-LIBEXP ReleaseDDThreadLock() { _asm { JMP pReleaseDDThreadLock } }
-LIBEXP SetAppCompatData() { _asm { JMP pSetAppCompatData } }
+LIBEXP exAcquireDDThreadLock() { _asm { JMP pAcquireDDThreadLock } }
+LIBEXP exCompleteCreateSysmemSurface() { _asm { JMP pCompleteCreateSysmemSurface } }
+LIBEXP exD3DParseUnknownCommand() { _asm { JMP pD3DParseUnknownCommand } }
+LIBEXP exDDGetAttachedSurfaceLcl() { _asm { JMP pDDGetAttachedSurfaceLcl } }
+LIBEXP exDDInternalLock() { _asm { JMP pDDInternalLock } }
+LIBEXP exDDInternalUnlock() { _asm { JMP pDDInternalUnlock } }
+LIBEXP exDSoundHelp() { _asm { JMP pDSoundHelp } }
+LIBEXP exDirectDrawCreate() { _asm { JMP pDirectDrawCreate } }
+LIBEXP exDirectDrawCreateClipper() { _asm { JMP pDirectDrawCreateClipper } }
+LIBEXP exDirectDrawCreateEx() { _asm { JMP pDirectDrawCreateEx } }
+LIBEXP exDirectDrawEnumerateA() { _asm { JMP pDirectDrawEnumerateA } }
+LIBEXP exDirectDrawEnumerateExA() { _asm { JMP pDirectDrawEnumerateExA } }
+LIBEXP exDirectDrawEnumerateExW() { _asm { JMP pDirectDrawEnumerateExW } }
+LIBEXP exDirectDrawEnumerateW() { _asm { JMP pDirectDrawEnumerateW } }
+LIBEXP exDllCanUnloadNow() { _asm { JMP pDllCanUnloadNow } }
+LIBEXP exDllGetClassObject() { _asm { JMP pDllGetClassObject } }
+LIBEXP exGetDDSurfaceLocal() { _asm { JMP pGetDDSurfaceLocal } }
+LIBEXP exGetOLEThunkData() { _asm { JMP pGetOLEThunkData } }
+LIBEXP exGetSurfaceFromDC() { _asm { JMP pGetSurfaceFromDC } }
+LIBEXP exRegisterSpecialCase() { _asm { JMP pRegisterSpecialCase } }
+LIBEXP exReleaseDDThreadLock() { _asm { JMP pReleaseDDThreadLock } }
+LIBEXP exSetAppCompatData() { _asm { JMP pSetAppCompatData } }
 
 double __cdecl round(double number)
 {
@@ -251,8 +251,8 @@ VOID LoadDDraw()
 			pDirectDrawEnumerateExA = (DWORD)GetProcAddress(hLib, "DirectDrawEnumerateExA");
 			pDirectDrawEnumerateExW = (DWORD)GetProcAddress(hLib, "DirectDrawEnumerateExW");
 			pDirectDrawEnumerateW = (DWORD)GetProcAddress(hLib, "DirectDrawEnumerateW");
-			//pDllCanUnloadNow = (DWORD)GetProcAddress(hLib, "DllCanUnloadNow");
-			//pDllGetClassObject = (DWORD)GetProcAddress(hLib, "DllGetClassObject");
+			pDllCanUnloadNow = (DWORD)GetProcAddress(hLib, "DllCanUnloadNow");
+			pDllGetClassObject = (DWORD)GetProcAddress(hLib, "DllGetClassObject");
 			pGetDDSurfaceLocal = (DWORD)GetProcAddress(hLib, "GetDDSurfaceLocal");
 			pGetOLEThunkData = (DWORD)GetProcAddress(hLib, "GetOLEThunkData");
 			pGetSurfaceFromDC = (DWORD)GetProcAddress(hLib, "GetSurfaceFromDC");

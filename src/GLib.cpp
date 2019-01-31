@@ -377,6 +377,7 @@ namespace GL
 		{
 			glVersion = GL_VER_1_1;
 			glCapsMultitex = GLActiveTexture && GLMultiTexCoord2f;
+			glCapsBGR = FALSE;
 		}
 	}
 

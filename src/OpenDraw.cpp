@@ -33,6 +33,9 @@
 #include "CommCtrl.h"
 #include "TextRenderer.h"
 
+#define MIN_WIDTH 240
+#define MIN_HEIGHT 180
+
 #pragma region Not Implemented
 ULONG OpenDraw::AddRef() { return 0; }
 HRESULT OpenDraw::Compact() { return DD_OK; }
@@ -70,6 +73,27 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return TRUE;
 		}
 		return NULL;
+	}
+
+	case WM_GETMINMAXINFO:
+	{
+		if (configDisplayWindowed)
+		{
+			RECT rect = { 0, 0, MIN_WIDTH, MIN_HEIGHT };
+			AdjustWindowRect(&rect, GetWindowLong(hWnd, GWL_STYLE), FALSE);
+
+			MINMAXINFO* mmi = (MINMAXINFO*)lParam;
+			mmi->ptMinTrackSize.x = rect.right - rect.left;
+			mmi->ptMinTrackSize.y = rect.bottom - rect.top;
+			mmi->ptMaxTrackSize.x = LONG_MAX >> 16;
+			mmi->ptMaxTrackSize.y = LONG_MAX >> 16;
+			mmi->ptMaxSize.x = LONG_MAX >> 16;
+			mmi->ptMaxSize.y = LONG_MAX >> 16;
+
+			return NULL;
+		}
+
+		return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
 	}
 
 	case WM_MOVE:
@@ -1050,6 +1074,8 @@ OpenDrawSurface* OpenDraw::PreRender()
 			this->textRenderer->DrawA(fpsText, this->hFontFps, RGB(255, 255, 0), RGB(0, 0, 0), &rcText, NULL, TR_LEFT | TR_TOP | TR_SHADOW);
 		}
 
+		this->CheckView();
+
 		// Check screenshot
 		if (this->isTakeSnapshot)
 		{
@@ -1099,8 +1125,6 @@ OpenDrawSurface* OpenDraw::PreRender()
 				CloseClipboard();
 			}
 		}
-
-		this->CheckView();
 	}
 
 	return surface;
@@ -1434,6 +1458,7 @@ VOID OpenDraw::CheckView()
 {
 	if (this->viewport.refresh)
 	{
+		this->viewport.refresh = FALSE;
 		this->CalcView();
 		GLViewport(this->viewport.rectangle.x, this->viewport.rectangle.y, this->viewport.rectangle.width, this->viewport.rectangle.height);
 
