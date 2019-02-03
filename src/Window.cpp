@@ -108,8 +108,6 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG:
 	{
-		SetWindowText(hDlg, "Legacy of Kain Settings");
-
 		RECT rectDlg;
 		GetWindowRect(hDlg, &rectDlg);
 
@@ -324,6 +322,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 		}
 
+		// Languages
 		{
 			CHAR iniFile[MAX_PATH];
 			StrPrint(iniFile, "%s\\LOCALE.INI", kainDirPath);
@@ -602,8 +601,6 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					AL::Free();
 			}
 
-			configOtherXboxConfig = Config::Get(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, TRUE);
-
 			EndDialog(hDlg, LOWORD(wParam));
 			break;
 		}
@@ -845,7 +842,74 @@ namespace Hooks
 			configOther3DSound = Config::Get(CONFIG_OTHER, CONFIG_OTHER_3D_SOUND, TRUE);
 			if (configOther3DSound && !AL::Load())
 				configOther3DSound = FALSE;
+
+			// Languages
+			{
+				CHAR iniFile[MAX_PATH];
+				StrPrint(iniFile, "%s\\LOCALE.INI", kainDirPath);
+
+				langIndexesCount = GetPrivateProfileInt("LOCALE", "Languages", 0, iniFile);
+				if (langIndexesCount)
+				{
+					configLangVoices = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_VOICES, 0);
+					configLangInterface = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_INTERFACE, 0);
+					configLangSubtitles = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_SUBTITLES, 0);
+
+					CHAR langKey[16];
+					CHAR langName[64];
+					CHAR langFile[MAX_PATH];
+					for (INT i = 0; i < (INT)langIndexesCount; ++i)
+					{
+						if (i == configLangVoices || i == configLangInterface || i == configLangSubtitles)
+						{
+							StrPrint(langKey, "LANG_%d", i);
+							if (GetPrivateProfileString(langKey, "Name", "", langName, sizeof(langName) - 1, iniFile))
+							{
+								CHAR langFileName[MAX_PATH];
+								if (i == configLangVoices && GetPrivateProfileString(langKey, "VoicesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								{
+									StrPrint(langFile, "%s\\%s", kainDirPath, langFileName);
+
+									FILE* hFile = FileOpen(langFile, "rb");
+									if (hFile)
+									{
+										FileClose(hFile);
+										StrCopy(langFiles.voicesFile, langFile);
+									}
+								}
+
+								if (i == configLangInterface && GetPrivateProfileString(langKey, "InterfaceFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								{
+									StrPrint(langFile, "%s\\%s", kainDirPath, langFileName);
+
+									FILE* hFile = FileOpen(langFile, "rb");
+									if (hFile)
+									{
+										FileClose(hFile);
+										StrCopy(langFiles.interfaceFile, langFile);
+									}
+								}
+
+								if (i == configLangSubtitles && GetPrivateProfileString(langKey, "SubtitlesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								{
+									StrPrint(langFile, "%s\\%s", kainDirPath, langFileName);
+
+									FILE* hFile = FileOpen(langFile, "rb");
+									if (hFile)
+									{
+										FileClose(hFile);
+										StrCopy(langFiles.subtitlesFile, langFile);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
+
+		// xBox gamepad
+		configOtherXboxConfig = Config::Get(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, TRUE);
 
 		PatchFunction("GetActiveWindow", GetActiveWindowHook);
 		PatchFunction("MessageBoxA", MessageBoxHook);

@@ -223,7 +223,7 @@ VOID __stdcall ChangeIconIndex(DWORD index, DWORD* position)
 		pos.y = 12 * (index / 16) + 171 + 256;
 	}
 
-	*position = pos.x | (pos.y << 16);
+	*position = MAKELONG(pos.x, pos.y);
 }
 
 DWORD back_00414478 = 0x00414478;

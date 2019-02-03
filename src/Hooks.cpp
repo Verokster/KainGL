@@ -209,6 +209,11 @@ namespace Hooks
 
 	VOID Start()
 	{
+		LoadXInput();
+		LoadGdi32();
+		LoadUnicoWS();
+		LoadDwmAPI();
+		// -------------
 		GL::Load();
 		// -------------
 		Patch_Window();

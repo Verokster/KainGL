@@ -62,16 +62,12 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		LoadMsvCRT();
 		LoadDDraw();
-		LoadXInput();
-
+		
 		hDllModule = hModule;
 		if (Hooks::Load())
 		{
 			LoadKernel32();
-			LoadGdi32();
-			LoadUnicoWS();
-			LoadDwmAPI();
-
+			
 			OldWindowKeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, WindowKeyHook, NULL, 0);
 
 			{

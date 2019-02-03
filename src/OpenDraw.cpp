@@ -412,7 +412,7 @@ LRESULT __stdcall PanelProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
-VOID __fastcall UseShaderProgram(ShaderProgram* program, FLOAT texSize)
+VOID __fastcall UseShaderProgram(ShaderProgram* program, DWORD texSize)
 {
 	if (!program->id)
 	{
@@ -441,7 +441,7 @@ VOID __fastcall UseShaderProgram(ShaderProgram* program, FLOAT texSize)
 
 		GLint loc = GLGetUniformLocation(program->id, "texSize");
 		if (loc >= 0)
-			GLUniform2f(loc, texSize, texSize);
+			GLUniform2f(loc, (FLOAT)texSize, (FLOAT)texSize);
 	}
 	else
 		GLUseProgram(program->id);
