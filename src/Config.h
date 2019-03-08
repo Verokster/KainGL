@@ -51,7 +51,7 @@
 
 #define CONFIG_CAMERA "CAMERA"
 #define CONFIG_CAMERA_STATIC "StaticCamera"
-#define CONFIG_CAMERA_ZOOMED "StaticCamera"
+#define CONFIG_CAMERA_ZOOMED "ZoomedCamera"
 
 #define CONFIG_OTHER "OTHER"
 #define CONFIG_OTHER_3D_SOUND "3dSound"
