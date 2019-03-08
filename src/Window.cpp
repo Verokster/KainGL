@@ -78,7 +78,7 @@ CHAR* GLInit(CHAR*(*callback)())
 				if (WGLMakeCurrent(hDc, hRc))
 				{
 					GL::CreateContextAttribs(hDc, &hRc);
-					
+
 					if (callback)
 						res = callback();
 
@@ -100,6 +100,36 @@ CHAR* GLInit(CHAR*(*callback)())
 CHAR* GetRenderer()
 {
 	return GLGetString ? StrDuplicate((const CHAR*)GLGetString(GL_RENDERER)) : NULL;
+}
+
+VOID __fastcall CheckGamepadConnected(HWND hDlg)
+{
+	BOOL devConnected = FALSE;
+	if (InputGetState)
+	{
+		for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
+		{
+			XINPUT_STATE xstate;
+			if (InputGetState(i, &xstate) == ERROR_SUCCESS)
+			{
+				devConnected = TRUE;
+				break;
+			}
+		}
+	}
+
+	HWND hCheck = GetDlgItem(hDlg, IDC_CHECK_FORCE_FEEDBACK);
+	LONG dwStyle = GetWindowLong(hCheck, GWL_STYLE);
+	if (devConnected)
+	{
+		SendDlgItemMessage(hDlg, IDC_CHECK_FORCE_FEEDBACK, BM_SETCHECK, configOtherForceFeedback ? BST_CHECKED : BST_UNCHECKED, NULL);
+		SetWindowLong(hCheck, GWL_STYLE, dwStyle & ~WS_DISABLED);
+	}
+	else
+	{
+		SendDlgItemMessage(hDlg, IDC_CHECK_FORCE_FEEDBACK, BM_SETCHECK, BST_UNCHECKED, NULL);
+		SetWindowLong(hCheck, GWL_STYLE, dwStyle | WS_DISABLED);
+	}
 }
 
 BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -304,8 +334,14 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		// Static camera
 		{
-			if (Config::Get(CONFIG_OTHER, CONFIG_OTHER_STATIC_CAMERA, FALSE))
+			if (Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_STATIC, FALSE))
 				SendDlgItemMessage(hDlg, IDC_CHECK_STATIC_CAMERA, BM_SETCHECK, BST_CHECKED, NULL);
+		}
+
+		// Zommed camera
+		{
+			if (Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_ZOOMED, FALSE))
+				SendDlgItemMessage(hDlg, IDC_CHECK_ZOOMED_CAMERA, BM_SETCHECK, BST_CHECKED, NULL);
 		}
 
 		// 3D audio
@@ -320,6 +356,12 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				HWND hCheck = GetDlgItem(hDlg, IDC_CHECK_3D_SOUND);
 				SetWindowLong(hCheck, GWL_STYLE, GetWindowLong(hCheck, GWL_STYLE) | WS_DISABLED);
 			}
+		}
+
+		// Force feedback
+		{
+			configOtherForceFeedback = Config::Get(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, TRUE);
+			CheckGamepadConnected(hDlg);
 		}
 
 		// Languages
@@ -407,6 +449,12 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 		return TRUE;
+	}
+
+	case WM_DEVICECHANGE:
+	{
+		CheckGamepadConnected(hDlg);
+		return DefWindowProc(hDlg, uMsg, wParam, lParam);
 	}
 
 	case WM_COMMAND:
@@ -584,8 +632,15 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			// Static camera
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_STATIC_CAMERA, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
-				if (Config::Set(CONFIG_OTHER, CONFIG_OTHER_STATIC_CAMERA, val))
-					*configOtherStaticCamera = val;
+				if (Config::Set(CONFIG_CAMERA, CONFIG_CAMERA_STATIC, val))
+					*configCameraStatic = val;
+			}
+
+			// Zommed camera
+			{
+				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_ZOOMED_CAMERA, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
+				if (Config::Set(CONFIG_CAMERA, CONFIG_CAMERA_ZOOMED, val))
+					configCameraZoomed = val;
 			}
 
 			// 3D audio
@@ -599,6 +654,16 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 				if (!configOther3DSound)
 					AL::Free();
+			}
+
+			// Force feedback
+			{
+				if (!(GetWindowLong(GetDlgItem(hDlg, IDC_CHECK_FORCE_FEEDBACK), GWL_STYLE) & WS_DISABLED))
+				{
+					BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_FORCE_FEEDBACK, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
+					if (Config::Set(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, val))
+						configOtherForceFeedback = val;
+				}
 			}
 
 			EndDialog(hDlg, LOWORD(wParam));
@@ -836,12 +901,18 @@ namespace Hooks
 			configVideoSmoother = Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SMOOTHER, TRUE);
 
 			// Static camera
-			*configOtherStaticCamera = Config::Get(CONFIG_OTHER, CONFIG_OTHER_STATIC_CAMERA, FALSE);
+			*configCameraStatic = Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_STATIC, FALSE);
+
+			// Zommed camera
+			configCameraZoomed = Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_ZOOMED, TRUE);
 
 			// 3D audio
 			configOther3DSound = Config::Get(CONFIG_OTHER, CONFIG_OTHER_3D_SOUND, TRUE);
 			if (configOther3DSound && !AL::Load())
 				configOther3DSound = FALSE;
+
+			// Force feedback
+			configOtherForceFeedback = Config::Get(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, TRUE);
 
 			// Languages
 			{

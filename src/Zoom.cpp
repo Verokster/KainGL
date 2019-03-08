@@ -24,6 +24,7 @@
 
 #include "stdafx.h"
 #include "Hooks.h"
+#include "Config.h"
 
 #define NORMAL_SCALE 4096
 #define LARGE_SCALE 4096
@@ -45,7 +46,7 @@ DWORD* shiftTile = (DWORD*)0x008E2B9C;
 VOID __cdecl CheckZoom(DWORD flag)
 {
 	if (flag && !*scale)
-		*scale = LARGE_SCALE;
+		*scale = !configCameraZoomed ? SMALL_SCALE : LARGE_SCALE;
 
 	if (flag == 1)
 		*advScale = *flagHires ? SMALL_SCALE : LARGE_SCALE;

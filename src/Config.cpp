@@ -47,9 +47,12 @@ INT configLangVoices;
 INT configLangInterface;
 INT configLangSubtitles;
 
-BOOL* configOtherStaticCamera;
+BOOL* configCameraStatic;
+BOOL configCameraZoomed;
+
 BOOL configOther3DSound;
 BOOL configOtherXboxConfig;
+BOOL configOtherForceFeedback;
 
 BOOL configSingleThread;
 

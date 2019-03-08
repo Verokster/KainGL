@@ -49,10 +49,14 @@
 #define CONFIG_LANGUAGE_INTERFACE "Interface"
 #define CONFIG_LANGUAGE_SUBTITLES "Subtitles"
 
+#define CONFIG_CAMERA "CAMERA"
+#define CONFIG_CAMERA_STATIC "StaticCamera"
+#define CONFIG_CAMERA_ZOOMED "StaticCamera"
+
 #define CONFIG_OTHER "OTHER"
-#define CONFIG_OTHER_STATIC_CAMERA "StaticCamera"
 #define CONFIG_OTHER_3D_SOUND "3dSound"
 #define CONFIG_OTHER_XBOX_CONFIG "XboxConfig"
+#define CONFIG_OTHER_FORCE_FEEDBACK "ForceFeedback"
 
 extern TCHAR iniFile[];
 
@@ -75,9 +79,12 @@ extern INT configLangVoices;
 extern INT configLangInterface;
 extern INT configLangSubtitles;
 
-extern BOOL* configOtherStaticCamera;
+extern BOOL* configCameraStatic;
+extern BOOL configCameraZoomed;
+
 extern BOOL configOther3DSound;
 extern BOOL configOtherXboxConfig;
+extern BOOL configOtherForceFeedback;
 
 extern BOOL configSingleThread;
 

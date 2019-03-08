@@ -247,7 +247,8 @@ namespace Hooks
 	BOOL Load()
 	{
 		headDOS = (PIMAGE_DOS_HEADER)GetModuleHandle(NULL);
-		baseOffset = (INT)headDOS - 0x00400000;
+		PIMAGE_NT_HEADERS headNT = (PIMAGE_NT_HEADERS)((BYTE*)headDOS + headDOS->e_lfanew);
+		baseOffset = (INT)headDOS - (INT)headNT->OptionalHeader.ImageBase;
 
 		DWORD check;
 		if (ReadDWord(0x0045F5DA + 1, &check) && check == WS_POPUP)
@@ -258,7 +259,7 @@ namespace Hooks
 				p = kainDirPath;
 			StrCopy(p, "\\KAIN");
 
-			configOtherStaticCamera = (BOOL*)(0x005947CC + baseOffset);
+			configCameraStatic = (BOOL*)(0x005947CC + baseOffset);
 
 			PatchHook(0x0046841E, hook_0046841E);
 			back_0046B6AC += baseOffset;

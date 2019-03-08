@@ -24,6 +24,7 @@
 
 #include "stdafx.h"
 #include "Vibration.h"
+#include "Config.h"
 
 struct {
 	FLOAT left;
@@ -34,6 +35,9 @@ namespace Vibration
 {
 	VOID Set()
 	{
+		if (!configOtherForceFeedback)
+			return;
+
 		for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
 		{
 			if (xJoyListConnected[i] && xJoyListCheck[i])
