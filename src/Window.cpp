@@ -216,6 +216,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			resolutionsList = (Resolution*)MemoryAlloc(sizeof(Resolution) * RECOUNT);
+			MemoryZero(resolutionsList, sizeof(Resolution) * RECOUNT);
 
 			DEVMODE devMode;
 			MemoryZero(&devMode, sizeof(DEVMODE));
@@ -500,7 +501,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						{
 							Resolution *res = &resolutionsList[val - 2];
 
-							DWORD val = (res->width & 0x7FFF) | ((res->height & 0x7FFF) << 15) | (((res->bpp >> 3) - 1) << 30);
+							val = (res->width & 0x7FFF) | ((res->height & 0x7FFF) << 15) | (((res->bpp >> 3) - 1) << 30);
 							if (val)
 							{
 								if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, val))
