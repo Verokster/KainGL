@@ -1012,6 +1012,14 @@ namespace Hooks
 			} while (--count);
 		}
 
+		HMODULE hLibrary = LoadLibrary("NTDLL.dll");
+		if (hLibrary)
+		{
+			if (GetProcAddress(hLibrary, "wine_get_version"))
+				configSingleWindow = TRUE;
+			FreeLibrary(hLibrary);
+		}
+
 		DEVMODE devMode;
 		MemoryZero(&devMode, sizeof(DEVMODE));
 		devMode.dmSize = sizeof(DEVMODE);

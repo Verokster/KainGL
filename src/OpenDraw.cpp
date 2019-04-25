@@ -99,7 +99,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_MOVE:
 	{
 		OpenDraw* ddraw = ddrawList;
-		if (ddraw && ddraw->hDraw)
+		if (ddraw && ddraw->hDraw && !configSingleWindow)
 		{
 			if (!configDisplayWindowed)
 			{
@@ -127,7 +127,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		OpenDraw* ddraw = ddrawList;
 		if (ddraw)
 		{
-			if (ddraw->hDraw)
+			if (ddraw->hDraw && !configSingleWindow)
 				SetWindowPos(ddraw->hDraw, NULL, 0, 0, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), SWP_NOZORDER | SWP_NOMOVE | SWP_NOREDRAW | SWP_NOREPOSITION | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
 
 			if (ddraw->virtualMode)
@@ -496,56 +496,57 @@ VOID OpenDraw::RenderStart()
 	RECT rect;
 	GetClientRect(this->hWnd, &rect);
 
-	if (!configDisplayWindowed)
-	{
-		this->hDraw = CreateWindowEx(
-			WS_EX_CONTROLPARENT | WS_EX_TOPMOST,
-			WC_DRAW,
-			NULL,
-			WS_VISIBLE | WS_POPUP,
-			rect.left, rect.top,
-			rect.right - rect.left, rect.bottom - rect.top,
-			this->hWnd,
-			NULL,
-			hDllModule,
-			NULL);
-	}
+	if (configSingleWindow)
+		this->hDraw = this->hWnd;
 	else
 	{
-		this->hDraw = CreateWindowEx(
-			WS_EX_CONTROLPARENT,
-			WC_DRAW,
-			NULL,
-			WS_VISIBLE | WS_CHILD,
-			rect.left, rect.top,
-			rect.right - rect.left, rect.bottom - rect.top,
-			this->hWnd,
-			NULL,
-			hDllModule,
-			NULL);
-	}
+		if (!configDisplayWindowed)
+		{
+			this->hDraw = CreateWindowEx(
+				WS_EX_CONTROLPARENT | WS_EX_TOPMOST,
+				WC_DRAW,
+				NULL,
+				WS_VISIBLE | WS_POPUP,
+				rect.left, rect.top,
+				rect.right - rect.left, rect.bottom - rect.top,
+				this->hWnd,
+				NULL,
+				hDllModule,
+				NULL);
+		}
+		else
+		{
+			this->hDraw = CreateWindowEx(
+				WS_EX_CONTROLPARENT,
+				WC_DRAW,
+				NULL,
+				WS_VISIBLE | WS_CHILD,
+				rect.left, rect.top,
+				rect.right - rect.left, rect.bottom - rect.top,
+				this->hWnd,
+				NULL,
+				hDllModule,
+				NULL);
+		}
 
-	if (this->hDraw)
-	{
 		OldPanelProc = (WNDPROC)SetWindowLongPtr(this->hDraw, GWLP_WNDPROC, (LONG_PTR)PanelProc);
 
 		SetClassLongPtr(this->hDraw, GCLP_HBRBACKGROUND, NULL);
 		RedrawWindow(this->hDraw, NULL, NULL, RDW_INVALIDATE);
-		SetClassLongPtr(this->hWnd, GCLP_HBRBACKGROUND, NULL);
-		RedrawWindow(this->hWnd, NULL, NULL, RDW_INVALIDATE);
-
-		this->viewport.width = rect.right - rect.left;
-		this->viewport.height = rect.bottom - rect.top;
-		this->viewport.refresh = TRUE;
-		this->isStateChanged = TRUE;
-
-		if (configSingleThread)
-			this->RenderStartInternal();
-		else
-			this->hDrawThread = CreateThread(NULL, NULL, RenderThread, this, NORMAL_PRIORITY_CLASS, NULL);
 	}
+
+	SetClassLongPtr(this->hWnd, GCLP_HBRBACKGROUND, NULL);
+	RedrawWindow(this->hWnd, NULL, NULL, RDW_INVALIDATE);
+
+	this->viewport.width = rect.right - rect.left;
+	this->viewport.height = rect.bottom - rect.top;
+	this->viewport.refresh = TRUE;
+	this->isStateChanged = TRUE;
+
+	if (configSingleThread)
+		this->RenderStartInternal();
 	else
-		this->isFinish = TRUE;
+		this->hDrawThread = CreateThread(NULL, NULL, RenderThread, this, NORMAL_PRIORITY_CLASS, NULL);
 }
 
 VOID OpenDraw::RenderStop()
@@ -565,11 +566,14 @@ VOID OpenDraw::RenderStop()
 		this->hDrawThread = NULL;
 	}
 
-	if (DestroyWindow(this->hDraw))
-		this->hDraw = NULL;
+	if (!configSingleWindow)
+	{
+		if (DestroyWindow(this->hDraw))
+			this->hDraw = NULL;
 
-	if (!configDisplayWindowed)
-		GL::ResetContext();
+		if (!configDisplayWindowed)
+			GL::ResetContext();
+	}
 
 	ClipCursor(NULL);
 }
