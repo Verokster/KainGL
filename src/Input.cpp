@@ -72,8 +72,11 @@ MMRESULT __stdcall joyGetPosHook(UINT uJoyID, LPJOYINFO pji)
 		}
 		else
 		{
-			DWORD g = (DWORD)MathSqrt(DOUBLE(state.Gamepad.sThumbLX * state.Gamepad.sThumbLX + state.Gamepad.sThumbLY * state.Gamepad.sThumbLY));
-			if (g >= 22938) // 70%
+			DOUBLE dist = DOUBLE(state.Gamepad.sThumbLX * state.Gamepad.sThumbLX + state.Gamepad.sThumbLY * state.Gamepad.sThumbLY);
+			if (dist < 0.0)
+				dist = -dist;
+			dist = MathSqrt(dist);
+			if (dist >= 22938.0) // 70%
 			{
 				INT agl = (INT)MathFloor(MathAtan2((DOUBLE)state.Gamepad.sThumbLY, (DOUBLE)state.Gamepad.sThumbLX) * 8.0f / M_PI) + 8;
 				switch (agl)
