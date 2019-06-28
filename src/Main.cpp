@@ -23,8 +23,6 @@
 */
 
 #include "stdafx.h"
-#include "stdio.h"
-#include "math.h"
 #include "OpenDraw.h"
 #include "OpenSound.h"
 #include "DirectSound.h"

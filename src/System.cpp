@@ -67,7 +67,7 @@ namespace Hooks
 			{
 				CHAR* path = (CHAR*)lpData;
 				GetModuleFileName(NULL, path, *lpcbData - 1);
-				CHAR* p = StrRightChar(path, '\\');
+				CHAR* p = StrLastChar(path, '\\');
 				if (!p)
 					p = path;
 				StrCopy(p, "\\SAVED");

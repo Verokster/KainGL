@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-	<VCProjectVersion>16.0</VCProjectVersion>
+    <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{5E8DD992-42B3-4645-9810-E4D7D7FB3096}</ProjectGuid>
     <RootNamespace>THRASH</RootNamespace>
     <ProjectName>KainGL</ProjectName>
@@ -53,13 +53,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;$(IncludePath)</IncludePath>
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>D:\Work\KainGL\Lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <GenerateManifest>false</GenerateManifest>
-    <LibraryPath>D:\Work\KainGL\Lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
     <IncludePath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -85,6 +85,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -99,12 +100,13 @@
       <SectionAlignment>
       </SectionAlignment>
       <AssemblyDebug>true</AssemblyDebug>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;advapi32.lib;comctl32.lib;ucrt.lib;vcruntime.lib;msvcrt.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comctl32.lib;crt.lib;ucrt.lib;vcruntime.lib;msvcrt.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <OutputFile>D:\Games\KAIN\ddraw.dll</OutputFile>
       <EntryPointSymbol>DllMain</EntryPointSymbol>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -141,10 +143,11 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ErrorReporting>None</ErrorReporting>
       <OptimizeForWindowsApplication>true</OptimizeForWindowsApplication>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile />
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;advapi32.lib;comctl32.lib;msvcrt.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comctl32.lib;crt.lib;msvcrt.lib</AdditionalDependencies>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AssemblyDebug>false</AssemblyDebug>
       <BaseAddress>0x60000000</BaseAddress>

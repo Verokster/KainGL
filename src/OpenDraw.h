@@ -45,7 +45,6 @@ public:
 	OpenDrawSurface* attachedSurface;
 
 	HWND hWnd;
-	HWND hDraw;
 	HDC hDc;
 	HGLRC hRc;
 	DisplayMode* virtualMode;

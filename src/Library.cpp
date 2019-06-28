@@ -34,8 +34,8 @@ namespace Hooks
 		PatchFunction("DirectDrawCreate", Main::DirectDrawCreate);
 		DSCreate = (DIRECTSOUNDCREATE)PatchFunction("DirectSoundCreate", Main::DirectSoundCreate);
 
-		PatchHook(0x0046F680, MemorySet);
-		PatchHook(0x0046F64D, MemoryCopy);
-		PatchHook(0x0046FBD6, MemoryCompare);
+		PatchHook(0x0046F680, (VOID*)memset);
+		PatchHook(0x0046F64D, (VOID*)memcpy);
+		PatchHook(0x0046FBD6, (VOID*)memcmp);
 	}
 }

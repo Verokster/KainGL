@@ -43,7 +43,7 @@ LRESULT __stdcall WindowKeyHook(INT nCode, WPARAM wParam, LPARAM lParam)
 			HWND hWnd = GetActiveWindow();
 
 			OpenDraw* ddraw = ddrawList;
-			if (ddraw && (ddraw->hWnd == hWnd || ddraw->hDraw == hWnd) && !configDisplayWindowed)
+			if (ddraw && ddraw->hWnd == hWnd && !configDisplayWindowed)
 			{
 				ddraw->isTakeSnapshot = TRUE;
 				Main::SetSyncDraw();
@@ -60,7 +60,6 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
-		LoadMsvCRT();
 		LoadDDraw();
 		
 		hDllModule = hModule;

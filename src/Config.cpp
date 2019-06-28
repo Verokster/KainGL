@@ -55,7 +55,6 @@ BOOL configOtherXboxConfig;
 BOOL configOtherForceFeedback;
 
 BOOL configSingleThread;
-BOOL configSingleWindow;
 
 namespace Config
 {

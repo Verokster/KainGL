@@ -214,8 +214,6 @@ namespace Hooks
 		LoadUnicoWS();
 		LoadDwmAPI();
 		// -------------
-		GL::Load();
-		// -------------
 		Patch_Window();
 		// -------------
 		Patch_Library();
@@ -254,7 +252,7 @@ namespace Hooks
 		if (ReadDWord(0x0045F5DA + 1, &check) && check == WS_POPUP)
 		{
 			GetModuleFileName(NULL, kainDirPath, sizeof(kainDirPath) - 1);
-			CHAR* p = StrRightChar(kainDirPath, '\\');
+			CHAR* p = StrLastChar(kainDirPath, '\\');
 			if (!p)
 				p = kainDirPath;
 			StrCopy(p, "\\KAIN");

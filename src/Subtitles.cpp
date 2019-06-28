@@ -40,9 +40,9 @@ CHAR fontFiles[2][MAX_PATH];
 
 VOID __stdcall CheckPlay(CHAR* fileName)
 {
-	CHAR* ptr = StrRightChar(fileName, '/');
+	CHAR* ptr = StrLastChar(fileName, '/');
 	if (!ptr)
-		ptr = StrRightChar(fileName, '\\');
+		ptr = StrLastChar(fileName, '\\');
 
 	if (ptr)
 		++ptr;
@@ -52,7 +52,7 @@ VOID __stdcall CheckPlay(CHAR* fileName)
 	CHAR soundFileName[16];
 	StrCopy(soundFileName, ptr);
 
-	ptr = StrRightChar(soundFileName, '.');
+	ptr = StrLastChar(soundFileName, '.');
 	if (ptr)
 		*ptr = NULL;
 

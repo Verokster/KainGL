@@ -87,7 +87,6 @@ extern BOOL configOtherXboxConfig;
 extern BOOL configOtherForceFeedback;
 
 extern BOOL configSingleThread;
-extern BOOL configSingleWindow;
 
 namespace Config
 {

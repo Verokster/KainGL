@@ -30,13 +30,9 @@
 #define PREFIX_GL "gl"
 #define PREFIX_WGL "wgl"
 
-WGLGETPROCADDRESS WGLGetProcAddress;
-WGLMAKECURRENT WGLMakeCurrent;
-WGLCREATECONTEXT WGLCreateContext;
-WGLDELETECONTEXT WGLDeleteContext;
 WGLCREATECONTEXTATTRIBS WGLCreateContextAttribs;
 WGLCHOOSEPIXELFORMAT WGLChoosePixelFormat;
-//WGLGETEXTENSIONSSTRING WGLGetExtensionsString;
+WGLGETEXTENSIONSSTRING WGLGetExtensionsString;
 WGLSWAPINTERVAL WGLSwapInterval;
 
 GLGETSTRING GLGetString;
@@ -114,35 +110,10 @@ DWORD glVersion;
 DWORD glCapsClampToEdge;
 BOOL glCapsMultitex;
 BOOL glCapsBGR;
-INT glCapsVSync;
+BOOL glCapsVSync;
 
 namespace GL
 {
-	BOOL __fastcall Load()
-	{
-		if (hGLModule)
-			return TRUE;
-
-		if (!hGLModule)
-			hGLModule = LoadLibrary("OPENGL32.dll");
-
-		if (!hGLModule)
-			return FALSE;
-
-		WGLGetProcAddress = (WGLGETPROCADDRESS)GetProcAddress(hGLModule, "wglGetProcAddress");
-		WGLMakeCurrent = (WGLMAKECURRENT)GetProcAddress(hGLModule, "wglMakeCurrent");
-		WGLCreateContext = (WGLCREATECONTEXT)GetProcAddress(hGLModule, "wglCreateContext");
-		WGLDeleteContext = (WGLDELETECONTEXT)GetProcAddress(hGLModule, "wglDeleteContext");
-
-		return TRUE;
-	}
-
-	VOID __fastcall Free()
-	{
-		if (hGLModule && FreeLibrary(hGLModule))
-			hGLModule = NULL;
-	}
-
 	VOID __fastcall LoadFunction(CHAR* buffer, const CHAR* prefix, const CHAR* name, PROC* func, const CHAR* sufix = NULL)
 	{
 		if (*func)
@@ -154,11 +125,13 @@ namespace GL
 		if (sufix)
 			StrCat(buffer, sufix);
 
-		if (WGLGetProcAddress)
-			*func = WGLGetProcAddress(buffer);
-
+		*func = wglGetProcAddress(buffer);
 		if ((INT)*func >= -1 && (INT)*func <= 3)
+		{
+			if (!hGLModule)
+				hGLModule = GetModuleHandle("OPENGL32.dll");
 			*func = GetProcAddress(hGLModule, buffer);
+		}
 
 		if (!sufix)
 		{
@@ -179,8 +152,8 @@ namespace GL
 		HGLRC hRc = WGLCreateContextAttribs(hDc, NULL, wglAttributes);
 		if (hRc)
 		{
-			WGLMakeCurrent(hDc, hRc);
-			WGLDeleteContext(*lpHRc);
+			wglMakeCurrent(hDc, hRc);
+			wglDeleteContext(*lpHRc);
 			*lpHRc = hRc;
 
 			return TRUE;
@@ -221,7 +194,7 @@ namespace GL
 			}
 		}
 
-		//LoadFunction(buffer, PREFIX_WGL, "GetExtensionsString", (PROC*)&WGLGetExtensionsString, "EXT");
+		LoadFunction(buffer, PREFIX_WGL, "GetExtensionsString", (PROC*)&WGLGetExtensionsString, "EXT");
 		LoadFunction(buffer, PREFIX_WGL, "SwapInterval", (PROC*)&WGLSwapInterval, "EXT");
 
 		LoadFunction(buffer, PREFIX_GL, "GetString", (PROC*)&GLGetString);
@@ -364,14 +337,7 @@ namespace GL
 			if (glVersion < GL_VER_1_2)
 				glCapsBGR = StrStr(glExtensions, "GL_EXT_bgr") != NULL;
 
-			/*if (WGLGetExtensionsString)
-			{
-				const CHAR* glExtensions = WGLGetExtensionsString();
-				if (WGLSwapInterval && StrStr(glExtensions, "WGL_EXT_swap_control"))
-					glCapsVSync = StrStr(glExtensions, "WGL_EXT_swap_control_tear") ? -1 : 1;
-			}
-			else*/
-				glCapsVSync = WGLSwapInterval ? 1 : 0;
+			glCapsVSync = WGLGetExtensionsString && StrStr(WGLGetExtensionsString(), "WGL_EXT_swap_control") || WGLSwapInterval;
 		}
 		else
 		{
@@ -424,8 +390,7 @@ namespace GL
 			NULL,
 			NULL,
 			hDllModule,
-			NULL
-		);
+			NULL);
 
 		if (hWnd)
 		{
@@ -435,10 +400,10 @@ namespace GL
 				res = ChoosePixelFormat(hDc, pfd);
 				if (res && ::SetPixelFormat(hDc, res, pfd))
 				{
-					HGLRC hRc = WGLCreateContext(hDc);
+					HGLRC hRc = wglCreateContext(hDc);
 					if (hRc)
 					{
-						if (WGLMakeCurrent(hDc, hRc))
+						if (wglMakeCurrent(hDc, hRc))
 						{
 							CHAR buffer[32];
 							LoadFunction(buffer, PREFIX_WGL, "ChoosePixelFormat", (PROC*)&WGLChoosePixelFormat, "ARB");
@@ -462,10 +427,10 @@ namespace GL
 									res = piFormats[0];
 							}
 
-							WGLMakeCurrent(hDc, NULL);
+							wglMakeCurrent(hDc, NULL);
 						}
 
-						WGLDeleteContext(hRc);
+						wglDeleteContext(hRc);
 					}
 				}
 
@@ -480,24 +445,27 @@ namespace GL
 
 	VOID __fastcall SetPixelFormat(HDC hDc)
 	{
-		PIXELFORMATDESCRIPTOR pfd;
-		INT glPixelFormat = GL::PreparePixelFormat(&pfd);
-		if (!glPixelFormat)
+		if (!::GetPixelFormat(hDc))
 		{
-			glPixelFormat = ::ChoosePixelFormat(hDc, &pfd);
+			PIXELFORMATDESCRIPTOR pfd;
+			INT glPixelFormat = GL::PreparePixelFormat(&pfd);
 			if (!glPixelFormat)
-				Main::ShowError("ChoosePixelFormat failed", __FILE__, __LINE__);
+			{
+				glPixelFormat = ::ChoosePixelFormat(hDc, &pfd);
+				if (!glPixelFormat)
+					Main::ShowError("ChoosePixelFormat failed", __FILE__, __LINE__);
+			}
+
+			if (!::SetPixelFormat(hDc, glPixelFormat, &pfd))
+				Main::ShowError("SetPixelFormat failed", __FILE__, __LINE__);
+
+			GL::ResetPixelFormatDescription(&pfd);
+			if (!::DescribePixelFormat(hDc, glPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd))
+				Main::ShowError("DescribePixelFormat failed", __FILE__, __LINE__);
+
+			if (pfd.iPixelType != PFD_TYPE_RGBA || pfd.cRedBits < 5 || pfd.cGreenBits < 5 || pfd.cBlueBits < 5)
+				Main::ShowError("Bad pixel type", __FILE__, __LINE__);
 		}
-
-		if (!::SetPixelFormat(hDc, glPixelFormat, &pfd))
-			Main::ShowError("SetPixelFormat failed", __FILE__, __LINE__);
-
-		GL::ResetPixelFormatDescription(&pfd);
-		if (!::DescribePixelFormat(hDc, glPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd))
-			Main::ShowError("DescribePixelFormat failed", __FILE__, __LINE__);
-
-		if (pfd.iPixelType != PFD_TYPE_RGBA || pfd.cRedBits < 5 || pfd.cGreenBits < 5 || pfd.cBlueBits < 5)
-			Main::ShowError("Bad pixel type", __FILE__, __LINE__);
 	}
 
 	GLuint __fastcall CompileShaderSource(DWORD name, GLenum type)
@@ -538,23 +506,5 @@ namespace GL
 		}
 
 		return shader;
-	}
-
-	DWORD __stdcall ResetThread(LPVOID lpParameter)
-	{
-		PIXELFORMATDESCRIPTOR pfd;
-		GL::PreparePixelFormat(&pfd);
-
-		return NULL;
-	}
-
-	VOID __fastcall ResetContext()
-	{
-		HANDLE hThread = CreateThread(NULL, NULL, ResetThread, NULL, NORMAL_PRIORITY_CLASS, NULL);
-		if (hThread)
-		{
-			WaitForSingleObject(hThread, INFINITE);
-			CloseHandle(hThread);
-		}
 	}
 }

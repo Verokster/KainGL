@@ -39,35 +39,6 @@ DWMISCOMPOSITIONENABLED IsDwmCompositionEnabled;
 ADDFONTRESOURCEEXA AddFontResourceC;
 REMOVEFONTRESOURCEEXA RemoveFontResourceC;
 
-MALLOC MemoryAlloc;
-FREE MemoryFree;
-MEMSET MemorySet;
-MEMCPY MemoryCopy;
-MEMCMP MemoryCompare;
-CEIL MathCeil;
-FLOOR MathFloor;
-ROUND MathRound;
-LOG10 MathLog10;
-SQRT MathSqrt;
-ATAN2 MathAtan2;
-SPRINTF StrPrint;
-STRSTR StrStr;
-STRCHR StrChar;
-STRCMP StrCompare;
-STRCPY StrCopy;
-STRCAT StrCat;
-STRDUP StrDuplicate;
-STRLEN StrLength;
-STRRCHR StrRightChar;
-FOPEN FileOpen;
-FCLOSE FileClose;
-FREAD FileRead;
-FWRITE FileWrite;
-FSEEK FileSeek;
-RAND Random;
-SRAND SeedRandom;
-EXIT Exit;
-
 XINPUTGETSTATE InputGetState;
 XINPUTSETSTATE InputSetState;
 XINPUTGETCAPABILITIES InputGetCapabilities;
@@ -122,9 +93,9 @@ LIBEXP exRegisterSpecialCase() { _asm { JMP pRegisterSpecialCase } }
 LIBEXP exReleaseDDThreadLock() { _asm { JMP pReleaseDDThreadLock } }
 LIBEXP exSetAppCompatData() { _asm { JMP pSetAppCompatData } }
 
-double __cdecl round(double number)
+DOUBLE __fastcall MathRound(DOUBLE number)
 {
-	double floorVal = MathFloor(number);
+	DOUBLE floorVal = MathFloor(number);
 	return floorVal + 0.5f > number ? floorVal : MathCeil(number);
 }
 
@@ -168,64 +139,6 @@ VOID LoadDwmAPI()
 	HMODULE hLib = LoadLibrary("DWMAPI.dll");
 	if (hLib)
 		IsDwmCompositionEnabled = (DWMISCOMPOSITIONENABLED)GetProcAddress(hLib, "DwmIsCompositionEnabled");
-}
-
-VOID LoadMsvCRT()
-{
-	HMODULE hLib = LoadLibrary("MSVCRT.dll");
-	if (hLib)
-	{
-		StrPrint = (SPRINTF)GetProcAddress(hLib, "sprintf");
-
-		CHAR libName[MAX_PATH];
-		for (DWORD i = 12; i >= 7; --i)
-		{
-			StrPrint(libName, "MSVCR%d0.dll", i);
-			HMODULE hCrtLib = LoadLibrary(libName);
-			if (hCrtLib)
-			{
-				FreeLibrary(hLib);
-				hLib = hCrtLib;
-				StrPrint = (SPRINTF)GetProcAddress(hLib, "sprintf");
-				break;
-			}
-		}
-
-		MemoryAlloc = (MALLOC)GetProcAddress(hLib, "malloc");
-		MemoryFree = (FREE)GetProcAddress(hLib, "free");
-		MemorySet = (MEMSET)GetProcAddress(hLib, "memset");
-		MemoryCopy = (MEMCPY)GetProcAddress(hLib, "memcpy");
-		MemoryCompare = (MEMCMP)GetProcAddress(hLib, "memcmp");
-
-		MathCeil = (CEIL)GetProcAddress(hLib, "ceil");
-		MathFloor = (FLOOR)GetProcAddress(hLib, "floor");
-		MathRound = (ROUND)GetProcAddress(hLib, "round");
-		if (!MathRound)
-			MathRound = round;
-		MathLog10 = (LOG10)GetProcAddress(hLib, "log10");
-		MathSqrt = (SQRT)GetProcAddress(hLib, "sqrt");
-		MathAtan2 = (ATAN2)GetProcAddress(hLib, "atan2");
-
-		StrStr = (STRSTR)GetProcAddress(hLib, "strstr");
-		StrChar = (STRCHR)GetProcAddress(hLib, "strchr");
-		StrCompare = (STRCMP)GetProcAddress(hLib, "strcmp");
-		StrCopy = (STRCPY)GetProcAddress(hLib, "strcpy");
-		StrCat = (STRCAT)GetProcAddress(hLib, "strcat");
-		StrDuplicate = (STRDUP)GetProcAddress(hLib, "_strdup");
-		StrLength = (STRLEN)GetProcAddress(hLib, "strlen");
-		StrRightChar = (STRRCHR)GetProcAddress(hLib, "strrchr");
-
-		FileOpen = (FOPEN)GetProcAddress(hLib, "fopen");
-		FileClose = (FCLOSE)GetProcAddress(hLib, "fclose");
-		FileRead = (FREAD)GetProcAddress(hLib, "fread");
-		FileWrite = (FWRITE)GetProcAddress(hLib, "fwrite");
-		FileSeek = (FSEEK)GetProcAddress(hLib, "fseek");
-
-		Random = (RAND)GetProcAddress(hLib, "rand");
-		SeedRandom = (SRAND)GetProcAddress(hLib, "srand");
-
-		Exit = (EXIT)GetProcAddress(hLib, "exit");
-	}
 }
 
 VOID LoadDDraw()

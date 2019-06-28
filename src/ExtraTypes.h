@@ -218,3 +218,11 @@ struct Strings
 	StringsItem strDevourerOfWorlds;
 	StringsItem strPage;
 };
+
+struct ModePtr {
+	BOOL* hiRes;
+	BOOL* hiColor;
+	BOOL* window;
+	BOOL* interlaced;
+	BOOL* upscale;
+};

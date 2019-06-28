@@ -24,12 +24,12 @@
 
 #pragma once
 #define WIN32_LEAN_AND_MEAN
+//#define WINVER 0x0400
 
 #include "windows.h"
-#include "stdlib.h"
-#include "stdio.h"
 #include "ExtraTypes.h"
-#include "Mmreg.h"
+#include "mmreg.h"
+#include "math.h"
 #include "dsound.h"
 #include "xinput.h"
 
@@ -125,65 +125,57 @@ typedef BOOL(__stdcall *REMOVEFONTRESOURCEEXA)(LPCSTR name, DWORD fl, PVOID pdv)
 extern ADDFONTRESOURCEEXA AddFontResourceC;
 extern REMOVEFONTRESOURCEEXA RemoveFontResourceC;
 
-typedef VOID*(__cdecl *MALLOC)(size_t);
-typedef VOID(__cdecl *FREE)(VOID*);
-typedef VOID*(__cdecl *MEMSET)(VOID*, INT, size_t);
-typedef VOID*(__cdecl *MEMCPY)(VOID*, const VOID*, size_t);
-typedef INT(__cdecl *MEMCMP)(const VOID*, const VOID*, size_t);
-typedef DOUBLE(__cdecl *CEIL)(DOUBLE);
-typedef DOUBLE(__cdecl *FLOOR)(DOUBLE);
-typedef DOUBLE(__cdecl *ROUND)(DOUBLE);
-typedef DOUBLE(__cdecl *LOG10)(DOUBLE);
-typedef DOUBLE(__cdecl *SQRT)(DOUBLE);
-typedef DOUBLE(__cdecl *ATAN2)(DOUBLE, DOUBLE);
-typedef INT(__cdecl *SPRINTF)(CHAR*, const CHAR*, ...);
-typedef CHAR*(__cdecl *STRSTR)(const CHAR*, const CHAR*);
-typedef CHAR*(__cdecl *STRCHR)(const CHAR*, INT);
-typedef INT(__cdecl *STRCMP)(const CHAR*, const CHAR*);
-typedef CHAR*(__cdecl *STRCPY)(CHAR*, const CHAR*);
-typedef CHAR*(__cdecl *STRCAT)(CHAR*, const CHAR*);
-typedef CHAR*(__cdecl *STRDUP)(const CHAR*);
-typedef size_t(__cdecl *STRLEN)(const CHAR*);
-typedef CHAR*(__cdecl *STRRCHR)(const CHAR*, INT);
-typedef FILE*(__cdecl *FOPEN)(const CHAR*, const CHAR*);
-typedef INT(__cdecl *FCLOSE)(FILE*);
-typedef size_t(__cdecl *FREAD)(VOID*, size_t, size_t, FILE*);
-typedef size_t(__cdecl *FWRITE)(const VOID*, size_t, size_t, FILE*);
-typedef INT(__cdecl *FSEEK)(FILE*, LONG, INT);
-typedef INT(__cdecl *RAND)();
-typedef VOID(__cdecl *SRAND)(DWORD);
-typedef VOID(__cdecl *EXIT)(INT);
+#ifndef _FILE_DEFINED
+#define _FILE_DEFINED
+typedef struct _iobuf {
+	void* _Placeholder;
+} FILE;
+#endif
 
-extern MALLOC MemoryAlloc;
-extern FREE MemoryFree;
-extern MEMSET MemorySet;
-extern MEMCPY MemoryCopy;
-extern MEMCMP MemoryCompare;
-extern CEIL MathCeil;
-extern FLOOR MathFloor;
-extern ROUND MathRound;
-extern LOG10 MathLog10;
-extern SQRT MathSqrt;
-extern ATAN2 MathAtan2;
-extern SPRINTF StrPrint;
-extern STRSTR StrStr;
-extern STRCHR StrChar;
-extern STRCMP StrCompare;
-extern STRCPY StrCopy;
-extern STRCAT StrCat;
-extern STRDUP StrDuplicate;
-extern STRLEN StrLength;
-extern STRRCHR StrRightChar;
-extern FOPEN FileOpen;
-extern FCLOSE FileClose;
-extern FREAD FileRead;
-extern FWRITE FileWrite;
-extern FSEEK FileSeek;
-extern RAND Random;
-extern SRAND SeedRandom;
-extern EXIT Exit;
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#endif
 
-#define MemoryZero(Destination,Length) MemorySet((Destination),0,(Length))
+extern "C"
+{
+	__declspec(dllimport) int __cdecl sprintf(char*, const char*, ...);
+	__declspec(dllimport) FILE* __cdecl fopen(const char*, const char*);
+	__declspec(dllimport) int __cdecl fclose(FILE*);
+	__declspec(dllimport) size_t __cdecl fread(const void*, size_t, size_t, FILE*);
+	__declspec(dllimport) size_t __cdecl fwrite(const void*, size_t, size_t, FILE*);
+	__declspec(dllimport) int __cdecl fseek(FILE*, long, int);
+}
+
+#define MemoryAlloc(size) malloc(size)
+#define MemoryFree(block) free(block)
+#define MemorySet(dst, val, size) memset(dst, val, size)
+#define MemoryZero(dst, size) memset(dst, 0, size)
+#define MemoryCopy(dst, src, size) memcpy(dst, src, size)
+#define MemoryCompare(buf1, buf2, size) memcmp(buf1, buf2, size)
+#define MathCeil(x) ceil(x)
+#define MathFloor(x) floor(x)
+#define MathLog10(x) log10(x)
+#define MathSqrt(x) sqrt(x)
+#define MathAtan2(y, x) atan2(y, x)
+#define StrPrint(buf, fmt, ...) sprintf(buf, fmt, __VA_ARGS__)
+#define StrStr(str, substr) strstr(str, substr)
+#define StrChar(str, ch) strchr(str, ch)
+#define StrCompare(str1, str2) strcmp(str1, str2)
+#define StrCopy(dst, src) strcpy(dst, src)
+#define StrCat(dst, src) strcat(dst, src)
+#define StrDuplicate(str) _strdup(str)
+#define StrLength(str) strlen(str)
+#define StrLastChar(str, ch) strrchr(str, ch)
+#define FileOpen(filename, mode) fopen(filename, mode)
+#define FileClose(stream) fclose(stream)
+#define FileRead(ptr, size, count, stream) fread(ptr, size, count, stream)
+#define FileWrite(ptr, size, count, stream) fwrite(ptr, size, count, stream)
+#define FileSeek(stream, offset, origin) fseek(stream, offset, origin)
+#define Random() rand()
+#define SeedRandom(seed) srand(seed)
+#define Exit(code) exit(code)
+
+DOUBLE __fastcall MathRound(DOUBLE);
 
 typedef HRESULT(__stdcall *DIRECTSOUNDCREATE)(LPCGUID lpcGuid, LPDIRECTSOUND* ppDS, LPUNKNOWN pUnkOuter);
 extern DIRECTSOUNDCREATE DSCreate;
@@ -205,7 +197,6 @@ VOID LoadKernel32();
 VOID LoadGdi32();
 VOID LoadUnicoWS();
 VOID LoadDwmAPI();
-VOID LoadMsvCRT();
 VOID LoadDDraw();
 VOID LoadXInput();
 
@@ -232,11 +223,4 @@ extern bool* isKainInside;
 extern BOOL* isKainSpeaking;
 extern DWORD* worldObject;
 
-extern struct ModePtr
-{
-	BOOL* hiRes;
-	BOOL* hiColor;
-	BOOL* window;
-	BOOL* interlaced;
-	BOOL* upscale;
-} flags;
+extern ModePtr flags;

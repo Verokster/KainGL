@@ -72,20 +72,20 @@ CHAR* GLInit(CHAR*(*callback)())
 		{
 			GL::SetPixelFormat(hDc);
 
-			HGLRC hRc = WGLCreateContext(hDc);
+			HGLRC hRc = wglCreateContext(hDc);
 			if (hRc)
 			{
-				if (WGLMakeCurrent(hDc, hRc))
+				if (wglMakeCurrent(hDc, hRc))
 				{
 					GL::CreateContextAttribs(hDc, &hRc);
 
 					if (callback)
 						res = callback();
 
-					WGLMakeCurrent(hDc, NULL);
+					wglMakeCurrent(hDc, NULL);
 				}
 
-				WGLDeleteContext(hRc);
+				wglDeleteContext(hRc);
 			}
 
 			ReleaseDC(hWnd, hDc);
@@ -691,17 +691,6 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
-HWND __stdcall GetActiveWindowHook()
-{
-	HWND hWnd = GetActiveWindow();
-
-	OpenDraw* ddraw = ddrawList;
-	if (ddraw && (ddraw->hWnd == hWnd || ddraw->hDraw == hWnd))
-		return ddraw->hWnd;
-
-	return hWnd;
-}
-
 INT __stdcall MessageBoxHook(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
 {
 	INT res;
@@ -983,7 +972,6 @@ namespace Hooks
 		// xBox gamepad
 		configOtherXboxConfig = Config::Get(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, TRUE);
 
-		PatchFunction("GetActiveWindow", GetActiveWindowHook);
 		PatchFunction("MessageBoxA", MessageBoxHook);
 		PatchFunction("LoadIconA", LoadIconHook);
 		PatchFunction("RegisterClassA", RegisterClassHook);
@@ -1010,14 +998,6 @@ namespace Hooks
 
 				processMask >>= 1;
 			} while (--count);
-		}
-
-		HMODULE hLibrary = LoadLibrary("NTDLL.dll");
-		if (hLibrary)
-		{
-			if (GetProcAddress(hLibrary, "wine_get_version"))
-				configSingleWindow = TRUE;
-			FreeLibrary(hLibrary);
 		}
 
 		DEVMODE devMode;

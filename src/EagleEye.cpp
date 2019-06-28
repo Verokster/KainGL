@@ -27,6 +27,7 @@
 
 DWORD back_00423E9B = 0x00423E9B;
 DWORD sub_0045DE6C = 0x0045DE6C;
+DWORD MemSet = (DWORD)memset;
 VOID __declspec(naked) hook_00423E96()
 {
 	__asm
@@ -37,7 +38,7 @@ VOID __declspec(naked) hook_00423E96()
 		PUSH 0x34
 		PUSH ECX
 		PUSH EAX
-		CALL MemorySet
+		CALL MemSet
 
 		POP EAX
 		ADD ESP, 8
