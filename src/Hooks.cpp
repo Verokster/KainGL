@@ -28,6 +28,7 @@
 #include "CommCtrl.h"
 
 CHAR kainDirPath[MAX_PATH];
+CHAR kainJamPath[MAX_PATH];
 
 namespace Hooks
 {
@@ -73,6 +74,17 @@ namespace Hooks
 	BOOL __fastcall PatchCall(DWORD addr, VOID* hook)
 	{
 		return PatchRedirect(addr, (DWORD)hook, 5, 0xE8);
+	}
+
+	BOOL __fastcall RedirectCall(DWORD addr, VOID* hook, DWORD* old)
+	{
+		if (ReadDWord(addr + 1, old))
+		{
+			*old += addr + 5 + baseOffset;
+			return PatchCall(addr, hook);
+		}
+
+		return FALSE;
 	}
 
 	BOOL __fastcall PatchNop(DWORD addr, DWORD size)
@@ -180,8 +192,10 @@ namespace Hooks
 		return ReadBlock(addr, value, sizeof(*value));
 	}
 
-	DWORD __fastcall PatchFunction(const CHAR* function, VOID* addr)
+	DWORD __fastcall PatchFunction(const CHAR* function, VOID* addr, BOOL multiple)
 	{
+		DWORD res = NULL;
+
 		PIMAGE_NT_HEADERS headNT = (PIMAGE_NT_HEADERS)((BYTE*)headDOS + headDOS->e_lfanew);
 
 		PIMAGE_IMPORT_DESCRIPTOR imports = (PIMAGE_IMPORT_DESCRIPTOR)((DWORD)headDOS + headNT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
@@ -195,16 +209,13 @@ namespace Hooks
 				DWORD name = (DWORD)headDOS + nameThunk->u1.AddressOfData;
 				CHAR* funcName = (CHAR*)(name + 2);
 
-				DWORD res = NULL;
 				WORD indent = 0;
-				if (ReadWord((INT)name - baseOffset, (WORD*)&indent) && !StrCompare(funcName, function) &&
-					ReadDWord((INT)&addressThunk->u1.AddressOfData - baseOffset, &res) &&
-					PatchDWord((INT)&addressThunk->u1.AddressOfData - baseOffset, (DWORD)addr))
-						return res;
+				if (ReadWord((INT)name - baseOffset, (WORD*)&indent) && !StrCompare(funcName, function) && ReadDWord((INT)&addressThunk->u1.AddressOfData - baseOffset, &res) && PatchDWord((INT)&addressThunk->u1.AddressOfData - baseOffset, (DWORD)addr) && !multiple)
+					return res;
 			}
 		}
 
-		return NULL;
+		return res;
 	}
 
 	VOID Start()
@@ -213,6 +224,7 @@ namespace Hooks
 		LoadGdi32();
 		LoadUnicoWS();
 		LoadDwmAPI();
+		LoadShcore();
 		// -------------
 		Patch_Window();
 		// -------------
@@ -256,6 +268,25 @@ namespace Hooks
 			if (!p)
 				p = kainDirPath;
 			StrCopy(p, "\\KAIN");
+
+			BOOL found = FALSE;
+			HKEY phkResult;
+			if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software", 0, KEY_ALL_ACCESS, &phkResult) == ERROR_SUCCESS)
+			{
+				HKEY hKey;
+				if (RegOpenKeyExA(phkResult, "LegacyofKain", 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
+				{
+					DWORD size = sizeof(kainJamPath);
+					found = RegQueryValueExA(hKey, "JAMPath", 0, 0, (BYTE*)kainJamPath, &size) == ERROR_SUCCESS;
+
+					RegCloseKey(hKey);
+				}
+
+				RegCloseKey(phkResult);
+			}
+
+			if (!found)
+				StrCopy(kainJamPath, kainDirPath);
 
 			configCameraStatic = (BOOL*)(0x005947CC + baseOffset);
 

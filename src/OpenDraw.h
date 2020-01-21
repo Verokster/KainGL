@@ -35,7 +35,7 @@ class OpenDraw : IDirectDraw, public Allocation
 private:
 	VOID(OpenDraw::*pRenderStartScene)();
 	VOID(OpenDraw::*pRenderEndScene)();
-	VOID(OpenDraw::*pRenderFrame)();
+	VOID (OpenDraw::*pRenderFrame)(OpenDrawSurface*);
 
 public:
 	OpenDrawSurface* surfaceEntries;
@@ -45,6 +45,7 @@ public:
 	OpenDrawSurface* attachedSurface;
 
 	HWND hWnd;
+	HWND hDraw;
 	HDC hDc;
 	HGLRC hRc;
 	DisplayMode* virtualMode;
@@ -94,11 +95,11 @@ public:
 
 	VOID RenderStartSceneOld();
 	VOID RenderEndSceneOld();
-	VOID RenderFrameOld();
+	VOID RenderFrameOld(OpenDrawSurface*);
 
 	VOID RenderStartSceneNew();
 	VOID RenderEndSceneNew();
-	VOID RenderFrameNew();
+	VOID RenderFrameNew(OpenDrawSurface*);
 
 	OpenDrawSurface* PreRender();
 	VOID CheckVSync();

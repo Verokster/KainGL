@@ -110,6 +110,9 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		OpenDraw* ddraw = ddrawList;
 		if (ddraw)
 		{
+			if (ddraw->hDraw && ddraw->hDraw != hWnd)
+				SetWindowPos(ddraw->hDraw, NULL, 0, 0, LOWORD(lParam), HIWORD(lParam), SWP_NOZORDER | SWP_NOMOVE | SWP_NOREDRAW | SWP_NOREPOSITION | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
+
 			if (ddraw->virtualMode)
 			{
 				ddraw->viewport.width = LOWORD(lParam);
@@ -365,11 +368,54 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
+LRESULT __stdcall PanelProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_NCHITTEST:
+	case WM_SETCURSOR:
+
+	case WM_MOUSEMOVE:
+	case WM_MOUSEWHEEL:
+
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_LBUTTONDBLCLK:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_RBUTTONDBLCLK:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_MBUTTONDBLCLK:
+
+	case WM_SYSCOMMAND:
+	case WM_SYSKEYDOWN:
+	case WM_SYSKEYUP:
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	case WM_CHAR:
+		return WindowProc(GetParent(hWnd), uMsg, wParam, lParam);
+
+	default:
+		return CallWindowProc(OldPanelProc, hWnd, uMsg, wParam, lParam);
+	}
+}
+
+DWORD __fastcall GetPow2(DWORD value)
+{
+	DWORD res = 1;
+	while (res < value)
+		res <<= 1;
+	return res;
+}
+
 VOID __fastcall UseShaderProgram(ShaderProgram* program, DWORD texSize)
 {
 	if (!program->id)
 	{
 		program->id = GLCreateProgram();
+
+		GLBindAttribLocation(program->id, 0, "vCoord");
 
 		GLuint vShader = GL::CompileShaderSource(program->vertexName, GL_VERTEX_SHADER);
 		GLuint fShader = GL::CompileShaderSource(program->fragmentName, GL_FRAGMENT_SHADER);
@@ -389,8 +435,8 @@ VOID __fastcall UseShaderProgram(ShaderProgram* program, DWORD texSize)
 		GLUseProgram(program->id);
 		GLUniformMatrix4fv(GLGetUniformLocation(program->id, "mvp"), 1, GL_FALSE, program->mvp);
 		GLUniform1i(GLGetUniformLocation(program->id, "isscl"), program->interlaced);
-		GLUniform1i(GLGetUniformLocation(program->id, "tex01"), GL_TEXTURE0 - GL_TEXTURE0);
-		GLUniform1i(GLGetUniformLocation(program->id, "scl01"), GL_TEXTURE1 - GL_TEXTURE0);
+		GLUniform1i(GLGetUniformLocation(program->id, "tex01"), 0);
+		GLUniform1i(GLGetUniformLocation(program->id, "scl01"), 1);
 
 		GLint loc = GLGetUniformLocation(program->id, "texSize");
 		if (loc >= 0)
@@ -446,11 +492,49 @@ VOID OpenDraw::RenderStart()
 
 	this->isFinish = FALSE;
 
+	RECT rect;
+	GetClientRect(this->hWnd, &rect);
+
+	if (configSingleWindow)
+		this->hDraw = this->hWnd;
+	else
+	{
+		if (!configDisplayWindowed)
+			this->hDraw = CreateWindowEx(
+				WS_EX_CONTROLPARENT | WS_EX_TOPMOST,
+				WC_DRAW,
+				NULL,
+				WS_VISIBLE | WS_POPUP | WS_MAXIMIZE,
+				0, 0,
+				rect.right, rect.bottom,
+				this->hWnd,
+				NULL,
+				hDllModule,
+				NULL);
+		else
+		{
+			this->hDraw = CreateWindowEx(
+				WS_EX_CONTROLPARENT,
+				WC_DRAW,
+				NULL,
+				WS_VISIBLE | WS_CHILD,
+				0, 0,
+				rect.right, rect.bottom,
+				this->hWnd,
+				NULL,
+				hDllModule,
+				NULL);
+		}
+
+		OldPanelProc = (WNDPROC)SetWindowLong(this->hDraw, GWL_WNDPROC, (LPARAM)PanelProc);
+
+		SetClassLongPtr(this->hDraw, GCLP_HBRBACKGROUND, NULL);
+		RedrawWindow(this->hDraw, NULL, NULL, RDW_INVALIDATE);
+	}
+
 	SetClassLongPtr(this->hWnd, GCLP_HBRBACKGROUND, NULL);
 	RedrawWindow(this->hWnd, NULL, NULL, RDW_INVALIDATE);
 
-	RECT rect;
-	GetClientRect(this->hWnd, &rect);
 	this->viewport.width = rect.right;
 	this->viewport.height = rect.bottom;
 	this->viewport.refresh = TRUE;
@@ -479,6 +563,14 @@ VOID OpenDraw::RenderStop()
 		this->hDrawThread = NULL;
 	}
 
+	if (this->hDraw != this->hWnd)
+	{
+		DestroyWindow(this->hDraw);
+		GL::ResetPixelFormat();
+	}
+
+	this->hDraw = NULL;
+
 	ClipCursor(NULL);
 }
 
@@ -493,7 +585,18 @@ VOID OpenDraw::RenderStartScene()
 VOID OpenDraw::RenderFrame()
 {
 	if (this->pRenderFrame)
-		(this->*pRenderFrame)();
+	{
+		OpenDrawSurface* surface = this->PreRender();
+		if (surface)
+		{
+			(this->*pRenderFrame)(surface);
+
+			SwapBuffers(this->hDc);
+
+			if (!configSingleThread)
+				WaitForSingleObject(this->hDrawEvent, INFINITE);
+		}
+	}
 }
 
 VOID OpenDraw::RenderEndScene()
@@ -506,7 +609,7 @@ VOID OpenDraw::RenderEndScene()
 
 VOID OpenDraw::RenderStartInternal()
 {
-	this->hDc = ::GetDC(this->hWnd);
+	this->hDc = ::GetDC(this->hDraw);
 	if (this->hDc)
 	{
 		GL::SetPixelFormat(this->hDc);
@@ -523,12 +626,7 @@ VOID OpenDraw::RenderStartInternal()
 
 				if (glVersion >= GL_VER_3_0)
 				{
-					DWORD maxSize = this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight;
-
-					DWORD maxTexSize = 1;
-					while (maxTexSize < maxSize)
-						maxTexSize <<= 1;
-
+					DWORD maxTexSize = GetPow2(this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight);
 					if (maxTexSize > glMaxTexSize)
 						glVersion = GL_VER_1_4;
 				}
@@ -612,7 +710,7 @@ VOID OpenDraw::RenderStopinternal()
 			this->hRc = NULL;
 		}
 
-		::ReleaseDC(this->hWnd, this->hDc);
+		::ReleaseDC(this->hDraw, this->hDc);
 		this->hDc = NULL;
 	}
 }
@@ -681,11 +779,7 @@ VOID OpenDraw::RenderStartSceneOld()
 	if (glMaxTexSize < 256)
 		glMaxTexSize = 256;
 
-	DWORD size = this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight;
-
-	DWORD maxAllow = 1;
-	while (maxAllow < size) maxAllow <<= 1;
-
+	DWORD maxAllow = GetPow2(this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight);
 	DWORD maxTexSize = maxAllow < glMaxTexSize ? maxAllow : glMaxTexSize;
 
 	DWORD framePerWidth = this->virtualMode->dwWidth / maxTexSize + (this->virtualMode->dwWidth % maxTexSize ? 1 : 0);
@@ -802,9 +896,7 @@ VOID OpenDraw::RenderStartSceneNew()
 	MemoryZero(renderData, sizeof(SceneDataNew));
 	this->sceneData = renderData;
 
-	DWORD maxSize = this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight;
-	renderData->maxTexSize = 1;
-	while (renderData->maxTexSize < maxSize) renderData->maxTexSize <<= 1;
+	renderData->maxTexSize = GetPow2(this->virtualMode->dwWidth > this->virtualMode->dwHeight ? this->virtualMode->dwWidth : this->virtualMode->dwHeight);
 	FLOAT texWidth = this->virtualMode->dwWidth == renderData->maxTexSize ? 1.0f : FLOAT((FLOAT)this->virtualMode->dwWidth / renderData->maxTexSize);
 	FLOAT texHeight = this->virtualMode->dwHeight == renderData->maxTexSize ? 1.0f : FLOAT((FLOAT)this->virtualMode->dwHeight / renderData->maxTexSize);
 
@@ -878,13 +970,8 @@ VOID OpenDraw::RenderStartSceneNew()
 					{
 						GLBufferData(GL_ARRAY_BUFFER, sizeof(renderData->buffer), renderData->buffer, GL_STREAM_DRAW);
 
-						ShaderProgram* program = configGlFiltering == GL_LINEAR ? &renderData->shaders.bicubic : &renderData->shaders.nearest;
-
-						UseShaderProgram(program, renderData->maxTexSize);
-
-						GLint attrCoordsLoc = GLGetAttribLocation(program->id, "vCoord");
-						GLEnableVertexAttribArray(attrCoordsLoc);
-						GLVertexAttribPointer(attrCoordsLoc, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+						GLEnableVertexAttribArray(0);
+						GLVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
 						{
 							GLClearColor(0.0, 0.0, 0.0, 1.0);
 
@@ -1042,12 +1129,8 @@ OpenDrawSurface* OpenDraw::PreRender()
 	return surface;
 }
 
-VOID OpenDraw::RenderFrameOld()
+VOID OpenDraw::RenderFrameOld(OpenDrawSurface* surface)
 {
-	OpenDrawSurface* surface = this->PreRender();
-	if (!surface)
-		return;
-
 	SceneDataOld* renderData = (SceneDataOld*)this->sceneData;
 
 	BOOL updateFilter = this->isStateChanged;
@@ -1159,19 +1242,10 @@ VOID OpenDraw::RenderFrameOld()
 
 		++frame;
 	}
-
-	SwapBuffers(this->hDc);
-
-	if (!configSingleThread)
-		WaitForSingleObject(this->hDrawEvent, INFINITE);
 }
 
-VOID OpenDraw::RenderFrameNew()
+VOID OpenDraw::RenderFrameNew(OpenDrawSurface* surface)
 {
-	OpenDrawSurface* surface = this->PreRender();
-	if (!surface)
-		return;
-
 	SceneDataNew* renderData = (SceneDataNew*)this->sceneData;
 
 	if (this->isStateChanged)
@@ -1194,11 +1268,6 @@ VOID OpenDraw::RenderFrameNew()
 	GLTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->virtualMode->dwWidth, this->virtualMode->dwHeight, GL_RGBA, GL_UNSIGNED_BYTE, this->textRenderer->dibData);
 
 	GLDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-	SwapBuffers(this->hDc);
-
-	if (!configSingleThread)
-		WaitForSingleObject(this->hDrawEvent, INFINITE);
 }
 
 // ------------------------------------------------
@@ -1256,6 +1325,8 @@ VOID OpenDraw::RenderEndSceneNew()
 		{
 			if (shaderProgram->id)
 				GLDeleteProgram(shaderProgram->id);
+
+			++shaderProgram;
 		} while (--count);
 	}
 	MemoryFree(renderData);
@@ -1280,6 +1351,7 @@ OpenDraw::OpenDraw()
 	this->pRenderFrame = NULL;
 
 	this->hWnd = NULL;
+	this->hDraw = NULL;
 
 	this->hDc = NULL;
 	this->hRc = NULL;

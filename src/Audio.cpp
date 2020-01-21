@@ -28,15 +28,15 @@
 #include "Config.h"
 
 BOOL isIma;
+BOOL foundIma;
 INT imaIndex[2];
 INT imaValue[2];
 
 // Check file
-DWORD* samplesRate = (DWORD*)0x004BF1EC;
 WAVEFORMATEX* waveFormat = (WAVEFORMATEX*)0x004BD8C8;
 VOID __cdecl CheckAudioFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* name)
 {
-	BOOL found = FALSE;
+	foundIma = FALSE;
 	StrPrint(dest, "GAME/%s.IMA", name);
 	DWORD hash = ((DWORD(__cdecl*)(CHAR*))Hooks::sub_GetHash)(dest);
 	FileHeader* file = filesHeaders;
@@ -45,46 +45,42 @@ VOID __cdecl CheckAudioFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* na
 	{
 		if (file->hash == hash)
 		{
-			found = TRUE;
-			break;
+			foundIma = TRUE;
+			return;
 		}
 
 		++file;
 	}
 
-	if (found)
+	StrPrint(dest, format, path, name);
+}
+
+DWORD sub_CreateVideoSoundBuffer;
+VOID __cdecl CreateVideoSoundBuffer(DWORD rate)
+{
+	isIma = foundIma;
+	if (foundIma)
 	{
-		isIma = TRUE;
-		*samplesRate = 37800; // sample rate 
-		waveFormat->nChannels = 2; // nChannels
+		rate = 37800;
+		waveFormat->nChannels = 2;
 		imaIndex[1] = imaIndex[0] = 0;
 		imaValue[1] = imaValue[0] = 0;
 	}
 	else
-	{
-		StrPrint(dest, format, path, name);
+		waveFormat->nChannels = 1;
 
-		isIma = FALSE;
-		waveFormat->nChannels = 1; // nChannels
-	}
-
-	waveFormat->nSamplesPerSec = *samplesRate;
+	waveFormat->nSamplesPerSec = rate;
 	waveFormat->nBlockAlign = waveFormat->nChannels * waveFormat->wBitsPerSample / 8;
 	waveFormat->nAvgBytesPerSec = waveFormat->nSamplesPerSec * waveFormat->nBlockAlign;
+
+	((DWORD(__cdecl*)(DWORD))sub_CreateVideoSoundBuffer)(rate);
 }
 
-DWORD back_00451A6F = 0x00451A6F;
-DWORD some_008E81E0 = 0x008E81E0;
-VOID __declspec(naked) hook_00451A69()
+DWORD sub_CreateRegularSoundBuffer;
+VOID __cdecl CreateRegularSoundBuffer()
 {
-	__asm
-	{
-		XOR ECX, ECX
-		MOV isIma, ECX
-		MOV ECX, some_008E81E0
-		MOV ECX, DWORD PTR DS : [ECX]
-		JMP back_00451A6F
-	}
+	((DWORD(__cdecl*)())sub_CreateRegularSoundBuffer)();
+	isIma = FALSE;
 }
 
 INT* indexTable = (INT*)0x004BD8DC;
@@ -217,8 +213,7 @@ VOID __declspec(naked) hook_00447064()
 DWORD back_0044484E = 0x0044484E;
 VOID __declspec(naked) hook_00444846()
 {
-	__asm
-	{
+	__asm {
 		MOV EAX, isIma
 		TEST EAX, EAX
 		JZ lbl_VAG
@@ -235,9 +230,8 @@ DWORD back_00451A09 = 0x00451A09;
 DWORD back_00451AF6 = 0x00451AF6;
 VOID __declspec(naked) hook_00451A01()
 {
-	__asm
-	{
-		MOV ECX, isIma
+	__asm {
+		MOV ECX, foundIma
 		TEST ECX, ECX
 		JZ lbl_VAG
 		JMP back_00451A09
@@ -319,7 +313,8 @@ VOID CheckListenePosition()
 	FLOAT point[3] = {
 		(FLOAT)camX,
 		(FLOAT)camY,
-		320.0f * 4096 / *scale };
+		320.0f * 4096 / *scale
+	};
 
 	dsoundList->SetListener(point);
 }
@@ -446,8 +441,8 @@ VOID __stdcall CheckPositionalSound(DWORD* waveIndex)
 		}
 		else
 		{
-			soundOptions.position.x = (FLOAT)*((WORD*)*worldObject + 9);
-			soundOptions.position.y = (FLOAT)*((WORD*)*worldObject + 11);
+			soundOptions.position.x = (FLOAT) * ((WORD*)*worldObject + 9);
+			soundOptions.position.y = (FLOAT) * ((WORD*)*worldObject + 11);
 		}
 
 		soundOptions.position.z = 0.0f;
@@ -490,7 +485,6 @@ namespace Hooks
 
 		worldObject = (DWORD*)((DWORD)worldObject + baseOffset);
 
-		samplesRate = (DWORD*)((DWORD)samplesRate + baseOffset);
 		waveFormat = (WAVEFORMATEX*)((DWORD)waveFormat + baseOffset);
 		sub_004453E8 += baseOffset;
 
@@ -504,11 +498,14 @@ namespace Hooks
 
 		PatchCall(0x004519C4, CheckAudioFile); // check file
 
-		PatchHook(0x00451A69, hook_00451A69); // restore
-		back_00451A6F += baseOffset;
-		some_008E81E0 += baseOffset;
+		// init
+		RedirectCall(0x00451A28, CreateVideoSoundBuffer, &sub_CreateVideoSoundBuffer);
 
-		PatchNop(0x0044778E, 0x0044779A - 0x0044778E); // 
+		// restore
+		RedirectCall(0x00451A64, CreateRegularSoundBuffer, &sub_CreateRegularSoundBuffer);
+
+		// prevent wave format calculation
+		PatchNop(0x0044778E, 0x0044779A - 0x0044778E);
 		PatchHook(0x00447064, hook_00447064);
 
 		PatchHook(0x00451A01, hook_00451A01); // Do not check if audio file for video exists

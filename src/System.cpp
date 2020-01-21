@@ -43,8 +43,7 @@ namespace Hooks
 	{
 		if (!StrCompare(lpValueName, "JAMPath"))
 		{
-			if (RegQueryValueExA(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData) != ERROR_SUCCESS)
-				StrCopy((CHAR*)lpData, kainDirPath);
+			StrCopy((CHAR*)lpData, kainJamPath);
 			return ERROR_SUCCESS;
 		}
 		else if (!StrCompare(lpValueName, "BIGPath"))

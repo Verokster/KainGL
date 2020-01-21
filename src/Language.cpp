@@ -102,9 +102,10 @@ VOID LoadBigFiles()
 	for (DWORD i = 0; i < MAX_FILES_COUNT; ++i)
 		bigPathes[i] = pillBigPath;
 
-	StrPrint(audioBigPath, "%s\\%s", kainDirPath, "AUDIO.BIG");
+	StrPrint(audioBigPath, "%s\\%s", kainJamPath, "AUDIO.BIG");
 	LoadLangBigFile(audioBigPath);
 
+	LoadLangBigFile(langFiles.audioFile);
 	LoadLangBigFile(langFiles.voicesFile);
 	LoadLangBigFile(langFiles.interfaceFile);
 

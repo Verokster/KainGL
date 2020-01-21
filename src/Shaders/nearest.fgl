@@ -23,7 +23,6 @@
 */
 
 #version 130
-precision lowp float;
 
 uniform bool isscl;
 uniform sampler2D tex01;

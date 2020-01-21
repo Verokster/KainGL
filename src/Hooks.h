@@ -26,9 +26,11 @@
 #include "windows.h"
 
 extern CHAR kainDirPath[];
+extern CHAR kainJamPath[];
 
 struct LangFiles
 {
+	CHAR audioFile[MAX_PATH];
 	CHAR voicesFile[MAX_PATH];
 	CHAR interfaceFile[MAX_PATH];
 	CHAR subtitlesFile[MAX_PATH];
@@ -60,6 +62,7 @@ namespace Hooks
 	BOOL __fastcall PatchJump(DWORD addr, DWORD dest);
 	BOOL __fastcall PatchHook(DWORD addr, VOID* hook);
 	BOOL __fastcall PatchCall(DWORD addr, VOID* hook);
+	BOOL __fastcall RedirectCall(DWORD addr, VOID* hook, DWORD* old);
 	BOOL __fastcall PatchNop(DWORD addr, DWORD size);
 	BOOL __fastcall PatchBlock(DWORD addr, VOID* block, DWORD size);
 	BOOL __fastcall PatchWord(DWORD addr, WORD value);
@@ -68,7 +71,7 @@ namespace Hooks
 	BOOL __fastcall PatchByte(DWORD addr, BYTE value);
 	BOOL __fastcall ReadWord(DWORD addr, WORD* value);
 	BOOL __fastcall ReadDWord(DWORD addr, DWORD* value);
-	DWORD __fastcall PatchFunction(const CHAR* function, VOID* addr);
+	DWORD __fastcall PatchFunction(const CHAR* function, VOID* addr, BOOL mult = FALSE);
 
 	BOOL Load();
 

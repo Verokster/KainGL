@@ -23,7 +23,6 @@
 */
 
 #version 130
-precision mediump float;
 
 uniform bool isscl;
 uniform sampler2D tex01;

@@ -38,17 +38,16 @@
 Resolution* resolutionsList;
 DWORD resolutionsListCount;
 
-struct LangIndexes
-{
+struct LangIndexes {
 	INT voicesIndex;
 	INT interfaceIndex;
 	INT subtitlesIndex;
 	LangFiles files;
-} *langIndexes;
+} * langIndexes;
 
 DWORD langIndexesCount;
 
-CHAR* GLInit(CHAR*(*callback)())
+CHAR* GLInit(CHAR* (*callback)())
 {
 	CHAR* res = NULL;
 
@@ -62,8 +61,7 @@ CHAR* GLInit(CHAR*(*callback)())
 		NULL,
 		NULL,
 		hDllModule,
-		NULL
-	);
+		NULL);
 
 	if (hWnd)
 	{
@@ -223,11 +221,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			devMode.dmSize = sizeof(DEVMODE);
 			for (DWORD i = 0; EnumDisplaySettings(NULL, i, &devMode); ++i)
 			{
-				if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) &&
-					devMode.dmPelsWidth >= 320 && devMode.dmPelsHeight >= 240 && (
-						pSupport[0] && devMode.dmBitsPerPel == 16 ||
-						pSupport[1] && devMode.dmBitsPerPel == 24 ||
-						pSupport[2] && devMode.dmBitsPerPel == 32))
+				if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) && devMode.dmPelsWidth >= 320 && devMode.dmPelsHeight >= 240 && (pSupport[0] && devMode.dmBitsPerPel == 16 || pSupport[1] && devMode.dmBitsPerPel == 24 || pSupport[2] && devMode.dmBitsPerPel == 32))
 				{
 					Resolution* resList = resolutionsList;
 					for (DWORD j = 0; j < RECOUNT; ++j, ++resList)
@@ -236,8 +230,8 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						{
 							if (!resolutionsListCount)
 							{
-								SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Game");
-								SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Desktop");
+								SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM) "By Game");
+								SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM) "By Desktop");
 							}
 
 							resList->width = devMode.dmPelsWidth;
@@ -264,7 +258,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			if (!resolutionsListCount)
 			{
-				SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM)"By Desktop");
+				SendDlgItemMessage(hDlg, IDC_COMBO_RESOLUTION, CB_ADDSTRING, NULL, (LPARAM) "By Desktop");
 				selIdx = 0;
 			}
 			else if (val <= 1)
@@ -370,7 +364,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			CHAR iniFile[MAX_PATH];
 			StrPrint(iniFile, "%s\\LOCALE.INI", kainDirPath);
 
-			SendDlgItemMessage(hDlg, IDC_COMBO_LANG_SUBTITLES, CB_ADDSTRING, 0, (LPARAM)"Off");
+			SendDlgItemMessage(hDlg, IDC_COMBO_LANG_SUBTITLES, CB_ADDSTRING, 0, (LPARAM) "Off");
 
 			langIndexesCount = GetPrivateProfileInt("LOCALE", "Languages", 0, iniFile);
 			SendDlgItemMessage(hDlg, IDC_COMBO_LANG_SUBTITLES, CB_SETCURSEL, 0, NULL);
@@ -394,6 +388,9 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (GetPrivateProfileString(langKey, "Name", "", langName, sizeof(langName) - 1, iniFile))
 					{
 						CHAR langFileName[MAX_PATH];
+						if (GetPrivateProfileString(langKey, "AudioFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+							StrPrint(currLangIndex->files.audioFile, "%s\\%s", kainJamPath, langFileName);
+
 						if (GetPrivateProfileString(langKey, "VoicesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
 						{
 							StrPrint(currLangIndex->files.voicesFile, "%s\\%s", kainDirPath, langFileName);
@@ -499,7 +496,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 							break;
 						default:
 						{
-							Resolution *res = &resolutionsList[val - 2];
+							Resolution* res = &resolutionsList[val - 2];
 
 							val = (res->width & 0x7FFF) | ((res->height & 0x7FFF) << 15) | (((res->bpp >> 3) - 1) << 30);
 							if (val)
@@ -589,6 +586,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (currLangIndex->voicesIndex == val)
 					{
 						configLangVoices = i;
+						StrCopy(langFiles.audioFile, currLangIndex->files.audioFile);
 						StrCopy(langFiles.voicesFile, currLangIndex->files.voicesFile);
 						break;
 					}
@@ -754,7 +752,7 @@ HWND __stdcall CreateWindowExHook(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lp
 	X = (monWidth - nWidth) >> 1;
 	Y = (monHeight - nHeight) >> 1;
 
-	RECT rect = { X, Y, X + nWidth , Y + nHeight };
+	RECT rect = { X, Y, X + nWidth, Y + nHeight };
 	AdjustWindowRect(&rect, dwStyle, FALSE);
 
 	X = rect.left;
@@ -775,6 +773,11 @@ HWND __stdcall CreateWindowExHook(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lp
 		SetWindowPos(Hooks::hMainWnd, NULL, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
 	}
 
+	return Hooks::hMainWnd;
+}
+
+HWND __stdcall GetActiveWindowHook()
+{
 	return Hooks::hMainWnd;
 }
 
@@ -837,8 +840,7 @@ namespace Hooks
 				devMode.dmSize = sizeof(DEVMODE);
 				for (DWORD i = 0; EnumDisplaySettings(NULL, i, &devMode); ++i)
 				{
-					if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) &&
-						devMode.dmPelsWidth == configDisplayResolution.width && devMode.dmPelsHeight == configDisplayResolution.height && devMode.dmBitsPerPel == configDisplayResolution.bpp)
+					if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) && devMode.dmPelsWidth == configDisplayResolution.width && devMode.dmPelsHeight == configDisplayResolution.height && devMode.dmBitsPerPel == configDisplayResolution.bpp)
 					{
 						found = TRUE;
 						break;
@@ -927,6 +929,18 @@ namespace Hooks
 							if (GetPrivateProfileString(langKey, "Name", "", langName, sizeof(langName) - 1, iniFile))
 							{
 								CHAR langFileName[MAX_PATH];
+								if (i == configLangVoices && GetPrivateProfileString(langKey, "AudioFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								{
+									StrPrint(langFile, "%s\\%s", kainJamPath, langFileName);
+
+									FILE* hFile = FileOpen(langFile, "rb");
+									if (hFile)
+									{
+										FileClose(hFile);
+										StrCopy(langFiles.audioFile, langFile);
+									}
+								}
+
 								if (i == configLangVoices && GetPrivateProfileString(langKey, "VoicesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
 								{
 									StrPrint(langFile, "%s\\%s", kainDirPath, langFileName);
@@ -976,11 +990,24 @@ namespace Hooks
 		PatchFunction("LoadIconA", LoadIconHook);
 		PatchFunction("RegisterClassA", RegisterClassHook);
 		PatchFunction("CreateWindowExA", CreateWindowExHook);
+		PatchFunction("GetActiveWindow", GetActiveWindowHook, TRUE);
+
+		HMODULE hLibrary = LoadLibrary("NTDLL.dll");
+		if (hLibrary)
+		{
+			if (GetProcAddress(hLibrary, "wine_get_version"))
+				configSingleWindow = TRUE;
+			FreeLibrary(hLibrary);
+		}
 
 		configSingleThread = TRUE;
 		DWORD processMask, systemMask;
-		if (GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask))
+		HANDLE process = GetCurrentProcess();
+		if (GetProcessAffinityMask(process, &processMask, &systemMask))
 		{
+			if (processMask != systemMask && SetProcessAffinityMask(process, systemMask))
+				GetProcessAffinityMask(process, &processMask, &systemMask);
+
 			BOOL isSingle = FALSE;
 			DWORD count = sizeof(DWORD) << 3;
 			do

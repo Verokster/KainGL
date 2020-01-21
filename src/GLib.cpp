@@ -97,7 +97,7 @@ GLUSEPROGRAM GLUseProgram;
 GLGETSHADERIV GLGetShaderiv;
 GLGETSHADERINFOLOG GLGetShaderInfoLog;
 
-GLGETATTRIBLOCATION GLGetAttribLocation;
+GLBINDATTRIBLOCATION GLBindAttribLocation;
 GLGETUNIFORMLOCATION GLGetUniformLocation;
 
 GLUNIFORM1I GLUniform1i;
@@ -259,7 +259,7 @@ namespace GL
 		LoadFunction(buffer, PREFIX_GL, "GetShaderiv", (PROC*)&GLGetShaderiv);
 		LoadFunction(buffer, PREFIX_GL, "GetShaderInfoLog", (PROC*)&GLGetShaderInfoLog);
 
-		LoadFunction(buffer, PREFIX_GL, "GetAttribLocation", (PROC*)&GLGetAttribLocation);
+		LoadFunction(buffer, PREFIX_GL, "BindAttribLocation", (PROC*)&GLBindAttribLocation);
 		LoadFunction(buffer, PREFIX_GL, "GetUniformLocation", (PROC*)&GLGetUniformLocation);
 
 		LoadFunction(buffer, PREFIX_GL, "Uniform1i", (PROC*)&GLUniform1i);
@@ -456,15 +456,48 @@ namespace GL
 					Main::ShowError("ChoosePixelFormat failed", __FILE__, __LINE__);
 			}
 
-			if (!::SetPixelFormat(hDc, glPixelFormat, &pfd))
-				Main::ShowError("SetPixelFormat failed", __FILE__, __LINE__);
-
 			GL::ResetPixelFormatDescription(&pfd);
 			if (!::DescribePixelFormat(hDc, glPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd))
 				Main::ShowError("DescribePixelFormat failed", __FILE__, __LINE__);
 
+			if (!::SetPixelFormat(hDc, glPixelFormat, &pfd))
+				Main::ShowError("SetPixelFormat failed", __FILE__, __LINE__);
+
 			if (pfd.iPixelType != PFD_TYPE_RGBA || pfd.cRedBits < 5 || pfd.cGreenBits < 5 || pfd.cBlueBits < 5)
 				Main::ShowError("Bad pixel type", __FILE__, __LINE__);
+		}
+	}
+
+	VOID __fastcall ResetPixelFormat()
+	{
+		HWND hWnd = CreateWindowEx(
+			WS_EX_APPWINDOW,
+			WC_DRAW,
+			NULL,
+			WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+			0, 0,
+			1, 1,
+			NULL,
+			NULL,
+			hDllModule,
+			NULL);
+
+		if (hWnd)
+		{
+			HDC hDc = GetDC(hWnd);
+			if (hDc)
+			{
+				PIXELFORMATDESCRIPTOR pfd;
+				PreparePixelFormatDescription(&pfd);
+
+				INT res = ::ChoosePixelFormat(hDc, &pfd);
+				if (res)
+					::SetPixelFormat(hDc, res, &pfd);
+
+				ReleaseDC(hWnd, hDc);
+			}
+
+			DestroyWindow(hWnd);
 		}
 	}
 

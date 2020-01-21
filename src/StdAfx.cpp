@@ -195,6 +195,18 @@ VOID LoadXInput()
 	} while (i--);
 }
 
+VOID LoadShcore()
+{
+	HMODULE hLib = LoadLibrary("SHCORE.dll");
+	if (hLib)
+	{
+
+		SETPROCESSDPIAWARENESS SetProcessDpiAwarenessC = (SETPROCESSDPIAWARENESS)GetProcAddress(hLib, "SetProcessDpiAwareness");
+		if (SetProcessDpiAwarenessC)
+			SetProcessDpiAwarenessC(PROCESS_PER_MONITOR_DPI_AWARE);
+	}
+}
+
 WCHAR* __fastcall DecodeUtf8(BYTE* ptr, DWORD* count)
 {
 	DWORD length;

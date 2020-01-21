@@ -23,8 +23,8 @@ IDM_MANIFEST				RT_MANIFEST				"module.manifest"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2019,6,6,462
- PRODUCTVERSION 1,5,8,0
+ FILEVERSION 2019,12,4,494
+ PRODUCTVERSION 1,6,2,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS VS_FF_DEBUG
@@ -40,10 +40,10 @@ BEGIN
 		BLOCK "040904b0"
 		BEGIN
 			VALUE "FileDescription", "Legacy Of Kain Graphic Library"
-			VALUE "FileVersion", "2019.06.06.462"
+			VALUE "FileVersion", "2019.12.04.494"
 			VALUE "LegalCopyright", "© 2019 Verok (verokster@gmail.com)"
 			VALUE "OriginalFilename", "ddraw.dll"
-			VALUE "ProductVersion", "1.5.8"
+			VALUE "ProductVersion", "1.6.2"
 			VALUE "ProductName", "KainGL"
 		END
 	END

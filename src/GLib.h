@@ -174,7 +174,7 @@ typedef VOID(__stdcall *GLUSEPROGRAM)(GLuint program);
 typedef VOID(__stdcall *GLGETSHADERIV)(GLuint shader, GLenum pname, GLint* params);
 typedef VOID(__stdcall *GLGETSHADERINFOLOG)(GLuint shader, GLsizei maxLength, GLsizei* length, GLchar* infoLog);
 
-typedef GLuint(__stdcall *GLGETATTRIBLOCATION)(GLuint program, const GLchar* name);
+typedef VOID(__stdcall* GLBINDATTRIBLOCATION)(GLuint program, GLuint index, const GLchar* name);
 typedef GLuint(__stdcall *GLGETUNIFORMLOCATION)(GLuint program, const GLchar* name);
 
 typedef VOID(__stdcall *GLUNIFORM1I)(GLint location, GLint v0);
@@ -244,7 +244,7 @@ extern GLUSEPROGRAM GLUseProgram;
 extern GLGETSHADERIV GLGetShaderiv;
 extern GLGETSHADERINFOLOG GLGetShaderInfoLog;
 
-extern GLGETATTRIBLOCATION GLGetAttribLocation;
+extern GLBINDATTRIBLOCATION GLBindAttribLocation;
 extern GLGETUNIFORMLOCATION GLGetUniformLocation;
 
 extern GLUNIFORM1I GLUniform1i;
@@ -264,5 +264,6 @@ namespace GL
 	VOID __fastcall PreparePixelFormatDescription(PIXELFORMATDESCRIPTOR* pfd);
 	INT __fastcall PreparePixelFormat(PIXELFORMATDESCRIPTOR* pfd);
 	VOID __fastcall SetPixelFormat(HDC hDc);
+	VOID __fastcall ResetPixelFormat();
 	GLuint __fastcall CompileShaderSource(DWORD name, GLenum type);
 }

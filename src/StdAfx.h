@@ -30,6 +30,7 @@
 #include "ExtraTypes.h"
 #include "mmreg.h"
 #include "math.h"
+#include "shellscalingapi.h"
 #include "dsound.h"
 #include "xinput.h"
 
@@ -188,6 +189,8 @@ extern XINPUTGETSTATE InputGetState;
 extern XINPUTSETSTATE InputSetState;
 extern XINPUTGETCAPABILITIES InputGetCapabilities;
 
+typedef HRESULT(__stdcall* SETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
+
 extern LPARAM mousePos;
 extern HWND mousehWnd;
 
@@ -199,6 +202,7 @@ VOID LoadUnicoWS();
 VOID LoadDwmAPI();
 VOID LoadDDraw();
 VOID LoadXInput();
+VOID LoadShcore();
 
 WCHAR* __fastcall DecodeUtf8(BYTE* ptr, DWORD* count);
 WCHAR* __fastcall DecodeUtf8(BYTE* ptr, DWORD* count, DWORD* length);
