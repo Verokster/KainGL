@@ -51,16 +51,18 @@
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)include;$(MSBuildProgramFiles32)\OpenAL 1.1 SDK\include;$(IncludePath)</IncludePath>
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
     <GenerateManifest>false</GenerateManifest>
+    <EnableMicrosoftCodeAnalysis>false</EnableMicrosoftCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <GenerateManifest>false</GenerateManifest>
     <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)include;$(MSBuildProgramFiles32)\OpenAL 1.1 SDK\include;$(IncludePath)</IncludePath>
+    <EnableMicrosoftCodeAnalysis>false</EnableMicrosoftCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
@@ -100,7 +102,7 @@
       <SectionAlignment>
       </SectionAlignment>
       <AssemblyDebug>true</AssemblyDebug>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comctl32.lib;crt.lib;ucrt.lib;vcruntime.lib;msvcrt.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comctl32.lib;winmm.lib;crt.lib;ucrt.lib;vcruntime.lib;msvcrt.lib;hooker.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <OutputFile>D:\Games\KAIN\ddraw.dll</OutputFile>
@@ -127,12 +129,9 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <OmitFramePointers>true</OmitFramePointers>
-      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -147,12 +146,10 @@
     </ClCompile>
     <ResourceCompile />
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comctl32.lib;crt.lib;msvcrt.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comctl32.lib;winmm.lib;crt.lib;msvcrt.lib;hooker.lib</AdditionalDependencies>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AssemblyDebug>false</AssemblyDebug>
-      <BaseAddress>0x60000000</BaseAddress>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <MergeSections>.text=.rdata</MergeSections>
       <SectionAlignment>4096</SectionAlignment>
       <ModuleDefinitionFile>$(ProjectDir)\module.def</ModuleDefinitionFile>
       <EntryPointSymbol>DllMain</EntryPointSymbol>
@@ -168,6 +165,10 @@
       <InterproceduralOptimization>false</InterproceduralOptimization>
       <AdditionalOptions>/DEBUG:NONE /EMITPOGOPHASEINFO %(AdditionalOptions)</AdditionalOptions>
       <SetChecksum>true</SetChecksum>
+      <FixedBaseAddress>
+      </FixedBaseAddress>
+      <BaseAddress>0x60000000</BaseAddress>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
     <Bscmake />
   </ItemDefinitionGroup>
@@ -177,6 +178,7 @@
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="Credits.cpp" />
+    <ClCompile Include="Image.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="OpenDraw.cpp" />
     <ClCompile Include="OpenDrawClipper.cpp" />

@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -25,36 +25,38 @@
 #include "stdafx.h"
 #include "Hooks.h"
 
-DWORD back_00423E9B = 0x00423E9B;
-DWORD sub_0045DE6C = 0x0045DE6C;
+DWORD back_00423E9B;
+DWORD sub_0045DE6C;
 DWORD MemSet = (DWORD)memset;
 VOID __declspec(naked) hook_00423E96()
 {
 	__asm
 	{
-		XOR ECX, ECX
-		POP EAX
+		xor ecx, ecx
+		pop eax
 
-		PUSH 0x34
-		PUSH ECX
-		PUSH EAX
-		CALL MemSet
+		push 0x34
+		push ecx
+		push eax
+		call MemSet
 
-		POP EAX
-		ADD ESP, 8
-		PUSH EAX
+		pop eax
+		add esp, 0x8
+		push eax
 
-		CALL sub_0045DE6C
-		JMP back_00423E9B
+		call sub_0045DE6C
+		jmp back_00423E9B
 	}
 }
 
 namespace Hooks
 {
-	VOID Patch_EagleEye()
+	VOID Patch_EagleEye(HOOKER hooker)
 	{
-		PatchHook(0x00423E96, hook_00423E96); // Clear object after initialization
-		back_00423E9B += baseOffset;
-		sub_0045DE6C += baseOffset;
+		DWORD baseOffset = GetBaseOffset(hooker);
+
+		PatchHook(hooker, 0x00423E96, hook_00423E96); // Clear object after initialization
+		back_00423E9B = f(0x00423E9B);
+		sub_0045DE6C = f(0x0045DE6C);
 	}
 }

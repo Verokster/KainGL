@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,9 @@
 
 #pragma once
 #include "windows.h"
+#include "hooker.h"
+
+#define f(a) (a + baseOffset)
 
 extern CHAR kainDirPath[];
 extern CHAR kainJamPath[];
@@ -52,43 +55,29 @@ extern CHAR* bigPathes[];
 
 namespace Hooks
 {
-	extern INT baseOffset;
 	extern HWND hMainWnd;
 
 	extern DWORD sub_GetHash;
 
 	extern const CHAR* trailersList[2];
 
-	BOOL __fastcall PatchJump(DWORD addr, DWORD dest);
-	BOOL __fastcall PatchHook(DWORD addr, VOID* hook);
-	BOOL __fastcall PatchCall(DWORD addr, VOID* hook);
-	BOOL __fastcall RedirectCall(DWORD addr, VOID* hook, DWORD* old);
-	BOOL __fastcall PatchNop(DWORD addr, DWORD size);
-	BOOL __fastcall PatchBlock(DWORD addr, VOID* block, DWORD size);
-	BOOL __fastcall PatchWord(DWORD addr, WORD value);
-	BOOL __fastcall PatchInt(DWORD addr, INT value);
-	BOOL __fastcall PatchDWord(DWORD addr, DWORD value);
-	BOOL __fastcall PatchByte(DWORD addr, BYTE value);
-	BOOL __fastcall ReadWord(DWORD addr, WORD* value);
-	BOOL __fastcall ReadDWord(DWORD addr, DWORD* value);
-	DWORD __fastcall PatchFunction(const CHAR* function, VOID* addr, BOOL mult = FALSE);
-
 	BOOL Load();
 
-	VOID Patch_Library();
-	VOID Patch_System();
-	VOID Patch_Timers();
-	VOID Patch_Window();
-	VOID Patch_Video();
-	VOID Patch_Trailer();
-	VOID Patch_Audio();
-	VOID Patch_Mouse();
-	VOID Patch_NoCD();
-	VOID Patch_Language();
-	VOID Patch_Zoom();
-	VOID Patch_EagleEye();
-	VOID Patch_Modes();
-	VOID Patch_Subtitles();
-	VOID Patch_Input();
-	VOID Patch_Credits();
+	VOID Patch_Library(HOOKER);
+	VOID Patch_System(HOOKER);
+	VOID Patch_Timers(HOOKER);
+	VOID Patch_Window(HOOKER);
+	VOID Patch_Video(HOOKER);
+	VOID Patch_Trailer(HOOKER);
+	VOID Patch_Audio(HOOKER);
+	VOID Patch_Mouse(HOOKER);
+	VOID Patch_NoCD(HOOKER);
+	VOID Patch_Language(HOOKER);
+	VOID Patch_Zoom(HOOKER);
+	VOID Patch_EagleEye(HOOKER);
+	VOID Patch_Modes(HOOKER);
+	VOID Patch_Subtitles(HOOKER);
+	VOID Patch_Input(HOOKER);
+	VOID Patch_Credits(HOOKER);
+	VOID Patch_Image(HOOKER);
 }

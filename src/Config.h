@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -58,36 +58,11 @@
 #define CONFIG_OTHER_XBOX_CONFIG "XboxConfig"
 #define CONFIG_OTHER_FORCE_FEEDBACK "ForceFeedback"
 
+extern ConfigItem config;
+
 extern TCHAR iniFile[];
 
-extern DWORD configGlVersion;
-extern DWORD configGlFiltering;
 
-extern BOOL configDisplayWindowed;
-extern Resolution configDisplayResolution;
-extern BOOL configDisplayAspect;
-extern BOOL configDisplayVSync;
-
-extern DOUBLE configFpsLimit;
-extern DOUBLE configFpsSync;
-extern BOOL configFpsCounter;
-
-extern BOOL configVideoSkipIntro;
-extern BOOL configVideoSmoother;
-
-extern INT configLangVoices;
-extern INT configLangInterface;
-extern INT configLangSubtitles;
-
-extern BOOL* configCameraStatic;
-extern BOOL configCameraZoomed;
-
-extern BOOL configOther3DSound;
-extern BOOL configOtherXboxConfig;
-extern BOOL configOtherForceFeedback;
-
-extern BOOL configSingleThread;
-extern BOOL configSingleWindow;
 
 namespace Config
 {

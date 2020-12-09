@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -120,7 +120,7 @@ VOID __fastcall CheckGamepadConnected(HWND hDlg)
 	LONG dwStyle = GetWindowLong(hCheck, GWL_STYLE);
 	if (devConnected)
 	{
-		SendDlgItemMessage(hDlg, IDC_CHECK_FORCE_FEEDBACK, BM_SETCHECK, configOtherForceFeedback ? BST_CHECKED : BST_UNCHECKED, NULL);
+		SendDlgItemMessage(hDlg, IDC_CHECK_FORCE_FEEDBACK, BM_SETCHECK, config.other.forceFeedback ? BST_CHECKED : BST_UNCHECKED, NULL);
 		SetWindowLong(hCheck, GWL_STYLE, dwStyle & ~WS_DISABLED);
 	}
 	else
@@ -355,7 +355,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		// Force feedback
 		{
-			configOtherForceFeedback = Config::Get(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, TRUE);
+			config.other.forceFeedback = Config::Get(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, TRUE);
 			CheckGamepadConnected(hDlg);
 		}
 
@@ -374,9 +374,9 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				langIndexes = (LangIndexes*)MemoryAlloc(sizeof(LangIndexes) * langIndexesCount);
 				MemoryZero(langIndexes, sizeof(LangIndexes) * langIndexesCount);
 
-				configLangVoices = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_VOICES, 0);
-				configLangInterface = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_INTERFACE, 0);
-				configLangSubtitles = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_SUBTITLES, 0);
+				config.language.voices = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_VOICES, 0);
+				config.language.display = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_INTERFACE, 0);
+				config.language.subtitles = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_SUBTITLES, 0);
 
 				LangIndexes* currLangIndex = langIndexes;
 
@@ -401,7 +401,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 								FileClose(hFile);
 
 								SendDlgItemMessage(hDlg, IDC_COMBO_LANG_VOICES, CB_ADDSTRING, 0, (LPARAM)langName);
-								if (i == configLangVoices)
+								if (i == config.language.voices)
 									SendDlgItemMessage(hDlg, IDC_COMBO_LANG_VOICES, CB_SETCURSEL, vIdx, NULL);
 
 								currLangIndex->voicesIndex = ++vIdx;
@@ -418,7 +418,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 								FileClose(hFile);
 
 								SendDlgItemMessage(hDlg, IDC_COMBO_LANG_INTERFACE, CB_ADDSTRING, 0, (LPARAM)langName);
-								if (i == configLangInterface)
+								if (i == config.language.display)
 									SendDlgItemMessage(hDlg, IDC_COMBO_LANG_INTERFACE, CB_SETCURSEL, iIdx, NULL);
 
 								currLangIndex->interfaceIndex = ++iIdx;
@@ -435,7 +435,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 								FileClose(hFile);
 
 								SendDlgItemMessage(hDlg, IDC_COMBO_LANG_SUBTITLES, CB_ADDSTRING, 0, (LPARAM)langName);
-								if (i == configLangSubtitles)
+								if (i == config.language.subtitles)
 									SendDlgItemMessage(hDlg, IDC_COMBO_LANG_SUBTITLES, CB_SETCURSEL, sIdx + 1, NULL);
 
 								currLangIndex->subtitlesIndex = ++sIdx;
@@ -467,15 +467,15 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				{
 				case 1:
 					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_1))
-						configGlVersion = GL_VER_1;
+						config.gl.version = GL_VER_1;
 					break;
 				case 2:
 					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_3))
-						configGlVersion = GL_VER_3;
+						config.gl.version = GL_VER_3;
 					break;
 				default:
 					if (Config::Set(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_AUTO))
-						configGlVersion = GL_VER_AUTO;
+						config.gl.version = GL_VER_AUTO;
 					break;
 				}
 			}
@@ -492,7 +492,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						case 0:
 						case 1:
 							if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, val))
-								configDisplayResolution.index = val;
+								config.display.resolution.index = val;
 							break;
 						default:
 						{
@@ -502,12 +502,12 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 							if (val)
 							{
 								if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, val))
-									configDisplayResolution = *res;
+									config.display.resolution = *res;
 							}
 							else
 							{
 								if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, 0))
-									configDisplayResolution.index = 0;
+									config.display.resolution.index = 0;
 							}
 							break;
 						}
@@ -515,7 +515,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					}
 				}
 				else if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, 1))
-					configDisplayResolution.index = 1;
+					config.display.resolution.index = 1;
 
 				MemoryFree(resolutionsList);
 			}
@@ -524,90 +524,90 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_WINDOWED, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_WINDOWED, val))
-					configDisplayWindowed = val;
+					config.display.windowed = val;
 			}
 
 			// Aspect
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_ASPECT, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_ASPECT, val))
-					configDisplayAspect = val;
+					config.display.aspect = val;
 			}
 
 			// VSync
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_VSYNC, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, val))
-					configDisplayVSync = val;
+					config.display.vSync = val;
 			}
 
 			// Filter
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_FILTER, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_GL, CONFIG_GL_FILTERING, val))
-					configGlFiltering = val ? GL_LINEAR : GL_NEAREST;
+					config.gl.filtering = val ? GL_LINEAR : GL_NEAREST;
 			}
 
 			// FPS limit
 			{
 				DWORD val = SendDlgItemMessage(hDlg, IDC_EDIT_FPS_LIMIT_UPDOWND, UDM_GETPOS, NULL, NULL);
 				if (Config::Set(CONFIG_FPS, CONFIG_FPS_LIMIT, val))
-					configFpsLimit = 1.0f / val;
+					config.fps.limit = 1.0f / val;
 			}
 
 			// FPS counter
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_FPS_COUNTER, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_FPS, CONFIG_FPS_COUNTER, val))
-					configFpsCounter = val;
+					config.fps.counter = val;
 			}
 
 			// Skip intro
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_SKIP, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_VIDEO, CONFIG_VIDEO_SKIP_INTRO, val))
-					configVideoSkipIntro = val;
+					config.video.skipIntro = val;
 			}
 
 			// Smoother movies
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_SMOOTH, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_VIDEO, CONFIG_VIDEO_SMOOTHER, val))
-					configVideoSmoother = val;
+					config.video.smoother = val;
 			}
 
 			// Languages
 			{
-				configLangVoices = 0;
+				config.language.voices = 0;
 				INT val = SendDlgItemMessage(hDlg, IDC_COMBO_LANG_VOICES, CB_GETCURSEL, NULL, NULL) + 1;
 				LangIndexes* currLangIndex = langIndexes;
 				for (INT i = 0; i < (INT)langIndexesCount; ++i, ++currLangIndex)
 				{
 					if (currLangIndex->voicesIndex == val)
 					{
-						configLangVoices = i;
+						config.language.voices = i;
 						StrCopy(langFiles.audioFile, currLangIndex->files.audioFile);
 						StrCopy(langFiles.voicesFile, currLangIndex->files.voicesFile);
 						break;
 					}
 				}
-				Config::Set(CONFIG_LANGUAGE, CONFIG_LANGUAGE_VOICES, configLangVoices);
+				Config::Set(CONFIG_LANGUAGE, CONFIG_LANGUAGE_VOICES, config.language.voices);
 
-				configLangInterface = 0;
+				config.language.display = 0;
 				val = SendDlgItemMessage(hDlg, IDC_COMBO_LANG_INTERFACE, CB_GETCURSEL, NULL, NULL) + 1;
 				currLangIndex = langIndexes;
 				for (INT i = 0; i < (INT)langIndexesCount; ++i, ++currLangIndex)
 				{
 					if (currLangIndex->interfaceIndex == val)
 					{
-						configLangInterface = i;
+						config.language.display = i;
 						StrCopy(langFiles.interfaceFile, currLangIndex->files.interfaceFile);
 						break;
 					}
 				}
-				Config::Set(CONFIG_LANGUAGE, CONFIG_LANGUAGE_INTERFACE, configLangInterface);
+				Config::Set(CONFIG_LANGUAGE, CONFIG_LANGUAGE_INTERFACE, config.language.display);
 
-				configLangSubtitles = -1;
+				config.language.subtitles = -1;
 				val = SendDlgItemMessage(hDlg, IDC_COMBO_LANG_SUBTITLES, CB_GETCURSEL, NULL, NULL);
 				if (val)
 				{
@@ -616,13 +616,13 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						if (currLangIndex->subtitlesIndex == val)
 						{
-							configLangSubtitles = i;
+							config.language.subtitles = i;
 							StrCopy(langFiles.subtitlesFile, currLangIndex->files.subtitlesFile);
 							break;
 						}
 					}
 				}
-				Config::Set(CONFIG_LANGUAGE, CONFIG_LANGUAGE_SUBTITLES, configLangSubtitles);
+				Config::Set(CONFIG_LANGUAGE, CONFIG_LANGUAGE_SUBTITLES, config.language.subtitles);
 
 				if (langIndexes)
 					MemoryFree(langIndexes);
@@ -632,14 +632,14 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_STATIC_CAMERA, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_CAMERA, CONFIG_CAMERA_STATIC, val))
-					*configCameraStatic = val;
+					*config.camera.isStatic = val;
 			}
 
 			// Zommed camera
 			{
 				BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_ZOOMED_CAMERA, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 				if (Config::Set(CONFIG_CAMERA, CONFIG_CAMERA_ZOOMED, val))
-					configCameraZoomed = val;
+					config.camera.isZoomed = val;
 			}
 
 			// 3D audio
@@ -648,10 +648,10 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				{
 					BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_3D_SOUND, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 					if (Config::Set(CONFIG_OTHER, CONFIG_OTHER_3D_SOUND, val))
-						configOther3DSound = val;
+						config.other.sound3d = val;
 				}
 
-				if (!configOther3DSound)
+				if (!config.other.sound3d)
 					AL::Free();
 			}
 
@@ -661,7 +661,7 @@ BOOL __stdcall DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				{
 					BOOL val = SendDlgItemMessage(hDlg, IDC_CHECK_FORCE_FEEDBACK, BM_GETCHECK, NULL, NULL) == BST_CHECKED;
 					if (Config::Set(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, val))
-						configOtherForceFeedback = val;
+						config.other.forceFeedback = val;
 				}
 			}
 
@@ -726,7 +726,7 @@ HWND __stdcall CreateWindowExHook(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lp
 	INT monWidth = GetSystemMetrics(SM_CXSCREEN);
 	INT monHeight = GetSystemMetrics(SM_CYSCREEN);
 
-	if (configDisplayWindowed)
+	if (config.display.windowed)
 	{
 		dwStyle = WIN_STYLE;
 
@@ -762,7 +762,7 @@ HWND __stdcall CreateWindowExHook(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lp
 
 	Hooks::hMainWnd = CreateWindowEx(WS_EX_APPWINDOW, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 
-	if (!configDisplayWindowed)
+	if (!config.display.windowed)
 	{
 		dwStyle = FS_STYLE;
 		SetWindowLong(Hooks::hMainWnd, GWL_STYLE, dwStyle);
@@ -783,7 +783,7 @@ HWND __stdcall GetActiveWindowHook()
 
 namespace Hooks
 {
-	VOID Patch_Window()
+	VOID Patch_Window(HOOKER hooker)
 	{
 		BOOL noWindow = FALSE;
 		CHAR* line = GetCommandLine();
@@ -822,17 +822,17 @@ namespace Hooks
 		else
 		{
 			// OpenGL
-			configGlVersion = Config::Get(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_AUTO);
-			if (configGlVersion != GL_VER_1 && configGlVersion != GL_VER_3)
-				configGlVersion = GL_VER_AUTO;
+			config.gl.version = Config::Get(CONFIG_GL, CONFIG_GL_VERSION, GL_VER_AUTO);
+			if (config.gl.version != GL_VER_1 && config.gl.version != GL_VER_3)
+				config.gl.version = GL_VER_AUTO;
 
 			// Resolution
 			DWORD val = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_RESOLUTION, 1);
 			if (val > 1)
 			{
-				configDisplayResolution.width = val & 0x7FFF;
-				configDisplayResolution.height = (val >> 15) & 0x7FFF;
-				configDisplayResolution.bpp = (((val >> 30) & 0x3) + 1) << 3;
+				config.display.resolution.width = val & 0x7FFF;
+				config.display.resolution.height = (val >> 15) & 0x7FFF;
+				config.display.resolution.bpp = (((val >> 30) & 0x3) + 1) << 3;
 
 				BOOL found = FALSE;
 				DEVMODE devMode;
@@ -840,7 +840,7 @@ namespace Hooks
 				devMode.dmSize = sizeof(DEVMODE);
 				for (DWORD i = 0; EnumDisplaySettings(NULL, i, &devMode); ++i)
 				{
-					if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) && devMode.dmPelsWidth == configDisplayResolution.width && devMode.dmPelsHeight == configDisplayResolution.height && devMode.dmBitsPerPel == configDisplayResolution.bpp)
+					if ((devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL)) == (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL) && devMode.dmPelsWidth == config.display.resolution.width && devMode.dmPelsHeight == config.display.resolution.height && devMode.dmBitsPerPel == config.display.resolution.bpp)
 					{
 						found = TRUE;
 						break;
@@ -852,59 +852,59 @@ namespace Hooks
 
 				if (!found)
 				{
-					configDisplayResolution.width = 0;
-					configDisplayResolution.height = 0;
-					configDisplayResolution.index = 1;
+					config.display.resolution.width = 0;
+					config.display.resolution.height = 0;
+					config.display.resolution.index = 1;
 				}
 			}
 			else
-				configDisplayResolution.index = val;
+				config.display.resolution.index = val;
 
 			// Windowed
-			configDisplayWindowed = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_WINDOWED, FALSE);
+			config.display.windowed = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_WINDOWED, FALSE);
 
 			// Aspect
-			configDisplayAspect = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_ASPECT, TRUE);
+			config.display.aspect = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_ASPECT, TRUE);
 
 			// VSync
 			{
-				configDisplayVSync = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, TRUE);
-				if (configDisplayVSync)
+				config.display.vSync = Config::Get(CONFIG_DISPLAY, CONFIG_DISPLAY_VSYNC, TRUE);
+				if (config.display.vSync)
 				{
 					GLInit(NULL);
 					if (!glCapsVSync)
-						configDisplayVSync = FALSE;
+						config.display.vSync = FALSE;
 				}
 			}
 
 			// Filter
-			configGlFiltering = Config::Get(CONFIG_GL, CONFIG_GL_FILTERING, TRUE) ? GL_LINEAR : GL_NEAREST;
+			config.gl.filtering = Config::Get(CONFIG_GL, CONFIG_GL_FILTERING, TRUE) ? GL_LINEAR : GL_NEAREST;
 
 			// FPS limit
-			configFpsLimit = 1.0f / Config::Get(CONFIG_FPS, CONFIG_FPS_LIMIT, 60);
+			config.fps.limit = 1.0f / Config::Get(CONFIG_FPS, CONFIG_FPS_LIMIT, 60);
 
 			// FPS counter
-			configFpsCounter = Config::Get(CONFIG_FPS, CONFIG_FPS_COUNTER, FALSE);
+			config.fps.counter = Config::Get(CONFIG_FPS, CONFIG_FPS_COUNTER, FALSE);
 
 			// Skip intro
-			configVideoSkipIntro = Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SKIP_INTRO, FALSE);
+			config.video.skipIntro = Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SKIP_INTRO, FALSE);
 
 			// Smoother movies
-			configVideoSmoother = Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SMOOTHER, TRUE);
+			config.video.smoother = Config::Get(CONFIG_VIDEO, CONFIG_VIDEO_SMOOTHER, TRUE);
 
 			// Static camera
-			*configCameraStatic = Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_STATIC, FALSE);
+			*config.camera.isStatic = Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_STATIC, FALSE);
 
 			// Zommed camera
-			configCameraZoomed = Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_ZOOMED, TRUE);
+			config.camera.isZoomed = Config::Get(CONFIG_CAMERA, CONFIG_CAMERA_ZOOMED, TRUE);
 
 			// 3D audio
-			configOther3DSound = Config::Get(CONFIG_OTHER, CONFIG_OTHER_3D_SOUND, TRUE);
-			if (configOther3DSound && !AL::Load())
-				configOther3DSound = FALSE;
+			config.other.sound3d = Config::Get(CONFIG_OTHER, CONFIG_OTHER_3D_SOUND, TRUE);
+			if (config.other.sound3d && !AL::Load())
+				config.other.sound3d = FALSE;
 
 			// Force feedback
-			configOtherForceFeedback = Config::Get(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, TRUE);
+			config.other.forceFeedback = Config::Get(CONFIG_OTHER, CONFIG_OTHER_FORCE_FEEDBACK, TRUE);
 
 			// Languages
 			{
@@ -914,22 +914,22 @@ namespace Hooks
 				langIndexesCount = GetPrivateProfileInt("LOCALE", "Languages", 0, iniFile);
 				if (langIndexesCount)
 				{
-					configLangVoices = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_VOICES, 0);
-					configLangInterface = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_INTERFACE, 0);
-					configLangSubtitles = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_SUBTITLES, 0);
+					config.language.voices = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_VOICES, 0);
+					config.language.display = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_INTERFACE, 0);
+					config.language.subtitles = Config::Get(CONFIG_LANGUAGE, CONFIG_LANGUAGE_SUBTITLES, 0);
 
 					CHAR langKey[16];
 					CHAR langName[64];
 					CHAR langFile[MAX_PATH];
 					for (INT i = 0; i < (INT)langIndexesCount; ++i)
 					{
-						if (i == configLangVoices || i == configLangInterface || i == configLangSubtitles)
+						if (i == config.language.voices || i == config.language.display || i == config.language.subtitles)
 						{
 							StrPrint(langKey, "LANG_%d", i);
 							if (GetPrivateProfileString(langKey, "Name", "", langName, sizeof(langName) - 1, iniFile))
 							{
 								CHAR langFileName[MAX_PATH];
-								if (i == configLangVoices && GetPrivateProfileString(langKey, "AudioFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								if (i == config.language.voices && GetPrivateProfileString(langKey, "AudioFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
 								{
 									StrPrint(langFile, "%s\\%s", kainJamPath, langFileName);
 
@@ -941,7 +941,7 @@ namespace Hooks
 									}
 								}
 
-								if (i == configLangVoices && GetPrivateProfileString(langKey, "VoicesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								if (i == config.language.voices && GetPrivateProfileString(langKey, "VoicesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
 								{
 									StrPrint(langFile, "%s\\%s", kainDirPath, langFileName);
 
@@ -953,7 +953,7 @@ namespace Hooks
 									}
 								}
 
-								if (i == configLangInterface && GetPrivateProfileString(langKey, "InterfaceFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								if (i == config.language.display && GetPrivateProfileString(langKey, "InterfaceFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
 								{
 									StrPrint(langFile, "%s\\%s", kainDirPath, langFileName);
 
@@ -965,7 +965,7 @@ namespace Hooks
 									}
 								}
 
-								if (i == configLangSubtitles && GetPrivateProfileString(langKey, "SubtitlesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
+								if (i == config.language.subtitles && GetPrivateProfileString(langKey, "SubtitlesFile", "", langFileName, sizeof(langFileName) - 1, iniFile))
 								{
 									StrPrint(langFile, "%s\\%s", kainDirPath, langFileName);
 
@@ -984,23 +984,24 @@ namespace Hooks
 		}
 
 		// xBox gamepad
-		configOtherXboxConfig = Config::Get(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, TRUE);
+		config.other.xboxConfig = Config::Get(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, TRUE);
 
-		PatchFunction("MessageBoxA", MessageBoxHook);
-		PatchFunction("LoadIconA", LoadIconHook);
-		PatchFunction("RegisterClassA", RegisterClassHook);
-		PatchFunction("CreateWindowExA", CreateWindowExHook);
-		PatchFunction("GetActiveWindow", GetActiveWindowHook, TRUE);
+		PatchImportByName(hooker, "MessageBoxA", MessageBoxHook);
+		PatchImportByName(hooker, "LoadIconA", LoadIconHook);
+		PatchImportByName(hooker, "RegisterClassA", RegisterClassHook);
+		PatchImportByName(hooker, "CreateWindowExA", CreateWindowExHook);
+		PatchImportByName(hooker, "GetActiveWindow", GetActiveWindowHook);
+		PatchImportByName(hooker, "GetActiveWindow", GetActiveWindowHook); // second time
 
 		HMODULE hLibrary = LoadLibrary("NTDLL.dll");
 		if (hLibrary)
 		{
 			if (GetProcAddress(hLibrary, "wine_get_version"))
-				configSingleWindow = TRUE;
+				config.single.window = TRUE;
 			FreeLibrary(hLibrary);
 		}
 
-		configSingleThread = TRUE;
+		config.single.thread = TRUE;
 		DWORD processMask, systemMask;
 		HANDLE process = GetCurrentProcess();
 		if (GetProcessAffinityMask(process, &processMask, &systemMask))
@@ -1016,7 +1017,7 @@ namespace Hooks
 				{
 					if (isSingle)
 					{
-						configSingleThread = FALSE;
+						config.single.thread = FALSE;
 						break;
 					}
 					else
@@ -1030,6 +1031,6 @@ namespace Hooks
 		DEVMODE devMode;
 		MemoryZero(&devMode, sizeof(DEVMODE));
 		devMode.dmSize = sizeof(DEVMODE);
-		configFpsSync = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devMode) && (devMode.dmFields & DM_DISPLAYFREQUENCY) ? 1.0f / devMode.dmDisplayFrequency : 0.0;
+		config.fps.sync = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devMode) && (devMode.dmFields & DM_DISPLAYFREQUENCY) ? 1.0f / devMode.dmDisplayFrequency : 0.0;
 	}
 }

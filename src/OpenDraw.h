@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ public:
 	OpenDrawPalette* paletteEntries;
 	OpenDrawClipper* clipperEntries;
 
-	OpenDrawSurface* attachedSurface;
+	std::atomic<OpenDrawSurface*> attachedSurface;
 
 	HWND hWnd;
 	HWND hDraw;
@@ -50,8 +50,8 @@ public:
 	HGLRC hRc;
 	DisplayMode* virtualMode;
 	DisplayMode* realMode;
-	BOOL isFinish;
-	DWORD mbPressed;
+	std::atomic<BOOL> isFinish;
+	std::atomic<BOOL> isLocked;
 
 	DOUBLE nextSyncTime;
 

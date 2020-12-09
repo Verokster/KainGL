@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -36,8 +36,8 @@ BOOL interlaced;
 DWORD frameBuffer[2][320][240];
 DWORD floatBuffer1[324][240];
 DWORD floatBuffer2[323][240][3];
-DWORD* palette = (DWORD*)0x008FB570;
-LPDIRECTDRAWSURFACE* lpDDSurface = (LPDIRECTDRAWSURFACE*)0x004CD728;
+DWORD* palette;
+LPDIRECTDRAWSURFACE* lpDDSurface;
 
 VOID __cdecl CopyFrame(LPVOID src, LPVOID dest, DWORD width, DWORD lPitch, DWORD height, DWORD offset)
 {
@@ -243,98 +243,98 @@ VOID __stdcall RenderVideoFrame(DWORD* buffers, DWORD index, DWORD width, DWORD 
 	}
 }
 
-DWORD sub_ReadMovieFrameHeader = 0x00468A3C;
-DWORD sub_PrepareVideoPallete = 0x004641FC;
-DWORD sub_RenderVideoFrame = 0x00461F68;
-DWORD some_004CD744 = 0x004CD744;
-DWORD some_0097CCF0 = 0x0097CCF0;
-DWORD back_004640EB = 0x004640EB;
+DWORD sub_ReadMovieFrameHeader;
+DWORD sub_PrepareVideoPallete;
+DWORD sub_RenderVideoFrame;
+DWORD some_004CD744;
+DWORD some_0097CCF0;
+DWORD back_004640EB;
 VOID __declspec(naked) hook_00464024()
 {
 	_asm
 	{
-		MOV EAX, DWORD PTR SS : [EBP - 0x20] // buffer index
-		TEST EAX, EAX // add idx + 3, read and draw first frame
-		JNZ checkfour
+		mov eax, [ebp - 0x20] // buffer index
+		test eax, eax // add idx + 3, read and draw first frame
+		jnz checkfour
 
-		ADD EAX, 0x3
-		MOV DWORD PTR SS : [EBP - 0x20], EAX
-		JMP readfile
+		add eax, 0x3
+		mov [ebp - 0x20], eax
+		jmp readfile
 
-		checkfour : MOV ECX, EAX
-					AND ECX, 0x3
-					TEST ECX, ECX
-					JNZ dontpallete_1
+		checkfour : mov ecx, eax
+					and ecx, 0x3
+					test ecx, ecx
+					jnz dontpallete_1
 
-					readfile : MOV ECX, DWORD PTR SS : [EBP - 0x30]
-							   PUSH ECX
-							   SHR EAX, 0x2
-							   PUSH EAX
-							   CALL sub_ReadMovieFrameHeader
-							   ADD ESP, 0x8
+					readfile : mov ecx, [ebp - 0x30]
+							   push ecx
+							   shr eax, 0x2
+							   push eax
+							   call sub_ReadMovieFrameHeader
+							   add esp, 0x8
 
-							   TEST EAX, EAX
-							   JNZ readed
-							   MOV DWORD PTR SS : [EBP - 0x28], 0x1
-							   JMP increment
+							   test eax, eax
+							   jnz readed
+							   mov [ebp - 0x28], 0x1
+							   jmp increment
 
-							   readed : MOV DWORD PTR SS : [EBP - 0x0C], 0x1
+							   readed : mov dword ptr [ebp - 0xC], 0x00000001
 
-										CALL DWORD PTR SS : [EBP + 0x28]
-										TEST EAX, EAX
-										JZ aftercheck_1
-										MOV EAX, some_004CD744
-										MOV DWORD PTR DS : [EAX], -0x1
-										MOV DWORD PTR SS : [EBP - 0x38], 0x1
-										MOV EAX, DWORD PTR SS : [EBP - 0x38]
-										MOV DWORD PTR SS : [EBP - 0x28], EAX
+										call [EBP + 0x28]
+										test eax, eax
+										jz aftercheck_1
+										mov eax, some_004CD744
+										mov dword ptr [eax], 0xFFFFFFFF
+										mov dword ptr [ebp - 0x38], 0x00000001
+										mov eax, [ebp - 0x38]
+										mov [ebp - 0x28], eax
 
-										aftercheck_1 : MOV EAX, some_0097CCF0
-													   PUSH EAX
-													   CALL sub_PrepareVideoPallete
-													   ADD ESP, 0x4
-													   JMP dontpallete_2
+										aftercheck_1 : mov eax, some_0097CCF0
+													   push eax
+													   call sub_PrepareVideoPallete
+													   add esp, 0x4
+													   jmp dontpallete_2
 
-													   dontpallete_1 : CALL DWORD PTR SS : [EBP + 0x28]
-																	   TEST EAX, EAX
-																	   JZ aftercheck_1
-																	   MOV EAX, some_004CD744
-																	   MOV DWORD PTR DS : [EAX], -0x1
-																	   MOV DWORD PTR SS : [EBP - 0x38], 0x1
-																	   MOV EAX, DWORD PTR SS : [EBP - 0x38]
-																	   MOV DWORD PTR SS : [EBP - 0x28], EAX
+													   dontpallete_1 : call [ebp + 0x28]
+																	   test eax, eax
+																	   jz aftercheck_1
+																	   mov eax, some_004CD744
+																	   mov dword ptr [eax], 0xFFFFFFFF
+																	   mov dword ptr [ebp - 0x38], 0x00000001
+																	   mov eax, [ebp - 0x38]
+																	   mov [ebp - 0x28], eax
 
-																	   dontpallete_2 : CALL DWORD PTR SS : [EBP + 0x28]
-																					   TEST EAX, EAX
-																					   JZ aftercheck_2
-																					   MOV EAX, some_004CD744
-																					   MOV DWORD PTR DS : [EAX], -0x1
-																					   MOV DWORD PTR SS : [EBP - 0x3C], 0x1
-																					   MOV EAX, DWORD PTR SS : [EBP - 0x3C]
-																					   MOV DWORD PTR SS : [EBP - 0x28], EAX
+																	   dontpallete_2 : call [ebp + 0x28]
+																					   test eax, eax
+																					   jz aftercheck_2
+																					   mov eax, some_004CD744
+																					   mov dword ptr [eax], 0xFFFFFFFF
+																					   mov dword ptr [ebp - 0x3C], 0x00000001
+																					   mov eax, [ebp - 0x3C]
+																					   mov [ebp - 0x28], eax
 
-																					   aftercheck_2 : MOV EAX, DWORD PTR SS : [EBP - 0x14]
-																									  PUSH EAX
-																									  MOV EAX, DWORD PTR SS : [EBP - 0x18]
-																									  PUSH EAX
-																									  MOV EAX, DWORD PTR SS : [EBP - 0x20] // buffer index
-																									  PUSH EAX
-																									  MOV EAX, DWORD PTR SS : [EBP - 0x30] // buffer pointer
-																									  PUSH EAX
-																									  CALL RenderVideoFrame
+																					   aftercheck_2 : mov eax, [ebp - 0x14]
+																									  push eax
+																									  mov eax, [ebp - 0x18]
+																									  push eax
+																									  mov eax, [ebp - 0x20] // buffer index
+																									  push eax
+																									  mov eax, [ebp - 0x30] // buffer pointer
+																									  push eax
+																									  call RenderVideoFrame
 
-																									  CALL DWORD PTR SS : [EBP + 0x28]
-																									  TEST EAX, EAX
-																									  JZ increment
-																									  MOV EAX, some_004CD744
-																									  MOV DWORD PTR DS : [EAX], -0x1
-																									  MOV DWORD PTR SS : [EBP - 0x40], 0x1
-																									  MOV EAX, DWORD PTR SS : [EBP - 0x40]
-																									  MOV DWORD PTR SS : [EBP - 0x28], EAX
+																									  call [ebp + 0x28]
+																									  test eax, eax
+																									  jz increment
+																									  mov eax, some_004CD744
+																									  mov dword ptr [eax], 0xFFFFFFFF
+																									  mov dword ptr [ebp - 0x40], 0x00000001
+																									  mov eax, [ebp - 0x40]
+																									  mov [ebp - 0x28], eax
 
-																									  increment : MOV EAX, DWORD PTR SS : [EBP - 0x20]
-																												  INC DWORD PTR SS : [EBP - 0x20]
-																												  JMP back_004640EB
+																									  increment : mov eax, [ebp - 0x20]
+																												  inc dword ptr [ebp - 0x20]
+																												  jmp back_004640EB
 
 	}
 }
@@ -354,15 +354,18 @@ VOID ClearMovieDisplay()
 }
 
 DWORD checkTick;
+VOID* clearKeys;
+VOID* clearMouse;
+VOID* clearGamepad;
 VOID ClearInputState()
 {
-	MemoryZero((VOID*)(0x008F8FB0 + Hooks::baseOffset), 1024); // clear keys
-	MemoryZero((VOID*)(0x004C8FBC + Hooks::baseOffset), 12); // clear mouse
-	MemoryZero((VOID*)(0x0058CE38 + Hooks::baseOffset), 32); // clear gamepad
+	MemoryZero(clearKeys, 1024); // clear keys
+	MemoryZero(clearMouse, 12); // clear mouse
+	MemoryZero(clearGamepad, 32); // clear gamepad
 
-	checkTick = GetTickCount();
+	checkTick = timeGetTime();
 
-	if (configVideoSmoother)
+	if (config.video.smoother)
 		ClearMovieDisplay();
 }
 
@@ -370,7 +373,7 @@ BOOL __stdcall CheckInputState(BOOL check)
 {
 	if (check)
 	{
-		DWORD newTick = GetTickCount();
+		DWORD newTick = timeGetTime();
 		if (newTick > checkTick + 700)
 		{
 			checkTick = newTick;
@@ -385,28 +388,28 @@ VOID __declspec(naked) hook_00444EE2()
 {
 	_asm
 	{
-		MOV EAX, EBX
-		POP ESI
-		POP EBX
+		mov eax, ebx
+		pop esi
+		pop ebx
 
-		POP ECX
-		PUSH EAX
-		PUSH ECX
-		JMP CheckInputState
+		pop ecx
+		push eax
+		push ecx
+		jmp CheckInputState
 	}
 }
 
-DWORD sub_ProcessMessage = 0x00464404;
-DWORD sub_CalcTimeout = 0x00444D44;
+DWORD sub_ProcessMessage;
+DWORD sub_CalcTimeout;
 
 VOID __declspec(naked) IntroTimeout()
 {
 	_asm
 	{
-		PUSH Hooks::hMainWnd
-		CALL sub_ProcessMessage
-		ADD ESP, 0x4
-		JMP	sub_CalcTimeout
+		push Hooks::hMainWnd
+		call sub_ProcessMessage
+		add esp, 0x4
+		jmp	sub_CalcTimeout
 	}
 }
 
@@ -425,57 +428,62 @@ VOID __cdecl CheckVideoFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* na
 
 namespace Hooks
 {
-	VOID Patch_Video()
+	VOID Patch_Video(HOOKER hooker)
 	{
-		palette = (DWORD*)((DWORD)palette + baseOffset);
-		lpDDSurface = (LPDIRECTDRAWSURFACE*)((DWORD)lpDDSurface + baseOffset);
+		DWORD baseOffset = GetBaseOffset(hooker);
 
-		PatchDWord(0x004CD73C, 320);
-		PatchDWord(0x004CD740, 240);
+		palette = (DWORD*)f(0x008FB570);
+		lpDDSurface = (LPDIRECTDRAWSURFACE*)f(0x004CD728);
+
+		PatchDWord(hooker, 0x004CD73C, 320);
+		PatchDWord(hooker, 0x004CD740, 240);
 
 		// Remove delay start playing
-		PatchNop(0x0045198B, 2);
-		PatchJump(0x004640EB, 0x0046412F + baseOffset);
-		PatchHook(0x00444EE2, hook_00444EE2);
+		PatchNop(hooker, 0x0045198B, 2);
+		PatchJump(hooker, 0x004640EB, 0x0046412F);
+		PatchHook(hooker, 0x00444EE2, hook_00444EE2);
 
-		if (configVideoSkipIntro)
+		if (config.video.skipIntro)
 		{
-			PatchNop(0x0042A6FD, 0x0042A72A - 0x0042A6FD); // Skip movies
-			PatchNop(0x0042A754, 0x0042A7E5 - 0x0042A754); // Skip intro
+			PatchJump(hooker, 0x0042A6FD, 0x0042A72A); // Skip movies
+			PatchJump(hooker, 0x0042A754, 0x0042A7E5); // Skip intro
 		}
 		else
 		{
-			PatchDWord(0x0042A7A5 + 1, 4000); // Lower intro 1 timeout
-			PatchDWord(0x0042A7D9 + 1, 3000); // Lower intro 2 timeout
+			PatchDWord(hooker, 0x0042A7A5 + 1, 4000); // Lower intro 1 timeout
+			PatchDWord(hooker, 0x0042A7D9 + 1, 3000); // Lower intro 2 timeout
 
-			sub_ProcessMessage += baseOffset;
-			sub_CalcTimeout += baseOffset;
+			sub_ProcessMessage = f(0x00464404);
+			sub_CalcTimeout = f(0x00444D44);
 
-			PatchCall(0x0042A79D, IntroTimeout);
-			PatchCall(0x0042A7D1, IntroTimeout);
+			PatchCall(hooker, 0x0042A79D, IntroTimeout);
+			PatchCall(hooker, 0x0042A7D1, IntroTimeout);
 		}
 
 		// Clear screen and input state before playing 
-		PatchCall(0x00463F2C, ClearInputState);
-		PatchCall(0x00464147, ClearInputState);
+		PatchCall(hooker, 0x00463F2C, ClearInputState);
+		PatchCall(hooker, 0x00464147, ClearInputState);
+		clearKeys = (VOID*)f(0x008F8FB0);
+		clearMouse = (VOID*)f(0x004C8FBC);
+		clearGamepad = (VOID*)f(0x0058CE38);
 
-		if (configVideoSmoother)
+		if (config.video.smoother)
 		{
-			PatchByte(0x00463EDD + 1, 32);
+			PatchByte(hooker, 0x00463EDD + 1, 32);
 
-			PatchByte(0x00444870 + 1, 60);
-			PatchHook(0x00464024, hook_00464024);
+			PatchByte(hooker, 0x00444870 + 1, 60);
+			PatchHook(hooker, 0x00464024, hook_00464024);
 
-			sub_ReadMovieFrameHeader += baseOffset;
-			sub_PrepareVideoPallete += baseOffset;
-			sub_RenderVideoFrame += baseOffset;
-			some_004CD744 += baseOffset;
-			some_0097CCF0 += baseOffset;
-			back_004640EB += baseOffset;
+			sub_ReadMovieFrameHeader = f(0x00468A3C);
+			sub_PrepareVideoPallete = f(0x004641FC);
+			sub_RenderVideoFrame = f(0x00461F68);
+			some_004CD744 = f(0x004CD744);
+			some_0097CCF0 = f(0x0097CCF0);
+			back_004640EB = f(0x004640EB);
 		}
 		else
-			PatchCall(0x00461FDA, CopyFrame);
+			PatchCall(hooker, 0x00461FDA, CopyFrame);
 
-		PatchCall(0x004519A4, CheckVideoFile);
+		PatchCall(hooker, 0x004519A4, CheckVideoFile);
 	}
 }

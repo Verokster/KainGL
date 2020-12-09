@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,11 @@
 
 namespace Hooks
 {
-	VOID Patch_NoCD()
+	VOID Patch_NoCD(HOOKER hooker)
 	{
-		PatchDWord(0x0044E6F8 + 2, 0x005947F4 + baseOffset);
-		PatchDWord(0x0044E737 + 1, 0x005947E8 + baseOffset);
+		DWORD baseOffset = GetBaseOffset(hooker);
+
+		PatchDWord(hooker, 0x0044E6F8 + 2, f(0x005947F4));
+		PatchDWord(hooker, 0x0044E737 + 1, f(0x005947E8));
 	}
 }

@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -147,13 +147,13 @@ HRESULT __stdcall DirectSoundBuffer::GetFrequency(LPDWORD pdwFrequency)
 
 HRESULT __stdcall DirectSoundBuffer::GetStatus(LPDWORD pdwStatus)
 {
-	if (this->vibration.duration && GetTickCount() - this->vibration.start > this->vibration.duration)
+	if (this->vibration.duration && timeGetTime() - this->vibration.start > this->vibration.duration)
 		Vibration::Remove(&this->vibration);
 
 	if (this->isSubtitled && activeSoundBuffer == this && subtitlesCurrent)
 	{
 		DWORD nextSync = this->lastSyncTime + 66;
-		DOUBLE currTime = GetTickCount();
+		DOUBLE currTime = timeGetTime();
 		if (currTime >= nextSync)
 		{
 			this->lastSyncTime = nextSync;
@@ -179,11 +179,11 @@ HRESULT __stdcall DirectSoundBuffer::Play(DWORD dwReserved1, DWORD dwPriority, D
 	if (this->isSubtitled)
 	{
 		if (soundSuspendTime)
-			soundStartTime += GetTickCount() - soundSuspendTime;
+			soundStartTime += timeGetTime() - soundSuspendTime;
 
 		activeSoundBuffer = this;
 		Main::SetSyncDraw();
-		this->lastSyncTime = GetTickCount();
+		this->lastSyncTime = timeGetTime();
 	}
 
 	Vibration::Add(&this->vibration);
@@ -220,7 +220,7 @@ HRESULT __stdcall DirectSoundBuffer::Stop()
 {
 	if (this->isSubtitled && activeSoundBuffer == this)
 	{
-		soundSuspendTime = GetTickCount();
+		soundSuspendTime = timeGetTime();
 		activeSoundBuffer = NULL;
 		Main::SetSyncDraw();
 	}

@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #pragma once
 #include "ddraw.h"
+#include "atomic"
 #include "OpenDrawPalette.h"
 #include "OpenDrawClipper.h"
 #include "Allocation.h"
@@ -41,6 +42,7 @@ public:
 	OpenDrawClipper* attachedClipper;
 
 	DWORD index;
+	std::atomic<BOOL> isLocked;
 	BYTE* indexBuffer;
 	DOUBLE lastTime;
 

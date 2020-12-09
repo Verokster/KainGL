@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -43,55 +43,33 @@ XINPUTGETSTATE InputGetState;
 XINPUTSETSTATE InputSetState;
 XINPUTGETCAPABILITIES InputGetCapabilities;
 
-DWORD
-	pAcquireDDThreadLock,
-	pCompleteCreateSysmemSurface,
-	pD3DParseUnknownCommand,
-	pDDGetAttachedSurfaceLcl,
-	pDDInternalLock,
-	pDDInternalUnlock,
-	pDSoundHelp,
-	pDirectDrawCreate,
-	pDirectDrawCreateClipper,
-	pDirectDrawCreateEx,
-	pDirectDrawEnumerateA,
-	pDirectDrawEnumerateExA,
-	pDirectDrawEnumerateExW,
-	pDirectDrawEnumerateW,
-	pDllCanUnloadNow,
-	pDllGetClassObject,
-	pGetDDSurfaceLocal,
-	pGetOLEThunkData,
-	pGetSurfaceFromDC,
-	pRegisterSpecialCase,
-	pReleaseDDThreadLock,
-	pSetAppCompatData;
-
 DIRECTSOUNDCREATE DSCreate;
 
-#define LIBEXP VOID __declspec(naked,nothrow) __stdcall
-LIBEXP exAcquireDDThreadLock() { _asm { JMP pAcquireDDThreadLock } }
-LIBEXP exCompleteCreateSysmemSurface() { _asm { JMP pCompleteCreateSysmemSurface } }
-LIBEXP exD3DParseUnknownCommand() { _asm { JMP pD3DParseUnknownCommand } }
-LIBEXP exDDGetAttachedSurfaceLcl() { _asm { JMP pDDGetAttachedSurfaceLcl } }
-LIBEXP exDDInternalLock() { _asm { JMP pDDInternalLock } }
-LIBEXP exDDInternalUnlock() { _asm { JMP pDDInternalUnlock } }
-LIBEXP exDSoundHelp() { _asm { JMP pDSoundHelp } }
-LIBEXP exDirectDrawCreate() { _asm { JMP pDirectDrawCreate } }
-LIBEXP exDirectDrawCreateClipper() { _asm { JMP pDirectDrawCreateClipper } }
-LIBEXP exDirectDrawCreateEx() { _asm { JMP pDirectDrawCreateEx } }
-LIBEXP exDirectDrawEnumerateA() { _asm { JMP pDirectDrawEnumerateA } }
-LIBEXP exDirectDrawEnumerateExA() { _asm { JMP pDirectDrawEnumerateExA } }
-LIBEXP exDirectDrawEnumerateExW() { _asm { JMP pDirectDrawEnumerateExW } }
-LIBEXP exDirectDrawEnumerateW() { _asm { JMP pDirectDrawEnumerateW } }
-LIBEXP exDllCanUnloadNow() { _asm { JMP pDllCanUnloadNow } }
-LIBEXP exDllGetClassObject() { _asm { JMP pDllGetClassObject } }
-LIBEXP exGetDDSurfaceLocal() { _asm { JMP pGetDDSurfaceLocal } }
-LIBEXP exGetOLEThunkData() { _asm { JMP pGetOLEThunkData } }
-LIBEXP exGetSurfaceFromDC() { _asm { JMP pGetSurfaceFromDC } }
-LIBEXP exRegisterSpecialCase() { _asm { JMP pRegisterSpecialCase } }
-LIBEXP exReleaseDDThreadLock() { _asm { JMP pReleaseDDThreadLock } }
-LIBEXP exSetAppCompatData() { _asm { JMP pSetAppCompatData } }
+#define LIBEXP(a) DWORD p##a; VOID __declspec(naked,nothrow) __stdcall ex##a() { LoadDDraw(); _asm { jmp p##a } }
+#define LIBLOAD(lib, a) p##a = (DWORD)GetProcAddress(lib, #a);
+
+LIBEXP(AcquireDDThreadLock)
+LIBEXP(CompleteCreateSysmemSurface)
+LIBEXP(D3DParseUnknownCommand)
+LIBEXP(DDGetAttachedSurfaceLcl)
+LIBEXP(DDInternalLock)
+LIBEXP(DDInternalUnlock)
+LIBEXP(DSoundHelp)
+LIBEXP(DirectDrawCreate)
+LIBEXP(DirectDrawCreateClipper)
+LIBEXP(DirectDrawCreateEx)
+LIBEXP(DirectDrawEnumerateA)
+LIBEXP(DirectDrawEnumerateExA)
+LIBEXP(DirectDrawEnumerateExW)
+LIBEXP(DirectDrawEnumerateW)
+LIBEXP(DllCanUnloadNow)
+LIBEXP(DllGetClassObject)
+LIBEXP(GetDDSurfaceLocal)
+LIBEXP(GetOLEThunkData)
+LIBEXP(GetSurfaceFromDC)
+LIBEXP(RegisterSpecialCase)
+LIBEXP(ReleaseDDThreadLock)
+LIBEXP(SetAppCompatData)
 
 DOUBLE __fastcall MathRound(DOUBLE number)
 {
@@ -143,35 +121,42 @@ VOID LoadDwmAPI()
 
 VOID LoadDDraw()
 {
-	CHAR dir[MAX_PATH];
-	if (GetSystemDirectory(dir, MAX_PATH))
+	static BOOL isLoaded;
+
+	if (!isLoaded)
 	{
-		StrCat(dir, "\\DDRAW.dll");
-		HMODULE hLib = LoadLibrary(dir);
-		if (hLib)
+		isLoaded = TRUE;
+
+		CHAR dir[MAX_PATH];
+		if (GetSystemDirectory(dir, MAX_PATH))
 		{
-			pAcquireDDThreadLock = (DWORD)GetProcAddress(hLib, "AcquireDDThreadLock");
-			pCompleteCreateSysmemSurface = (DWORD)GetProcAddress(hLib, "CompleteCreateSysmemSurface");
-			pD3DParseUnknownCommand = (DWORD)GetProcAddress(hLib, "D3DParseUnknownCommand");
-			pDDGetAttachedSurfaceLcl = (DWORD)GetProcAddress(hLib, "DDGetAttachedSurfaceLcl");
-			pDDInternalLock = (DWORD)GetProcAddress(hLib, "DDInternalLock");
-			pDDInternalUnlock = (DWORD)GetProcAddress(hLib, "DDInternalUnlock");
-			pDSoundHelp = (DWORD)GetProcAddress(hLib, "DSoundHelp");
-			pDirectDrawCreate = (DWORD)GetProcAddress(hLib, "DirectDrawCreate");
-			pDirectDrawCreateClipper = (DWORD)GetProcAddress(hLib, "DirectDrawCreateClipper");
-			pDirectDrawCreateEx = (DWORD)GetProcAddress(hLib, "DirectDrawCreateEx");
-			pDirectDrawEnumerateA = (DWORD)GetProcAddress(hLib, "DirectDrawEnumerateA");
-			pDirectDrawEnumerateExA = (DWORD)GetProcAddress(hLib, "DirectDrawEnumerateExA");
-			pDirectDrawEnumerateExW = (DWORD)GetProcAddress(hLib, "DirectDrawEnumerateExW");
-			pDirectDrawEnumerateW = (DWORD)GetProcAddress(hLib, "DirectDrawEnumerateW");
-			pDllCanUnloadNow = (DWORD)GetProcAddress(hLib, "DllCanUnloadNow");
-			pDllGetClassObject = (DWORD)GetProcAddress(hLib, "DllGetClassObject");
-			pGetDDSurfaceLocal = (DWORD)GetProcAddress(hLib, "GetDDSurfaceLocal");
-			pGetOLEThunkData = (DWORD)GetProcAddress(hLib, "GetOLEThunkData");
-			pGetSurfaceFromDC = (DWORD)GetProcAddress(hLib, "GetSurfaceFromDC");
-			pRegisterSpecialCase = (DWORD)GetProcAddress(hLib, "RegisterSpecialCase");
-			pReleaseDDThreadLock = (DWORD)GetProcAddress(hLib, "ReleaseDDThreadLock");
-			pSetAppCompatData = (DWORD)GetProcAddress(hLib, "SetAppCompatData");
+			StrCat(dir, "\\DDRAW.dll");
+			HMODULE hLib = LoadLibrary(dir);
+			if (hLib)
+			{
+				LIBLOAD(hLib, AcquireDDThreadLock);
+				LIBLOAD(hLib, CompleteCreateSysmemSurface);
+				LIBLOAD(hLib, D3DParseUnknownCommand);
+				LIBLOAD(hLib, DDGetAttachedSurfaceLcl);
+				LIBLOAD(hLib, DDInternalLock);
+				LIBLOAD(hLib, DDInternalUnlock);
+				LIBLOAD(hLib, DSoundHelp);
+				LIBLOAD(hLib, DirectDrawCreate);
+				LIBLOAD(hLib, DirectDrawCreateClipper);
+				LIBLOAD(hLib, DirectDrawCreateEx);
+				LIBLOAD(hLib, DirectDrawEnumerateA);
+				LIBLOAD(hLib, DirectDrawEnumerateExA);
+				LIBLOAD(hLib, DirectDrawEnumerateExW);
+				LIBLOAD(hLib, DirectDrawEnumerateW);
+				LIBLOAD(hLib, DllCanUnloadNow);
+				LIBLOAD(hLib, DllGetClassObject);
+				LIBLOAD(hLib, GetDDSurfaceLocal);
+				LIBLOAD(hLib, GetOLEThunkData);
+				LIBLOAD(hLib, GetSurfaceFromDC);
+				LIBLOAD(hLib, RegisterSpecialCase);
+				LIBLOAD(hLib, ReleaseDDThreadLock);
+				LIBLOAD(hLib, SetAppCompatData);
+			}
 		}
 	}
 }

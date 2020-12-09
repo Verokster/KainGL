@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -28,18 +28,9 @@
 
 namespace Hooks
 {
-	DWORD __stdcall GetTickCountHook()
+	VOID Patch_Timers(HOOKER hooker)
 	{
-		LONGLONG qpf, qpc;
-		QueryPerformanceFrequency((LARGE_INTEGER*)&qpf);
-		QueryPerformanceCounter((LARGE_INTEGER*)&qpc);
-		DOUBLE timerResolution = 0.001f * qpf;
-		return (DWORD)((DOUBLE)qpc / timerResolution);
-	}
-
-	VOID Patch_Timers()
-	{
-		PatchFunction("GetTickCount", GetTickCountHook);
-		PatchNop(0x0044436E, 2); // remove timer for gameplay
+		PatchImportByName(hooker, "GetTickCount", timeGetTime);
+		PatchNop(hooker, 0x0044436E, 2); // remove timer for gameplay
 	}
 }

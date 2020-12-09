@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -39,12 +39,12 @@ HRESULT OpenDrawSurface::DeleteAttachedSurface(DWORD, LPDIRECTDRAWSURFACE) { ret
 HRESULT OpenDrawSurface::EnumAttachedSurfaces(LPVOID, LPDDENUMSURFACESCALLBACK) { return DD_OK; }
 HRESULT OpenDrawSurface::EnumOverlayZOrders(DWORD, LPVOID, LPDDENUMSURFACESCALLBACK) { return DD_OK; }
 HRESULT OpenDrawSurface::GetBltStatus(DWORD) { return DD_OK; }
-HRESULT OpenDrawSurface::GetClipper(LPDIRECTDRAWCLIPPER *) { return DD_OK; }
+HRESULT OpenDrawSurface::GetClipper(LPDIRECTDRAWCLIPPER*) { return DD_OK; }
 HRESULT OpenDrawSurface::GetColorKey(DWORD, LPDDCOLORKEY) { return DD_OK; }
 HRESULT OpenDrawSurface::GetDC(HDC* hDc) { return DD_OK; }
 HRESULT OpenDrawSurface::GetFlipStatus(DWORD) { return DD_OK; }
 HRESULT OpenDrawSurface::GetOverlayPosition(LPLONG, LPLONG) { return DD_OK; }
-HRESULT OpenDrawSurface::GetPalette(LPDIRECTDRAWPALETTE *) { return DD_OK; }
+HRESULT OpenDrawSurface::GetPalette(LPDIRECTDRAWPALETTE*) { return DD_OK; }
 HRESULT OpenDrawSurface::GetSurfaceDesc(LPDDSURFACEDESC) { return DD_OK; }
 HRESULT OpenDrawSurface::Initialize(LPDIRECTDRAW, LPDDSURFACEDESC) { return DD_OK; }
 HRESULT OpenDrawSurface::IsLost() { return DD_OK; }
@@ -87,6 +87,7 @@ OpenDrawSurface::OpenDrawSurface(OpenDraw* lpDD, OpenDrawSurface* attached, BYTE
 	this->attachedClipper = NULL;
 
 	this->index = 1;
+	this->isLocked = FALSE;
 	this->lastTime = 0.0;
 
 	this->indexBuffer = indexBuffer;
@@ -156,6 +157,11 @@ HRESULT OpenDrawSurface::Lock(LPRECT lpDestRect, LPDDSURFACEDESC lpDDSurfaceDesc
 	lpDDSurfaceDesc->lPitch = dwMode->dwWidth * (dwMode->dwBPP >> 3);
 	lpDDSurfaceDesc->lpSurface = this->indexBuffer;
 
+	if (this->ddraw->attachedSurface == this)
+		while (this->ddraw->isLocked)
+			;
+
+	this->isLocked = TRUE;
 	return DD_OK;
 }
 
@@ -174,9 +180,10 @@ HRESULT OpenDrawSurface::SetPalette(LPDIRECTDRAWPALETTE lpDDPalette)
 HRESULT OpenDrawSurface::Unlock(LPVOID lpRect)
 {
 	this->ddraw->attachedSurface = this;
+	this->isLocked = FALSE;
 
 	this->ddraw->SetSyncDraw();
-	if (configSingleThread)
+	if (config.single.thread)
 		this->ddraw->CheckSyncDraw();
 
 	if (!lpRect)
@@ -185,7 +192,7 @@ HRESULT OpenDrawSurface::Unlock(LPVOID lpRect)
 		QueryPerformanceFrequency((LARGE_INTEGER*)&qp);
 		DOUBLE timerResolution = (DOUBLE)qp;
 
-		this->lastTime += configFpsLimit;
+		this->lastTime += config.fps.limit;
 		DOUBLE currTime;
 		do
 		{
@@ -193,7 +200,7 @@ HRESULT OpenDrawSurface::Unlock(LPVOID lpRect)
 			currTime = (DOUBLE)qp / timerResolution;
 		} while (currTime < this->lastTime);
 
-		this->lastTime += configFpsLimit * DWORD((currTime - this->lastTime) / configFpsLimit);
+		this->lastTime += config.fps.limit * DWORD((currTime - this->lastTime) / config.fps.limit);
 	}
 
 	return DD_OK;

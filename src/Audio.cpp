@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ INT imaIndex[2];
 INT imaValue[2];
 
 // Check file
-WAVEFORMATEX* waveFormat = (WAVEFORMATEX*)0x004BD8C8;
+WAVEFORMATEX* waveFormat;
 VOID __cdecl CheckAudioFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* name)
 {
 	foundIma = FALSE;
@@ -83,10 +83,10 @@ VOID __cdecl CreateRegularSoundBuffer()
 	isIma = FALSE;
 }
 
-INT* indexTable = (INT*)0x004BD8DC;
-INT* stepsizeTable = (INT*)0x004BD91C;
-BYTE* lastIndex = (BYTE*)0x004BDA82;
-SHORT* lastValue = (SHORT*)0x004BDA80;
+INT* indexTable;
+INT* stepsizeTable;
+BYTE* lastIndex;
+SHORT* lastValue;
 VOID __cdecl Convert4bitTo16bit(BYTE* input, SHORT* output, INT count)
 {
 	BOOL isRight = FALSE;
@@ -207,46 +207,46 @@ VOID __cdecl Convert4bitTo16bit(BYTE* input, SHORT* output, INT count)
 
 VOID __declspec(naked) hook_00447064()
 {
-	__asm { JMP Convert4bitTo16bit }
+	__asm { jmp Convert4bitTo16bit }
 }
 
-DWORD back_0044484E = 0x0044484E;
+DWORD back_0044484E;
 VOID __declspec(naked) hook_00444846()
 {
 	__asm {
-		MOV EAX, isIma
-		TEST EAX, EAX
-		JZ lbl_VAG
-		PUSH 1
-		JMP lbl_cont
-		lbl_VAG : PUSH 3
-				  lbl_cont : PUSH 0
-							 MOV EDX, DWORD PTR SS : [ESP + 0x18]
-							 JMP back_0044484E
+		mov eax, isIma
+		test eax, eax
+		jz lbl_VAG
+		push 1
+		jmp lbl_cont
+		lbl_VAG : push 3
+				  lbl_cont : push 0
+							 mov edx, [esp + 0x18]
+							 jmp back_0044484E
 	}
 }
 
-DWORD back_00451A09 = 0x00451A09;
-DWORD back_00451AF6 = 0x00451AF6;
+DWORD back_00451A09;
+DWORD back_00451AF6;
 VOID __declspec(naked) hook_00451A01()
 {
 	__asm {
-		MOV ECX, foundIma
-		TEST ECX, ECX
-		JZ lbl_VAG
-		JMP back_00451A09
+		mov ecx, foundIma
+		test ecx, ecx
+		jz lbl_VAG
+		jmp back_00451A09
 
-		lbl_VAG : TEST EAX, EAX
-				  JZ lbl_notfound
-				  JMP back_00451A09
+		lbl_VAG : test eax, eax
+				  jz lbl_notfound
+				  jmp back_00451A09
 
-				  lbl_notfound : JMP back_00451AF6
+				  lbl_notfound : jmp back_00451AF6
 	}
 }
 
 // =====================================================
 #pragma region "Load Flash audio"
-DWORD sub_004453E8 = 0x004453E8;
+DWORD sub_004453E8;
 VOID LoadFlashAudio()
 {
 	CHAR fileName[10];
@@ -257,24 +257,24 @@ VOID LoadFlashAudio()
 	}
 }
 
-DWORD back_00445561 = 0x00445561;
+DWORD back_00445561;
 VOID __declspec(naked) hook_00445530()
 {
 	__asm
 	{
-		CALL LoadFlashAudio
-		JMP back_00445561
+		call LoadFlashAudio
+		jmp back_00445561
 	}
 }
 #pragma endregion
 
 // =====================================================
-BOOL* isCameraStatic = (BOOL*)0x005947CC;
-DWORD* worldObject = (DWORD*)0x004BF7CC;
+BOOL* isCameraStatic;
+DWORD* worldObject;
 
 #pragma region "Check listener position"
-BYTE* offsetListX = (BYTE*)0x00414948;
-BYTE* offsetListY = (BYTE*)0x00414952;
+BYTE* offsetListX;
+BYTE* offsetListY;
 VOID CheckListenePosition()
 {
 	if (!dsoundList)
@@ -319,44 +319,44 @@ VOID CheckListenePosition()
 	dsoundList->SetListener(point);
 }
 
-DWORD back_00416A6E = 0x00416A6E;
+DWORD back_00416A6E;
 VOID __declspec(naked) hook_00416A68()
 {
 	__asm
 	{
-		CALL CheckListenePosition
+		call CheckListenePosition
 
-		PUSH EBX
-		PUSH ESI
-		PUSH EDI
-		SUB ESP, 0x18
+		push ebx
+		push esi
+		push edi
+		sub esp, 0x18
 
-		JMP back_00416A6E
+		jmp back_00416A6E
 	}
 }
 
-DWORD back_0041684F = 0x0041684F;
+DWORD back_0041684F;
 VOID __declspec(naked) hook_00416848()
 {
 	__asm
 	{
-		CALL CheckListenePosition
+		call CheckListenePosition
 
-		PUSH EBX
-		PUSH ESI
-		PUSH EDI
-		PUSH EBP
-		SUB ESP, 0x20
+		push ebx
+		push esi
+		push edi
+		push ebp
+		sub esp, 0x20
 
-		JMP back_0041684F
+		jmp back_0041684F
 	}
 }
 #pragma endregion
 
 // =====================================================
-INT* gainVolume = (INT*)0x004BFA48;
-bool* isKainInside = (bool*)0x008BF35D;
-BOOL* isKainSpeaking = (BOOL*)0x004BFFD8;
+INT* gainVolume;
+bool* isKainInside;
+BOOL* isKainSpeaking;
 
 #pragma region "3D sound"
 BOOL isGainPositional;
@@ -364,26 +364,26 @@ ALSoundOptions soundOptions;
 
 DWORD objectCellX, objectCellY;
 
-DWORD back_00445D60 = 0x00445D60;
+DWORD back_00445D60;
 VOID __declspec(naked) hook_00445D58()
 {
 	__asm
 	{
-		MOV EAX, [ESP + 0x0C]
-		MOV objectCellX, EAX
-		MOV EAX, [ESP + 0x10]
-		MOV objectCellY, EAX
-		XOR EAX, EAX
-		INC EAX
-		MOV isGainPositional, EAX
+		mov eax, [esp + 0xC]
+		mov objectCellX, eax
+		mov eax, [esp + 0x10]
+		MOV objectCellY, eax
+		xor eax, eax
+		inc eax
+		mov isGainPositional, eax
 
-		PUSH EBX
-		PUSH ESI
-		PUSH EDI
-		PUSH EBP
-		MOV EDI, DWORD PTR SS : [ESP + 0x14]
+		push ebx
+		push esi
+		push edi
+		push ebp
+		mov edi, [esp + 0x14]
 
-		JMP back_00445D60
+		jmp back_00445D60
 	}
 }
 
@@ -453,101 +453,103 @@ VOID __stdcall CheckPositionalSound(DWORD* waveIndex)
 	isGainPositional = FALSE;
 }
 
-DWORD back_00445348 = 0x00445348;
+DWORD back_00445348;
 VOID __declspec(naked) hook_00445340()
 {
 	__asm
 	{
-		LEA EAX, [ESP + 0x4]
-		PUSH EAX
-		CALL CheckPositionalSound
+		lea eax, [esp + 0x4]
+		push eax
+		call CheckPositionalSound
 
-		PUSH EBX
-		PUSH ESI
-		PUSH EDI
-		PUSH EBP
-		MOV EBX, DWORD PTR SS : [ESP + 0x1C]
+		push ebx
+		push esi
+		push edi
+		push ebp
+		mov ebx, [esp + 0x1c]
 
-		JMP back_00445348
+		jmp back_00445348
 	}
 }
 #pragma endregion
 
 namespace Hooks
 {
-	VOID Patch_Audio()
+	VOID Patch_Audio(HOOKER hooker)
 	{
-		isCameraStatic = (BOOL*)((DWORD)isCameraStatic + baseOffset);
+		DWORD baseOffset = GetBaseOffset(hooker);
 
-		gainVolume = (INT*)((DWORD)gainVolume + baseOffset);
-		isKainInside = (bool*)((DWORD)isKainInside + baseOffset);
-		isKainSpeaking = (BOOL*)((DWORD)isKainSpeaking + baseOffset);
+		isCameraStatic = (BOOL*)f(0x005947CC);
 
-		worldObject = (DWORD*)((DWORD)worldObject + baseOffset);
+		gainVolume = (INT*)f(0x004BFA48);
+		isKainInside = (bool*)f(0x008BF35D);
+		isKainSpeaking = (BOOL*)f(0x004BFFD8);
 
-		waveFormat = (WAVEFORMATEX*)((DWORD)waveFormat + baseOffset);
-		sub_004453E8 += baseOffset;
+		worldObject = (DWORD*)f(0x004BF7CC);
 
-		indexTable = (INT*)((DWORD)indexTable + baseOffset);
-		stepsizeTable = (INT*)((DWORD)stepsizeTable + baseOffset);
-		lastIndex = (BYTE*)((DWORD)lastIndex + baseOffset);
-		lastValue = (SHORT*)((DWORD)lastValue + baseOffset);
+		waveFormat = (WAVEFORMATEX*)f(0x004BD8C8);
+		sub_004453E8 = f(0x004453E8);
 
-		offsetListX = (BYTE*)((DWORD)offsetListX + baseOffset);
-		offsetListY = (BYTE*)((DWORD)offsetListY + baseOffset);
+		indexTable = (INT*)f(0x004BD8DC);
+		stepsizeTable = (INT*)f(0x004BD91C);
+		lastIndex = (BYTE*)f(0x004BDA82);
+		lastValue = (SHORT*)f(0x004BDA80);
 
-		PatchCall(0x004519C4, CheckAudioFile); // check file
+		offsetListX = (BYTE*)f(0x00414948);
+		offsetListY = (BYTE*)f(0x00414952);
+
+		PatchCall(hooker, 0x004519C4, CheckAudioFile); // check file
 
 		// init
-		RedirectCall(0x00451A28, CreateVideoSoundBuffer, &sub_CreateVideoSoundBuffer);
+		sub_CreateVideoSoundBuffer = RedirectCall(hooker, 0x00451A28, CreateVideoSoundBuffer);
 
 		// restore
-		RedirectCall(0x00451A64, CreateRegularSoundBuffer, &sub_CreateRegularSoundBuffer);
+		sub_CreateRegularSoundBuffer = RedirectCall(hooker, 0x00451A64, CreateRegularSoundBuffer);
 
 		// prevent wave format calculation
-		PatchNop(0x0044778E, 0x0044779A - 0x0044778E);
-		PatchHook(0x00447064, hook_00447064);
+		PatchJump(hooker, 0x0044778E, 0x0044779A);
+		PatchHook(hooker, 0x00447064, hook_00447064);
 
-		PatchHook(0x00451A01, hook_00451A01); // Do not check if audio file for video exists
-		back_00451A09 += baseOffset;
-		back_00451AF6 += baseOffset;
+		PatchHook(hooker, 0x00451A01, hook_00451A01); // Do not check if audio file for video exists
+		back_00451A09 = f(0x00451A09);
+		back_00451AF6 = f(0x00451AF6);
 
-		PatchHook(0x00444846, hook_00444846);
-		back_0044484E += baseOffset;
+		PatchHook(hooker, 0x00444846, hook_00444846);
+		back_0044484E = f(0x0044484E);
 
 		// Increase wave pool 46 -> 49
-		PatchDWord(0x004453BC + 1, 49 * 4);
-		PatchNop(0x004453CF, 6);
+		PatchDWord(hooker, 0x004453BC + 1, 49 * 4);
+		PatchNop(hooker, 0x004453CF, 6);
 
 		// Move inventory index 45 -> 48
-		DWORD val = 0x005915EC + 48 * 4 + baseOffset;
-		PatchDWord(0x00446988 + 2, val);
-		PatchDWord(0x004469AF + 1, val);
-		PatchDWord(0x004458C0 + 2, val);
-		PatchDWord(0x0044695B + 2, val);
-		PatchDWord(0x004469DF + 2, val);
+		DWORD val = f(0x005915EC) + 48 * 4;
+		PatchDWord(hooker, 0x00446988 + 2, val);
+		PatchDWord(hooker, 0x004469AF + 1, val);
+		PatchDWord(hooker, 0x004458C0 + 2, val);
+		PatchDWord(hooker, 0x0044695B + 2, val);
+		PatchDWord(hooker, 0x004469DF + 2, val);
 
-		PatchHook(0x00445530, hook_00445530); // Load Flash audio
-		back_00445561 += baseOffset;
+		PatchHook(hooker, 0x00445530, hook_00445530); // Load Flash audio
+		back_00445561 = f(0x00445561);
 
 		// 3d audio
-		PatchHook(0x00445D58, hook_00445D58); // Get sound cell position
-		back_00445D60 += baseOffset;
+		PatchHook(hooker, 0x00445D58, hook_00445D58); // Get sound cell position
+		back_00445D60 = f(0x00445D60);
 
-		PatchHook(0x00445340, hook_00445340); // Check sound index for positioning
-		back_00445348 += baseOffset;
+		PatchHook(hooker, 0x00445340, hook_00445340); // Check sound index for positioning
+		back_00445348 = f(0x00445348);
 
-		if (configOther3DSound) // remove max distance
-			PatchByte(0x00445DBB, 0xEB);
+		if (config.other.sound3d) // remove max distance
+			PatchByte(hooker, 0x00445DBB, 0xEB);
 
 		// Check listener position
-		PatchHook(0x00416A68, hook_00416A68);
-		back_00416A6E += baseOffset;
+		PatchHook(hooker, 0x00416A68, hook_00416A68);
+		back_00416A6E = f(0x00416A6E);
 
-		PatchHook(0x00416848, hook_00416848);
-		back_0041684F += baseOffset;
+		PatchHook(hooker, 0x00416848, hook_00416848);
+		back_0041684F = f(0x0041684F);
 
 		// Prevent "Coffee Guy"
-		PatchJump(0x00419C5F, 0x00419C92 + baseOffset);
+		PatchJump(hooker, 0x00419C5F, 0x00419C92);
 	}
 }

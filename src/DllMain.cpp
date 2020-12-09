@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ LRESULT __stdcall WindowKeyHook(INT nCode, WPARAM wParam, LPARAM lParam)
 			HWND hWnd = GetActiveWindow();
 
 			OpenDraw* ddraw = ddrawList;
-			if (ddraw && ddraw->hWnd == hWnd && !configDisplayWindowed)
+			if (ddraw && ddraw->hWnd == hWnd && !config.display.windowed)
 			{
 				ddraw->isTakeSnapshot = TRUE;
 				Main::SetSyncDraw();
@@ -60,8 +60,6 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
-		LoadDDraw();
-		
 		hDllModule = hModule;
 		if (Hooks::Load())
 		{
@@ -97,6 +95,8 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 				actCtx.dwFlags = ACTCTX_FLAG_HMODULE_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID;
 				hActCtx = CreateActCtxC(&actCtx);
 			}
+
+			timeBeginPeriod(1);
 		}
 		else
 			hDllModule = NULL;
@@ -106,6 +106,8 @@ BOOL __stdcall DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	case DLL_PROCESS_DETACH:
 		if (hDllModule)
 		{
+			timeEndPeriod(1);
+
 			if (hActCtx && hActCtx != INVALID_HANDLE_VALUE)
 				ReleaseActCtxC(hActCtx);
 

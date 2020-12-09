@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -30,23 +30,21 @@
 #define LARGE_SCALE 4096
 #define SMALL_SCALE 2432
 
-BOOL* flagHires = (BOOL*)0x008E81E0;
-DWORD* scale = (DWORD*)0x008E2EE4;
+BOOL* flagHires;
+DWORD* scale;
 
-DWORD* maxScale = (DWORD*)0x008E2B98;
-DWORD* minScale = (DWORD*)0x008E2B8C;
-DWORD* advScale = (DWORD*)0x008E2E50;
+DWORD* advScale;
 
-DWORD* roomSize = (DWORD*)0x008E2E58;
-DWORD* roomClip = (DWORD*)0x008E2E44;
+DWORD* roomSize;
+DWORD* roomClip;
 
-DWORD* shiftScale = (DWORD*)0x008E2BA0;
-DWORD* shiftTile = (DWORD*)0x008E2B9C;
+DWORD* shiftScale;
+DWORD* shiftTile;
 
 VOID __cdecl CheckZoom(DWORD flag)
 {
 	if (flag && !*scale)
-		*scale = !configCameraZoomed ? SMALL_SCALE : LARGE_SCALE;
+		*scale = !config.camera.isZoomed ? SMALL_SCALE : LARGE_SCALE;
 
 	if (flag == 1)
 		*advScale = *flagHires ? SMALL_SCALE : LARGE_SCALE;
@@ -55,41 +53,37 @@ VOID __cdecl CheckZoom(DWORD flag)
 	*roomClip = (*roomSize + 240) / *roomSize + 1;
 }
 
-VOID __declspec(naked) hook_0042C8BC()
-{
-	__asm { JMP CheckZoom }
-}
-
 namespace Hooks
 {
-	VOID Patch_Zoom()
+	VOID Patch_Zoom(HOOKER hooker)
 	{
-		PatchDWord((DWORD)shiftTile, 5);
-		PatchDWord((DWORD)shiftScale, 12);
-		PatchDWord((DWORD)maxScale, SMALL_SCALE);
-		PatchDWord((DWORD)minScale, LARGE_SCALE);
-		PatchDWord(0x008E2B94, NORMAL_SCALE); // unknown
+		DWORD baseOffset = GetBaseOffset(hooker);
 
-		flagHires = (BOOL*)((BOOL)flagHires + baseOffset);
-		scale = (DWORD*)((DWORD)scale + baseOffset);
+		PatchDWord(hooker, 0x008E2B98, SMALL_SCALE); // max scale
+		PatchDWord(hooker, 0x008E2B8C, LARGE_SCALE); // min scale
+		PatchDWord(hooker, 0x008E2B94, NORMAL_SCALE); // unknown
 
-		//maxScale = (DWORD*)((DWORD)maxScale + baseOffset);
-		//minScale = (DWORD*)((DWORD)minScale + baseOffset);
-		advScale = (DWORD*)((DWORD)advScale + baseOffset);
+		PatchDWord(hooker, 0x008E2B9C, 5);
+		PatchDWord(hooker, 0x008E2BA0, 12);
 
-		roomSize = (DWORD*)((DWORD)roomSize + baseOffset);
-		roomClip = (DWORD*)((DWORD)roomClip + baseOffset);
+		shiftTile = (DWORD*)f(0x008E2B9C);
+		shiftScale = (DWORD*)f(0x008E2BA0);
 
-		shiftScale = (DWORD*)((DWORD)shiftScale + baseOffset);
-		shiftTile = (DWORD*)((DWORD)shiftTile + baseOffset);
+		flagHires = (BOOL*)f(0x008E81E0);
+		scale = (DWORD*)f(0x008E2EE4);
 
-		PatchHook(0x0042C8BC, hook_0042C8BC);
+		advScale = (DWORD*)f(0x008E2E50);
+
+		roomSize = (DWORD*)f(0x008E2E58);
+		roomClip = (DWORD*)f(0x008E2E44);
+
+		PatchHook(hooker, 0x0042C8BC, CheckZoom);
 
 		// Prevent from y offset inside builing
-		PatchNop(0x0043E72B, 10);
-		PatchNop(0x00454B9B, 10);
+		PatchNop(hooker, 0x0043E72B, 10);
+		PatchNop(hooker, 0x00454B9B, 10);
 
 		// Prevent static camera
-		PatchNop(0x0044E732, 5);
+		PatchNop(hooker, 0x0044E732, 5);
 	}
 }

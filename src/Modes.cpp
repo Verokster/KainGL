@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ struct Mode
 	1, 1, 0, 0, 0	// 480p
 };
 
-ModePtr flags = { (BOOL*)0x008E81E0, (BOOL*)0x004C0EC0, (BOOL*)0x008E81D8, (BOOL*)0x008E81D0, (BOOL*)0x008E81DC };
+ModePtr flags;
 
 DWORD GetFlag()
 {
@@ -58,61 +58,59 @@ DWORD GetFlag()
 	return 0;
 }
 
-DWORD back_0042789C = 0x0042789C;
+DWORD back_0042789C;
 VOID __declspec(naked) hook_0042785B()
 {
 	__asm
 	{
-		CALL GetFlag
-		JMP back_0042789C
+		call GetFlag
+		jmp back_0042789C
 	}
 }
 
 namespace Hooks
 {
-	VOID Patch_Modes()
+	VOID Patch_Modes(HOOKER hooker)
 	{
-		flags.hiRes = (BOOL*)((DWORD)flags.hiRes + baseOffset);
-		flags.hiColor = (BOOL*)((DWORD)flags.hiColor + baseOffset);
-		flags.window = (BOOL*)((DWORD)flags.window + baseOffset);
-		flags.interlaced = (BOOL*)((DWORD)flags.interlaced + baseOffset);
-		flags.upscale = (BOOL*)((DWORD)flags.upscale + baseOffset);
+		DWORD baseOffset = GetBaseOffset(hooker);
+
+		flags = { (BOOL*)f(0x008E81E0), (BOOL*)f(0x004C0EC0), (BOOL*)f(0x008E81D8), (BOOL*)f(0x008E81D0), (BOOL*)f(0x008E81DC) };
 
 		MemoryCopy((VOID*)(0x004BCF90 + baseOffset), modes, sizeof(modes));
-		PatchHook(0x0042785B, hook_0042785B);
-		back_0042789C += baseOffset;
+		PatchHook(hooker, 0x0042785B, hook_0042785B);
+		back_0042789C = f(0x0042789C);
 
 		//PatchByte(0x0044E6B1 + 1, 0x1B);
-		PatchNop(0x00429AFF, 0x00429B0F - 0x00429AFF);
-		PatchByte(0x00429BBD + 2, 3);
+		PatchJump(hooker, 0x00429AFF, 0x00429B24);
+		PatchByte(hooker, 0x00429BBD + 2, 3);
 
 		// Remove interlace from logic
-		PatchByte(0x0045E855, 0x31);
-		PatchByte(0x0045E4D4, 0xEB);
-		PatchNop(0x00442114, 2); // at GetCursorPosition
+		PatchByte(hooker, 0x0045E855, 0x31);
+		PatchByte(hooker, 0x0045E4D4, 0xEB);
+		PatchNop(hooker, 0x00442114, 2); // at GetCursorPosition
 
-		PatchNop(0x00441EA0, 2);
-		PatchNop(0x00441F5D, 2);
-		PatchNop(0x00441FDA, 2);
-		PatchNop(0x0044206A, 2);
+		PatchNop(hooker, 0x00441EA0, 2);
+		PatchNop(hooker, 0x00441F5D, 2);
+		PatchNop(hooker, 0x00441FDA, 2);
+		PatchNop(hooker, 0x0044206A, 2);
 
-		PatchByte(0x00429747, 0xEB);
+		PatchByte(hooker, 0x00429747, 0xEB);
 
-		PatchNop(0x00429564, 2);
+		PatchNop(hooker, 0x00429564, 2);
 
-		PatchNop(0x00429106, 2);
-		PatchByte(0x00429260, 0xEB);
+		PatchNop(hooker, 0x00429106, 2);
+		PatchByte(hooker, 0x00429260, 0xEB);
 
-		PatchNop(0x00428624, 2);
-		PatchByte(0x004289A6, 0xEB);
+		PatchNop(hooker, 0x00428624, 2);
+		PatchByte(hooker, 0x004289A6, 0xEB);
 
-		PatchNop(0x004283F4, 2);
+		PatchNop(hooker, 0x004283F4, 2);
 
 		// Correct menu and map for 320
-		PatchNop(0x004284F1, 6);
-		PatchNop(0x00428501, 6);
-		PatchNop(0x00428511, 6);
-		PatchNop(0x00428521, 6);
-		PatchNop(0x0042852C, 6);
+		PatchNop(hooker, 0x004284F1, 6);
+		PatchNop(hooker, 0x00428501, 6);
+		PatchNop(hooker, 0x00428511, 6);
+		PatchNop(hooker, 0x00428521, 6);
+		PatchNop(hooker, 0x0042852C, 6);
 	}
 }

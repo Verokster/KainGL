@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -39,12 +39,12 @@ BOOL __stdcall SetCursorPosHook(INT X, INT Y) { return TRUE; };
 
 namespace Hooks
 {
-	VOID Patch_Mouse()
+	VOID Patch_Mouse(HOOKER hooker)
 	{
-		PatchFunction("GetCursorPos", GetCursorPosHook);
-		PatchFunction("SetCursorPos", SetCursorPosHook);
+		PatchImportByName(hooker, "GetCursorPos", GetCursorPosHook);
+		PatchImportByName(hooker, "SetCursorPos", SetCursorPosHook);
 
-		PatchByte(0x00444B68, 0xC3); // Prevent map move by cursor
-		PatchByte(0x00428A1D + 1, 1); // add no wait flag 
+		PatchByte(hooker, 0x00444B68, 0xC3); // Prevent map move by cursor
+		PatchByte(hooker, 0x00428A1D + 1, 1); // add no wait flag 
 	}
 }

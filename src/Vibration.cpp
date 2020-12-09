@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ namespace Vibration
 {
 	VOID Set()
 	{
-		if (!configOtherForceFeedback)
+		if (!config.other.forceFeedback)
 			return;
 
 		for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
@@ -76,7 +76,7 @@ namespace Vibration
 		if (!reset)
 			return;
 
-		options->start = GetTickCount();
+		options->start = timeGetTime();
 		Set();
 	}
 

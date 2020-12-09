@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -57,7 +57,7 @@ namespace Main
 
 	HRESULT __stdcall DirectSoundCreate(GUID* lpGUID, LPDIRECTSOUND* lplpDS, LPUNKNOWN pUnkOuter)
 	{
-		if (configOther3DSound)
+		if (config.other.sound3d)
 		{
 			dsoundList = (IOpenDirectSound*)new OpenSound(dsoundList);
 			*lplpDS = (LPDIRECTSOUND)dsoundList;

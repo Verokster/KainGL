@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -78,17 +78,17 @@ namespace Hooks
 		return RegQueryValueExA(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 	}
 
-	VOID Patch_System()
+	VOID Patch_System(HOOKER hooker)
 	{
-		PatchByte(0x00429430, 0x75);
-		PatchNop(0x0044CAC4, 2);
-		PatchByte(0x00468C6C, 0xC3);
+		PatchByte(hooker, 0x00429430, 0x75);
+		PatchNop(hooker, 0x0044CAC4, 2);
+		PatchByte(hooker, 0x00468C6C, 0xC3);
 		
-		PatchByte(0x00467C74, 0x7E); // patch resolution count check
+		PatchByte(hooker, 0x00467C74, 0x7E); // patch resolution count check
 
-		if (configSingleThread)
-			PatchFunction("PeekMessageA", PeekMessageHook);
+		if (config.single.thread)
+			PatchImportByName(hooker, "PeekMessageA", PeekMessageHook);
 
-		PatchFunction("RegQueryValueExA", RegQueryValueExHook);
+		PatchImportByName(hooker, "RegQueryValueExA", RegQueryValueExHook);
 	}
 }

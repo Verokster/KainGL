@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -225,4 +225,51 @@ struct ModePtr {
 	BOOL* window;
 	BOOL* interlaced;
 	BOOL* upscale;
+};
+
+struct ConfigItem {
+	struct {
+		DWORD version;
+		DWORD filtering;
+	} gl;
+
+	struct {
+		BOOL windowed;
+		Resolution resolution;
+		BOOL aspect;
+		BOOL vSync;
+	} display;
+
+	struct {
+		double limit;
+		double sync;
+		BOOL counter;
+	} fps;
+
+	struct {
+		BOOL skipIntro;
+		BOOL smoother;
+	} video;
+
+	struct {
+		INT voices;
+		INT display;
+		INT subtitles;
+	} language;
+
+	struct {
+		BOOL* isStatic;
+		BOOL isZoomed;
+	} camera;
+
+	struct {
+		BOOL sound3d;
+		BOOL xboxConfig;
+		BOOL forceFeedback;
+	} other;
+
+	struct {
+		BOOL thread;
+		BOOL window;
+	} single;
 };

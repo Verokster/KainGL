@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -65,7 +65,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_ERASEBKGND:
 	{
-		if (!configDisplayWindowed)
+		if (!config.display.windowed)
 		{
 			RECT rc;
 			GetClientRect(hWnd, &rc);
@@ -77,7 +77,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	case WM_GETMINMAXINFO:
 	{
-		if (configDisplayWindowed)
+		if (config.display.windowed)
 		{
 			RECT rect = { 0, 0, MIN_WIDTH, MIN_HEIGHT };
 			AdjustWindowRect(&rect, GetWindowLong(hWnd, GWL_STYLE), FALSE);
@@ -131,7 +131,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		DEVMODE devMode;
 		MemoryZero(&devMode, sizeof(DEVMODE));
 		devMode.dmSize = sizeof(DEVMODE);
-		configFpsSync = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devMode) && (devMode.dmFields & DM_DISPLAYFREQUENCY) ? 1.0f / devMode.dmDisplayFrequency : 0.0;
+		config.fps.sync = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devMode) && (devMode.dmFields & DM_DISPLAYFREQUENCY) ? 1.0f / devMode.dmDisplayFrequency : 0.0;
 
 		return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
 	}
@@ -148,7 +148,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	case WM_ACTIVATEAPP:
 	{
-		if (!configDisplayWindowed)
+		if (!config.display.windowed)
 		{
 			OpenDraw* ddraw = ddrawList;
 			if (ddraw && ddraw->virtualMode)
@@ -178,13 +178,13 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				// Windowed mode on/off
 			case VK_RETURN:
 			{
-				configDisplayWindowed = !configDisplayWindowed;
-				Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_WINDOWED, configDisplayWindowed);
+				config.display.windowed = !config.display.windowed;
+				Config::Set(CONFIG_DISPLAY, CONFIG_DISPLAY_WINDOWED, config.display.windowed);
 
 				OpenDraw* ddraw = ddrawList;
 				if (ddraw)
 				{
-					if (!configDisplayWindowed)
+					if (!config.display.windowed)
 					{
 						if (ddraw->realMode)
 						{
@@ -229,8 +229,8 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			// FPS counter on/off
 			case 'I':
 			{
-				configFpsCounter = !configFpsCounter;
-				Config::Set(CONFIG_FPS, CONFIG_FPS_COUNTER, configFpsCounter);
+				config.fps.counter = !config.fps.counter;
+				Config::Set(CONFIG_FPS, CONFIG_FPS_COUNTER, config.fps.counter);
 				isFpsChanged = TRUE;
 				return NULL;
 			}
@@ -238,8 +238,8 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			// Filtering on/off
 			case 'F':
 			{
-				configGlFiltering = configGlFiltering == GL_LINEAR ? GL_NEAREST : GL_LINEAR;
-				Config::Set(CONFIG_GL, CONFIG_GL_FILTERING, configGlFiltering == GL_LINEAR);
+				config.gl.filtering = config.gl.filtering == GL_LINEAR ? GL_NEAREST : GL_LINEAR;
+				Config::Set(CONFIG_GL, CONFIG_GL_FILTERING, config.gl.filtering == GL_LINEAR);
 
 				OpenDraw* ddraw = ddrawList;
 				if (ddraw)
@@ -357,7 +357,7 @@ LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSELEAVE:
 	case WM_NCMOUSELEAVE:
 	{
-		if (configDisplayWindowed && ddrawList)
+		if (config.display.windowed && ddrawList)
 			while (ShowCursor(TRUE) <= 0);
 
 		return CallWindowProc(OldWindowProc, hWnd, uMsg, wParam, lParam);
@@ -451,7 +451,7 @@ DWORD __stdcall RenderThread(LPVOID lpParameter)
 	OpenDraw* ddraw = (OpenDraw*)lpParameter;
 	ddraw->RenderStartInternal();
 	{
-		if (!configDisplayVSync || ddraw->sceneData->isVSync)
+		if (!config.display.vSync || ddraw->sceneData->isVSync)
 		{
 			do
 				ddraw->RenderFrame();
@@ -461,7 +461,7 @@ DWORD __stdcall RenderThread(LPVOID lpParameter)
 		{
 			do
 			{
-				if (configFpsSync != 0.0)
+				if (config.fps.sync != 0.0)
 				{
 					LONGLONG qp;
 					QueryPerformanceFrequency((LARGE_INTEGER*)&qp);
@@ -472,7 +472,7 @@ DWORD __stdcall RenderThread(LPVOID lpParameter)
 
 					if (currTime >= ddraw->nextSyncTime)
 					{
-						ddraw->nextSyncTime += configFpsSync * (1.0f + (FLOAT)DWORD((currTime - ddraw->nextSyncTime) / configFpsSync));
+						ddraw->nextSyncTime += config.fps.sync * (1.0f + (FLOAT)DWORD((currTime - ddraw->nextSyncTime) / config.fps.sync));
 						ddraw->RenderFrame();
 					}
 				}
@@ -495,11 +495,11 @@ VOID OpenDraw::RenderStart()
 	RECT rect;
 	GetClientRect(this->hWnd, &rect);
 
-	if (configSingleWindow)
+	if (config.single.window)
 		this->hDraw = this->hWnd;
 	else
 	{
-		if (!configDisplayWindowed)
+		if (!config.display.windowed)
 			this->hDraw = CreateWindowEx(
 				WS_EX_CONTROLPARENT | WS_EX_TOPMOST,
 				WC_DRAW,
@@ -540,7 +540,7 @@ VOID OpenDraw::RenderStart()
 	this->viewport.refresh = TRUE;
 	this->isStateChanged = TRUE;
 
-	if (configSingleThread)
+	if (config.single.thread)
 		this->RenderStartInternal();
 	else
 		this->hDrawThread = CreateThread(NULL, NULL, RenderThread, this, NORMAL_PRIORITY_CLASS, NULL);
@@ -553,7 +553,7 @@ VOID OpenDraw::RenderStop()
 
 	this->isFinish = TRUE;
 
-	if (configSingleThread)
+	if (config.single.thread)
 		this->RenderStopinternal();
 	else
 	{
@@ -593,7 +593,7 @@ VOID OpenDraw::RenderFrame()
 
 			SwapBuffers(this->hDc);
 
-			if (!configSingleThread)
+			if (!config.single.thread)
 				WaitForSingleObject(this->hDrawEvent, INFINITE);
 		}
 	}
@@ -644,14 +644,14 @@ VOID OpenDraw::RenderStartInternal()
 						{
 							BOOL isNew = FALSE;
 
-							if (configGlVersion == GL_VER_3)
+							if (config.gl.version == GL_VER_3)
 							{
 								if (glVersion >= GL_VER_3_0)
 									isNew = TRUE;
 								else
 									Main::ShowError("OpenGL 3.0 is not supported", __FILE__, __LINE__);
 							}
-							else if (configGlVersion != GL_VER_1 && glVersion >= GL_VER_3_0)
+							else if (config.gl.version != GL_VER_1 && glVersion >= GL_VER_3_0)
 								isNew = TRUE;
 
 							if (!isNew)
@@ -723,14 +723,14 @@ VOID OpenDraw::CheckVSync()
 	if (glCapsVSync)
 	{
 		BOOL isDWM;
-		this->sceneData->isVSync = configDisplayVSync && (!configDisplayWindowed || !IsDwmCompositionEnabled || IsDwmCompositionEnabled(&isDWM) == S_OK && !isDWM);
+		this->sceneData->isVSync = config.display.vSync && (!config.display.windowed || !IsDwmCompositionEnabled || IsDwmCompositionEnabled(&isDWM) == S_OK && !isDWM);
 		WGLSwapInterval(this->sceneData->isVSync);
 	}
 }
 
 VOID OpenDraw::SetSyncDraw()
 {
-	if (!configSingleThread)
+	if (!config.single.thread)
 	{
 		SetEvent(this->hDrawEvent);
 		Sleep(0);
@@ -741,7 +741,7 @@ VOID OpenDraw::SetSyncDraw()
 
 VOID OpenDraw::CheckSyncDraw()
 {
-	if (configDisplayVSync && configFpsSync != 0.0)
+	if (config.display.vSync && config.fps.sync != 0.0)
 	{
 		LONGLONG qp;
 		QueryPerformanceFrequency((LARGE_INTEGER*)&qp);
@@ -752,7 +752,7 @@ VOID OpenDraw::CheckSyncDraw()
 
 		if (currTime >= this->nextSyncTime)
 		{
-			this->nextSyncTime += configFpsSync * (0.001f + (FLOAT)DWORD((currTime - this->nextSyncTime) / configFpsSync));
+			this->nextSyncTime += config.fps.sync * (0.001f + (FLOAT)DWORD((currTime - this->nextSyncTime) / config.fps.sync));
 
 			if (this->hDrawFlag)
 			{
@@ -859,8 +859,8 @@ VOID OpenDraw::RenderStartSceneOld()
 						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glCapsClampToEdge);
 						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
-						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
+						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, config.gl.filtering);
+						GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, config.gl.filtering);
 
 						GLTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
@@ -939,8 +939,8 @@ VOID OpenDraw::RenderStartSceneNew()
 				GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 				GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 				GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-				GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
-				GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
+				GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, config.gl.filtering);
+				GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, config.gl.filtering);
 
 				INT scalelineData[] = { -1, -1, 0, 0 };
 				GLTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 4, 4, GL_NONE, GL_RED, GL_UNSIGNED_BYTE, scalelineData);
@@ -988,10 +988,14 @@ VOID OpenDraw::RenderStartSceneNew()
 
 OpenDrawSurface* OpenDraw::PreRender()
 {
-	OpenDrawSurface* surface = this->attachedSurface;
+	OpenDrawSurface* surface;
+	do
+		surface = this->attachedSurface;
+	while (surface && surface->isLocked);
+
 	if (surface)
 	{
-		if (configFpsCounter)
+		if (config.fps.counter)
 		{
 			if (isFpsChanged)
 			{
@@ -1002,28 +1006,32 @@ OpenDrawSurface* OpenDraw::PreRender()
 			this->fpsCounter->Calculate();
 		}
 
-		DWORD dibSize = this->virtualMode->dwWidth * this->virtualMode->dwHeight;
-		if (this->virtualMode->dwBPP == 8)
+		this->isLocked = TRUE;
 		{
-			BYTE* src = surface->indexBuffer;
-			PALETTEENTRY* dst = (PALETTEENTRY*)this->textRenderer->dibData;
-			do
-				*dst++ = surface->attachedPallete->entries[*src++];
-			while (--dibSize);
-		}
-		else if (this->virtualMode->dwBPP == 16)
-		{
-			WORD* src = (WORD*)surface->indexBuffer;
-			DWORD* dst = (DWORD*)this->textRenderer->dibData;
-
-			do
+			DWORD dibSize = this->virtualMode->dwWidth * this->virtualMode->dwHeight;
+			if (this->virtualMode->dwBPP == 8)
 			{
-				WORD px = *src++;
-				*dst++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
-			} while (--dibSize);
+				BYTE* src = surface->indexBuffer;
+				PALETTEENTRY* dst = (PALETTEENTRY*)this->textRenderer->dibData;
+				do
+					*dst++ = surface->attachedPallete->entries[*src++];
+				while (--dibSize);
+			}
+			else if (this->virtualMode->dwBPP == 16)
+			{
+				WORD* src = (WORD*)surface->indexBuffer;
+				DWORD* dst = (DWORD*)this->textRenderer->dibData;
+
+				do
+				{
+					WORD px = *src++;
+					*dst++ = ((px & 0x7C00) >> 7) | ((px & 0x3E0) << 6) | ((px & 0x1F) << 19);
+				} while (--dibSize);
+			}
+			else
+				MemoryCopy(this->textRenderer->dibData, surface->indexBuffer, dibSize * sizeof(DWORD));
 		}
-		else
-			MemoryCopy(this->textRenderer->dibData, surface->indexBuffer, dibSize * sizeof(DWORD));
+		this->isLocked = FALSE;
 
 		// Draw Subtitles
 		RECT rcText;
@@ -1032,7 +1040,7 @@ OpenDrawSurface* OpenDraw::PreRender()
 			SubtitlesItem* currentSub = subtitlesCurrent;
 			if (currentSub)
 			{
-				DWORD tick = GetTickCount() - soundStartTime;
+				DWORD tick = timeGetTime() - soundStartTime;
 
 				SubtitlesLine* currentLine = currentSub->lines + currentSub->count - 1;
 				DWORD count = currentSub->count;
@@ -1062,7 +1070,7 @@ OpenDrawSurface* OpenDraw::PreRender()
 		}
 
 		// Draw FPS counter
-		if (configFpsCounter)
+		if (config.fps.counter)
 		{
 			SetRect(&rcText, 10 << this->mult, 5 << this->mult, (LONG)this->virtualMode->dwWidth - (10 << this->mult), (LONG)this->virtualMode->dwHeight - (5 << mult));
 			this->textRenderer->DrawA("FPS: ", this->hFontFps, RGB(255, 255, 255), RGB(0, 0, 0), &rcText, NULL, TR_LEFT | TR_TOP | TR_SHADOW | TR_CALCULATE);
@@ -1142,8 +1150,8 @@ VOID OpenDraw::RenderFrameOld(OpenDrawSurface* surface)
 		{
 			GLActiveTexture(GL_TEXTURE1);
 			GLBindTexture(GL_TEXTURE_2D, renderData->scalelineId);
-			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
-			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
+			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, config.gl.filtering);
+			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, config.gl.filtering);
 			GLActiveTexture(GL_TEXTURE0);
 		}
 	}
@@ -1156,8 +1164,8 @@ VOID OpenDraw::RenderFrameOld(OpenDrawSurface* surface)
 
 		if (updateFilter)
 		{
-			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
-			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
+			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, config.gl.filtering);
+			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, config.gl.filtering);
 		}
 
 		if (renderData->frameCount > 1)
@@ -1251,14 +1259,14 @@ VOID OpenDraw::RenderFrameNew(OpenDrawSurface* surface)
 	if (this->isStateChanged)
 	{
 		this->isStateChanged = FALSE;
-		UseShaderProgram(configGlFiltering == GL_LINEAR ? &renderData->shaders.bicubic : &renderData->shaders.nearest, renderData->maxTexSize);
+		UseShaderProgram(config.gl.filtering == GL_LINEAR ? &renderData->shaders.bicubic : &renderData->shaders.nearest, renderData->maxTexSize);
 
 		if (*flags.interlaced)
 		{
 			GLActiveTexture(GL_TEXTURE1);
 			GLBindTexture(GL_TEXTURE_2D, renderData->textures.scalelineId);
-			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, configGlFiltering);
-			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, configGlFiltering);
+			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, config.gl.filtering);
+			GLTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, config.gl.filtering);
 
 			GLActiveTexture(GL_TEXTURE0);
 			GLBindTexture(GL_TEXTURE_2D, renderData->textures.normalId);
@@ -1363,6 +1371,7 @@ OpenDraw::OpenDraw()
 
 	this->nextSyncTime = 0.0;
 	this->isFinish = TRUE;
+	this->isLocked = FALSE;
 	this->hDrawEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
@@ -1406,7 +1415,7 @@ VOID OpenDraw::CalcView()
 	this->viewport.clipFactor.x = this->viewport.viewFactor.x = (FLOAT)this->viewport.width / (this->virtualMode->dwWidth << *flags.interlaced);
 	this->viewport.clipFactor.y = this->viewport.viewFactor.y = (FLOAT)this->viewport.height / (this->virtualMode->dwHeight << *flags.interlaced);
 
-	if (configDisplayAspect && this->viewport.viewFactor.x != this->viewport.viewFactor.y)
+	if (config.display.aspect && this->viewport.viewFactor.x != this->viewport.viewFactor.y)
 	{
 		if (this->viewport.viewFactor.x > this->viewport.viewFactor.y)
 		{
@@ -1456,8 +1465,8 @@ HRESULT OpenDraw::SetFullscreenMode()
 	devMode.dmPelsWidth = this->realMode->dwWidth;
 	devMode.dmPelsHeight = this->realMode->dwHeight;
 
-	if (configDisplayResolution.index > 1)
-		devMode.dmBitsPerPel = configDisplayResolution.bpp;
+	if (config.display.resolution.index > 1)
+		devMode.dmBitsPerPel = config.display.resolution.bpp;
 
 	devMode.dmFields |= (DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL);
 
@@ -1534,7 +1543,7 @@ HRESULT OpenDraw::SetWindowedMode()
 
 VOID OpenDraw::ScaleMouseIn(LPARAM* lParam)
 {
-	if (configDisplayWindowed || this->virtualMode != this->realMode)
+	if (config.display.windowed || this->virtualMode != this->realMode)
 	{
 		INT xPos = GET_X_LPARAM(*lParam);
 		INT yPos = GET_Y_LPARAM(*lParam);
@@ -1565,7 +1574,7 @@ VOID OpenDraw::ScaleMouseIn(LPARAM* lParam)
 
 VOID OpenDraw::ScaleMouseOut(LPARAM* lParam)
 {
-	if (configDisplayWindowed || this->virtualMode != this->realMode)
+	if (config.display.windowed || this->virtualMode != this->realMode)
 	{
 		INT xPos = (INT)(this->viewport.clipFactor.x * GET_X_LPARAM(*lParam));
 		if (xPos < (INT)this->viewport.rectangle.x)
@@ -1592,7 +1601,7 @@ VOID OpenDraw::ScaleMouseOut(LPARAM* lParam)
 VOID OpenDraw::CheckDisplayMode()
 {
 	DisplayMode* mode = this->virtualMode;
-	if (configDisplayResolution.index)
+	if (config.display.resolution.index)
 		this->realMode = &modesList[9 + (mode->dwBPP == 32 ? 2 : (mode->dwBPP == 16 ? 1 : 0))];
 	else
 	{
@@ -1675,8 +1684,8 @@ HRESULT OpenDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceDes
 	devMode.dmSize = sizeof(DEVMODE);
 
 	DWORD bppCheck = 32;
-	if (configDisplayResolution.index > 1)
-		bppCheck = configDisplayResolution.bpp;
+	if (config.display.resolution.index > 1)
+		bppCheck = config.display.resolution.bpp;
 	else
 	{
 		if (EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devMode) && (devMode.dmFields & DM_BITSPERPEL))
@@ -1724,15 +1733,15 @@ HRESULT OpenDraw::EnumDisplayModes(DWORD dwFlags, LPDDSURFACEDESC lpDDSurfaceDes
 		mode = &modesList[9];
 		for (DWORD i = 0; i < 3; ++i, ++mode)
 		{
-			if (configDisplayResolution.index <= 1 && (devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT)) == (DM_PELSWIDTH | DM_PELSHEIGHT))
+			if (config.display.resolution.index <= 1 && (devMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT)) == (DM_PELSWIDTH | DM_PELSHEIGHT))
 			{
 				mode->dwWidth = devMode.dmPelsWidth;
 				mode->dwHeight = devMode.dmPelsHeight;
 			}
 			else
 			{
-				mode->dwWidth = configDisplayResolution.width;
-				mode->dwHeight = configDisplayResolution.height;
+				mode->dwWidth = config.display.resolution.width;
+				mode->dwHeight = config.display.resolution.height;
 			}
 
 			mode->dwBPP = 8 << i;
@@ -1786,7 +1795,6 @@ HRESULT OpenDraw::SetCooperativeLevel(HWND hWnd, DWORD dwFlags)
 	{
 		this->hWnd = hWnd;
 		this->windowPlacement.length = sizeof(WINDOWPLACEMENT);
-		this->mbPressed = NULL;
 
 		if (!OldWindowProc)
 			OldWindowProc = (WNDPROC)SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WindowProc);
@@ -1812,7 +1820,7 @@ HRESULT OpenDraw::SetDisplayMode(DWORD dwWidth, DWORD dwHeight, DWORD dwBPP)
 	this->virtualMode = &modesList[idx];
 	this->CheckDisplayMode();
 
-	if (configDisplayWindowed)
+	if (config.display.windowed)
 	{
 		if (this->isStylesLoaded)
 			GetWindowPlacement(hWnd, &this->windowPlacement);

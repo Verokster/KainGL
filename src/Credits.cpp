@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -106,7 +106,7 @@ VOID __cdecl PrintSave(CHAR* dst, const CHAR* format, DWORD page, DWORD save)
 
 namespace Hooks
 {
-	VOID Patch_Credits()
+	VOID Patch_Credits(HOOKER hooker)
 	{
 		BYTE* creditsList = NULL;
 		{
@@ -161,13 +161,13 @@ namespace Hooks
 								MemoryCopy(indents + 180, ptr, 90);
 								ptr += 90;
 
-								PatchDWord(0x00419DB7 + 1, 90);
-								PatchDWord(0x00419DA3 + 1, 180);
-								PatchDWord(0x0041A471 + 1, 90);
+								PatchDWord(hooker, 0x00419DB7 + 1, 90);
+								PatchDWord(hooker, 0x00419DA3 + 1, 180);
+								PatchDWord(hooker, 0x0041A471 + 1, 90);
 
-								PatchDWord(0x00419E74 + 2, (DWORD)indents - '!');
-								PatchDWord(0x00419E94 + 2, (DWORD)indents - '!');
-								PatchDWord(0x0041A48C + 3, (DWORD)indents - '!');
+								PatchDWord(hooker, 0x00419E74 + 2, (DWORD)indents - '!');
+								PatchDWord(hooker, 0x00419E94 + 2, (DWORD)indents - '!');
+								PatchDWord(hooker, 0x0041A48C + 3, (DWORD)indents - '!');
 
 								DWORD lines = (DWORD)*(WORD*)ptr;
 								ptr += sizeof(WORD);
@@ -208,59 +208,59 @@ namespace Hooks
 
 									{
 										DWORD address = 0x0041973C;
-										PatchDWord(address, (DWORD)stringsList->strWhelp.text);
+										PatchPtr(hooker, address, stringsList->strWhelp.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strGimp.text);
+										PatchPtr(hooker, address, stringsList->strGimp.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strPrincess.text);
+										PatchPtr(hooker, address, stringsList->strPrincess.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strBride.text);
+										PatchPtr(hooker, address, stringsList->strBride.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strPrince.text);
+										PatchPtr(hooker, address, stringsList->strPrince.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strBloodHunter.text);
+										PatchPtr(hooker, address, stringsList->strBloodHunter.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strCount.text);
+										PatchPtr(hooker, address, stringsList->strCount.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strBaron.text);
+										PatchPtr(hooker, address, stringsList->strBaron.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strOverloard.text);
+										PatchPtr(hooker, address, stringsList->strOverloard.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strSaint.text);
+										PatchPtr(hooker, address, stringsList->strSaint.text);
 										address += 4;
-										PatchDWord(address, (DWORD)stringsList->strDevourerOfWorlds.text);
+										PatchPtr(hooker, address, stringsList->strDevourerOfWorlds.text);
 
 										address = 0x00496A67;
-										PatchBlock(address, stringsList->strYouHave.text, STRINGS_SIZE);
+										PatchBlock(hooker, address, stringsList->strYouHave.text, STRINGS_SIZE);
 										address += STRINGS_SIZE + 1;
-										PatchBlock(address, stringsList->strPerished.text, STRINGS_SIZE);
+										PatchBlock(hooker, address, stringsList->strPerished.text, STRINGS_SIZE);
 										address += (STRINGS_SIZE + 1) << 1;
-										PatchBlock(address, stringsList->strSlayings.text, STRINGS_SIZE);
+										PatchBlock(hooker, address, stringsList->strSlayings.text, STRINGS_SIZE);
 										address += (STRINGS_SIZE + 1) << 1;
-										PatchBlock(address, stringsList->strMeals.text, STRINGS_SIZE);
+										PatchBlock(hooker, address, stringsList->strMeals.text, STRINGS_SIZE);
 										address += (STRINGS_SIZE + 1) << 1;
-										PatchBlock(address, stringsList->strMutilations.text, STRINGS_SIZE);
+										PatchBlock(hooker, address, stringsList->strMutilations.text, STRINGS_SIZE);
 										address += (STRINGS_SIZE + 1) << 1;
-										PatchBlock(address, stringsList->strSecrets.text, STRINGS_SIZE);
+										PatchBlock(hooker, address, stringsList->strSecrets.text, STRINGS_SIZE);
 										address += (STRINGS_SIZE + 1) << 1;
-										PatchBlock(address, stringsList->strPrestige.text, STRINGS_SIZE);
+										PatchBlock(hooker, address, stringsList->strPrestige.text, STRINGS_SIZE);
 
 
-										PatchDWord(0x0041A2DE + 1, (DWORD)stringsList->strYouAre.text);
-										PatchDWord(0x0041A331 + 1, (DWORD)stringsList->strYouAre.text);
+										PatchPtr(hooker, 0x0041A2DE + 1, stringsList->strYouAre.text);
+										PatchPtr(hooker, 0x0041A331 + 1, stringsList->strYouAre.text);
 
-										PatchDWord(0x0041A379 + 1, (DWORD)stringsList->strYouHave.text);
+										PatchPtr(hooker, 0x0041A379 + 1, stringsList->strYouHave.text);
 
-										PatchDWord(0x0041A2F0 + 1, (DWORD)stringsList->strVictorious.text);
-										PatchDWord(0x0041A343 + 1, (DWORD)stringsList->strVictorious.text);
+										PatchPtr(hooker, 0x0041A2F0 + 1, stringsList->strVictorious.text);
+										PatchPtr(hooker, 0x0041A343 + 1, stringsList->strVictorious.text);
 										
-										PatchDWord(0x0041A38B + 1, (DWORD)stringsList->strPerished.text);
+										PatchPtr(hooker, 0x0041A38B + 1, stringsList->strPerished.text);
 
-										PatchDWord(0x0041A707 + 1, (DWORD)stringsList->strPage.text);
+										PatchPtr(hooker, 0x0041A707 + 1, stringsList->strPage.text);
 
-										PatchCall(0x0041A711, PrintPage);
+										PatchCall(hooker, 0x0041A711, PrintPage);
 
-										PatchCall(0x0043DFB7, PrintSave);
+										PatchCall(hooker, 0x0043DFB7, PrintSave);
 									}
 
 									DWORD lines = (DWORD)*(WORD*)ptr;
@@ -301,7 +301,8 @@ namespace Hooks
 
 			DWORD idx = INSERT_INDEX;
 
-			BYTE* originalList = (BYTE*)(0x00496C0A + baseOffset);
+			DWORD baseOffset = GetBaseOffset(hooker);
+			BYTE* originalList = (BYTE*)f(0x00496C0A);
 			MemoryCopy(creditsList, originalList, idx * STR_LENGTH);
 
 			StrCopy((CHAR*)&creditsList[idx++ * STR_LENGTH], "1GL WRAPPER & PATCH");
@@ -312,21 +313,21 @@ namespace Hooks
 			MemoryCopy(&creditsList[idx * STR_LENGTH], originalList + INSERT_INDEX * STR_LENGTH, LIST_LENGTH * STR_LENGTH - INSERT_INDEX * STR_LENGTH);
 		}
 
-		PatchDWord(0x00419826 + 2, (DWORD)creditsList);
-		PatchDWord(0x004199AC + 2, (DWORD)creditsList);
-		PatchDWord(0x004199DE + 2, (DWORD)creditsList);
-		PatchDWord(0x004199EF + 2, (DWORD)creditsList);
-		PatchDWord(0x00419A0D + 2, (DWORD)creditsList);
-		PatchDWord(0x00419A20 + 2, (DWORD)creditsList);
-		PatchDWord(0x00419A36 + 2, (DWORD)creditsList);
+		PatchPtr(hooker, 0x00419826 + 2, creditsList);
+		PatchPtr(hooker, 0x004199AC + 2, creditsList);
+		PatchPtr(hooker, 0x004199DE + 2, creditsList);
+		PatchPtr(hooker, 0x004199EF + 2, creditsList);
+		PatchPtr(hooker, 0x00419A0D + 2, creditsList);
+		PatchPtr(hooker, 0x00419A20 + 2, creditsList);
+		PatchPtr(hooker, 0x00419A36 + 2, creditsList);
 
-		PatchDWord(0x00419C15 + 1, (DWORD)creditsList);
+		PatchPtr(hooker, 0x00419C15 + 1, creditsList);
 
-		PatchDWord(0x00419C6A + 1, (DWORD)creditsList);
-		PatchDWord(0x00419CA8 + 1, (DWORD)creditsList);
-		PatchDWord(0x00419CEC + 3, (DWORD)creditsList);
-		PatchDWord(0x00419CF7 + 1, (DWORD)creditsList);
+		PatchPtr(hooker, 0x00419C6A + 1, creditsList);
+		PatchPtr(hooker, 0x00419CA8 + 1, creditsList);
+		PatchPtr(hooker, 0x00419CEC + 3, creditsList);
+		PatchPtr(hooker, 0x00419CF7 + 1, creditsList);
 
-		PatchByte(0x0041990C + 2, 24); // decrease speed 
+		PatchByte(hooker, 0x0041990C + 2, 24); // decrease speed 
 	}
 }

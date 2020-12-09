@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -32,191 +32,9 @@ CHAR kainJamPath[MAX_PATH];
 
 namespace Hooks
 {
-	PIMAGE_DOS_HEADER headDOS;
-	INT baseOffset;
 	HWND hMainWnd;
 
-	DWORD sub_GetHash = 0x0041279C;
-
-	BOOL __fastcall PatchRedirect(DWORD addr, DWORD dest, DWORD size, BYTE instruction)
-	{
-		DWORD address = addr + baseOffset;
-
-		DWORD old_prot;
-		if (VirtualProtect((VOID*)address, size, PAGE_EXECUTE_READWRITE, &old_prot))
-		{
-			BYTE* jump = (BYTE*)address;
-			*jump = instruction;
-			++jump;
-			*(DWORD*)jump = dest - address - size;
-
-			VirtualProtect((VOID*)address, size, old_prot, &old_prot);
-
-			return TRUE;
-		}
-		return FALSE;
-	}
-
-	BOOL __fastcall PatchJump(DWORD addr, DWORD dest)
-	{
-		INT relative = dest - addr - baseOffset - 2;
-		if (relative >= -128 && relative <= 127)
-			return PatchRedirect(addr, dest, 2, 0xEB);
-		else
-			return PatchRedirect(addr, dest, 5, 0xE9);
-	}
-
-	BOOL __fastcall PatchHook(DWORD addr, VOID* hook)
-	{
-		return PatchRedirect(addr, (DWORD)hook, 5, 0xE9);
-	}
-
-	BOOL __fastcall PatchCall(DWORD addr, VOID* hook)
-	{
-		return PatchRedirect(addr, (DWORD)hook, 5, 0xE8);
-	}
-
-	BOOL __fastcall RedirectCall(DWORD addr, VOID* hook, DWORD* old)
-	{
-		if (ReadDWord(addr + 1, old))
-		{
-			*old += addr + 5 + baseOffset;
-			return PatchCall(addr, hook);
-		}
-
-		return FALSE;
-	}
-
-	BOOL __fastcall PatchNop(DWORD addr, DWORD size)
-	{
-		DWORD address = addr + baseOffset;
-
-		DWORD old_prot;
-		if (VirtualProtect((VOID*)address, size, PAGE_EXECUTE_READWRITE, &old_prot))
-		{
-			MemorySet((VOID*)address, 0x90, size);
-			VirtualProtect((VOID*)address, size, old_prot, &old_prot);
-
-			return TRUE;
-		}
-		return FALSE;
-	}
-
-	BOOL __fastcall PatchBlock(DWORD addr, VOID* block, DWORD size)
-	{
-		DWORD address = addr + baseOffset;
-
-		DWORD old_prot;
-		if (VirtualProtect((VOID*)address, size, PAGE_EXECUTE_READWRITE, &old_prot))
-		{
-			switch (size)
-			{
-			case 4:
-				*(DWORD*)address = *(DWORD*)block;
-				break;
-			case 2:
-				*(WORD*)address = *(WORD*)block;
-				break;
-			case 1:
-				*(BYTE*)address = *(BYTE*)block;
-				break;
-			default:
-				MemoryCopy((VOID*)address, block, size);
-				break;
-			}
-
-			VirtualProtect((VOID*)address, size, old_prot, &old_prot);
-
-			return TRUE;
-		}
-		return FALSE;
-	}
-
-	BOOL __fastcall ReadBlock(DWORD addr, VOID* block, DWORD size)
-	{
-		DWORD address = addr + baseOffset;
-
-		DWORD old_prot;
-		if (VirtualProtect((VOID*)address, size, PAGE_READONLY, &old_prot))
-		{
-			switch (size)
-			{
-			case 4:
-				*(DWORD*)block = *(DWORD*)address;
-				break;
-			case 2:
-				*(WORD*)block = *(WORD*)address;
-				break;
-			case 1:
-				*(BYTE*)block = *(BYTE*)address;
-				break;
-			default:
-				MemoryCopy(block, (VOID*)address, size);
-				break;
-			}
-
-			VirtualProtect((VOID*)address, size, old_prot, &old_prot);
-
-			return TRUE;
-		}
-		return FALSE;
-	}
-
-	BOOL __fastcall PatchWord(DWORD addr, WORD value)
-	{
-		return PatchBlock(addr, &value, sizeof(value));
-	}
-
-	BOOL __fastcall PatchInt(DWORD addr, INT value)
-	{
-		return PatchBlock(addr, &value, sizeof(value));
-	}
-
-	BOOL __fastcall PatchDWord(DWORD addr, DWORD value)
-	{
-		return PatchBlock(addr, &value, sizeof(value));
-	}
-
-	BOOL __fastcall PatchByte(DWORD addr, BYTE value)
-	{
-		return PatchBlock(addr, &value, sizeof(value));
-	}
-
-	BOOL __fastcall ReadWord(DWORD addr, WORD* value)
-	{
-		return ReadBlock(addr, value, sizeof(*value));
-	}
-
-	BOOL __fastcall ReadDWord(DWORD addr, DWORD* value)
-	{
-		return ReadBlock(addr, value, sizeof(*value));
-	}
-
-	DWORD __fastcall PatchFunction(const CHAR* function, VOID* addr, BOOL multiple)
-	{
-		DWORD res = NULL;
-
-		PIMAGE_NT_HEADERS headNT = (PIMAGE_NT_HEADERS)((BYTE*)headDOS + headDOS->e_lfanew);
-
-		PIMAGE_IMPORT_DESCRIPTOR imports = (PIMAGE_IMPORT_DESCRIPTOR)((DWORD)headDOS + headNT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-		for (; imports->Name; ++imports)
-		{
-			CHAR* libraryName = (CHAR*)((DWORD)headDOS + imports->Name);
-			PIMAGE_THUNK_DATA nameThunk = (PIMAGE_THUNK_DATA)((DWORD)headDOS + imports->OriginalFirstThunk);
-			PIMAGE_THUNK_DATA addressThunk = (PIMAGE_THUNK_DATA)((DWORD)headDOS + imports->FirstThunk);
-			for (; nameThunk->u1.AddressOfData; ++nameThunk, ++addressThunk)
-			{
-				DWORD name = (DWORD)headDOS + nameThunk->u1.AddressOfData;
-				CHAR* funcName = (CHAR*)(name + 2);
-
-				WORD indent = 0;
-				if (ReadWord((INT)name - baseOffset, (WORD*)&indent) && !StrCompare(funcName, function) && ReadDWord((INT)&addressThunk->u1.AddressOfData - baseOffset, &res) && PatchDWord((INT)&addressThunk->u1.AddressOfData - baseOffset, (DWORD)addr) && !multiple)
-					return res;
-			}
-		}
-
-		return res;
-	}
+	DWORD sub_GetHash;
 
 	VOID Start()
 	{
@@ -225,78 +43,89 @@ namespace Hooks
 		LoadUnicoWS();
 		LoadDwmAPI();
 		LoadShcore();
-		// -------------
-		Patch_Window();
-		// -------------
-		Patch_Library();
-		Patch_Video();
-		Patch_Trailer();
-		Patch_Subtitles();
-		Patch_System();
-		Patch_Timers();
-		Patch_Audio();
-		Patch_Mouse();
-		Patch_NoCD();
-		Patch_Language();
-		Patch_Zoom();
-		Patch_EagleEye();
-		Patch_Modes();
-		Patch_Input();
+
+		HOOKER hooker = CreateHooker(GetModuleHandle(NULL));
+		{
+			// -------------
+			Patch_Window(hooker);
+			// -------------
+			Patch_Library(hooker);
+			Patch_Video(hooker);
+			Patch_Trailer(hooker);
+			Patch_Subtitles(hooker);
+			Patch_System(hooker);
+			Patch_Timers(hooker);
+			Patch_Audio(hooker);
+			Patch_Mouse(hooker);
+			Patch_NoCD(hooker);
+			Patch_Language(hooker);
+			Patch_Zoom(hooker);
+			Patch_EagleEye(hooker);
+			Patch_Modes(hooker);
+			Patch_Input(hooker);
+			Patch_Image(hooker);
+		}
+		ReleaseHooker(hooker);
 	}
 
-	DWORD back_0046B6AC = 0x0046B6AC;
+	DWORD back_0046B6AC;
 	VOID __declspec(naked) hook_0046841E()
 	{
 		_asm
 		{
-			CALL Start
-			JMP back_0046B6AC
+			call Start
+			jmp back_0046B6AC
 		}
 	}
 
 	BOOL Load()
 	{
-		headDOS = (PIMAGE_DOS_HEADER)GetModuleHandle(NULL);
-		PIMAGE_NT_HEADERS headNT = (PIMAGE_NT_HEADERS)((BYTE*)headDOS + headDOS->e_lfanew);
-		baseOffset = (INT)headDOS - (INT)headNT->OptionalHeader.ImageBase;
-
-		DWORD check;
-		if (ReadDWord(0x0045F5DA + 1, &check) && check == WS_POPUP)
+		HOOKER hooker = CreateHooker(GetModuleHandle(NULL));
 		{
-			GetModuleFileName(NULL, kainDirPath, sizeof(kainDirPath) - 1);
-			CHAR* p = StrLastChar(kainDirPath, '\\');
-			if (!p)
-				p = kainDirPath;
-			StrCopy(p, "\\KAIN");
+			DWORD baseOffset = GetBaseOffset(hooker);
 
-			BOOL found = FALSE;
-			HKEY phkResult;
-			if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software", 0, KEY_ALL_ACCESS, &phkResult) == ERROR_SUCCESS)
+			DWORD check;
+			if (ReadDWord(hooker, 0x0045F5DA + 1, &check) && check == WS_POPUP)
 			{
-				HKEY hKey;
-				if (RegOpenKeyExA(phkResult, "LegacyofKain", 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
-				{
-					DWORD size = sizeof(kainJamPath);
-					found = RegQueryValueExA(hKey, "JAMPath", 0, 0, (BYTE*)kainJamPath, &size) == ERROR_SUCCESS;
+				GetModuleFileName(NULL, kainDirPath, sizeof(kainDirPath) - 1);
+				CHAR* p = StrLastChar(kainDirPath, '\\');
+				if (!p)
+					p = kainDirPath;
+				StrCopy(p, "\\KAIN");
 
-					RegCloseKey(hKey);
+				BOOL found = FALSE;
+				HKEY phkResult;
+				if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software", 0, KEY_ALL_ACCESS, &phkResult) == ERROR_SUCCESS)
+				{
+					HKEY hKey;
+					if (RegOpenKeyExA(phkResult, "LegacyofKain", 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
+					{
+						DWORD size = sizeof(kainJamPath);
+						found = RegQueryValueExA(hKey, "JAMPath", 0, 0, (BYTE*)kainJamPath, &size) == ERROR_SUCCESS;
+
+						RegCloseKey(hKey);
+					}
+
+					RegCloseKey(phkResult);
 				}
 
-				RegCloseKey(phkResult);
+				if (!found)
+					StrCopy(kainJamPath, kainDirPath);
+
+				config.camera.isStatic = (BOOL*)(0x005947CC + baseOffset);
+
+				DWORD old_prot;
+				VirtualProtect((VOID*)(0x00480000 + baseOffset), 0x2000, PAGE_EXECUTE_READWRITE, &old_prot);
+
+				PatchHook(hooker, 0x0046841E, hook_0046841E);
+				back_0046B6AC = f(0x0046B6AC);
+
+				sub_GetHash = f(0x0041279C);
+
+				return TRUE;
 			}
-
-			if (!found)
-				StrCopy(kainJamPath, kainDirPath);
-
-			configCameraStatic = (BOOL*)(0x005947CC + baseOffset);
-
-			PatchHook(0x0046841E, hook_0046841E);
-			back_0046B6AC += baseOffset;
-
-			sub_GetHash += baseOffset;
-
-			return TRUE;
 		}
+		ReleaseHooker(hooker);
 
 		return FALSE;
 	}

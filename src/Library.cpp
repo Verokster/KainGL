@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -28,14 +28,14 @@
 
 namespace Hooks
 {
-	VOID Patch_Library()
+	VOID Patch_Library(HOOKER hooker)
 	{
-		PatchFunction("DirectDrawEnumerateA", Main::DirectDrawEnumerateA);
-		PatchFunction("DirectDrawCreate", Main::DirectDrawCreate);
-		DSCreate = (DIRECTSOUNDCREATE)PatchFunction("DirectSoundCreate", Main::DirectSoundCreate);
+		PatchImportByName(hooker, "DirectDrawEnumerateA", Main::DirectDrawEnumerateA);
+		PatchImportByName(hooker, "DirectDrawCreate", Main::DirectDrawCreate);
+		PatchImportByName(hooker, "DirectSoundCreate", Main::DirectSoundCreate, (DWORD*)&DSCreate);
 
-		PatchHook(0x0046F680, (VOID*)memset);
-		PatchHook(0x0046F64D, (VOID*)memcpy);
-		PatchHook(0x0046FBD6, (VOID*)memcmp);
+		PatchHook(hooker, 0x0046F680, memset);
+		PatchHook(hooker, 0x0046F64D, memcpy);
+		PatchHook(hooker, 0x0046FBD6, memcmp);
 	}
 }

@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -197,15 +197,15 @@ DWORD __stdcall GetJoyID()
 	return 0;
 }
 
-DWORD back_00427552 = 0x00427552;
+DWORD back_00427552;
 VOID __declspec(naked) hook_00427536()
 {
 	__asm
 	{
-		CALL GetJoyID
-		MOV EBX, EAX
+		call GetJoyID
+		mov ebx, eax
 
-		JMP back_00427552
+		jmp back_00427552
 	}
 }
 
@@ -229,15 +229,15 @@ VOID __stdcall ChangeIconIndex(DWORD index, DWORD* position)
 	*position = MAKELONG(pos.x, pos.y);
 }
 
-DWORD back_00414478 = 0x00414478;
+DWORD back_00414478;
 VOID __declspec(naked) hook_0041443B()
 {
 	__asm
 	{
-		PUSH ESP
-		PUSH EBX
-		CALL ChangeIconIndex
-		JMP back_00414478
+		push esp
+		push ebx
+		call ChangeIconIndex
+		jmp back_00414478
 	}
 }
 
@@ -246,32 +246,32 @@ VOID __declspec(naked) hook_0041443B()
 INT controState;
 BOOL isController;
 
-DWORD* joyList = (DWORD*)0x004BCCEC;
-DWORD* joyPsList = (DWORD*)0x004BCD6C;
-DWORD* joyXboxList = (DWORD*)0x004BCDEC;
-DWORD* joyTempList = (DWORD*)0x00511A74;
+DWORD* joyList;
+DWORD* joyPsList;
+DWORD* joyXboxList;
+DWORD* joyTempList;
 
-BYTE* keyList = (BYTE*)0x004BD1FB;
-BYTE* keyDefaultList = (BYTE*)0x004BD1F1;
-BYTE* keyTempList = (BYTE*)0x00511AF4;
+BYTE* keyList;
+BYTE* keyDefaultList;
+BYTE* keyTempList;
 
 VOID __stdcall InitControllesSetup()
 {
 	controState = 0;
-	isXbox = configOtherXboxConfig;
+	isXbox = config.other.xboxConfig;
 }
 
-DWORD back_00413A18 = 0x00413A18;
+DWORD back_00413A18;
 VOID __declspec(naked) hook_00413A12()
 {
 	__asm
 	{
-		CALL InitControllesSetup
-		JMP back_00413A18
+		call InitControllesSetup
+		jmp back_00413A18
 	}
 }
 
-DWORD sub_004467FC = 0x004467FC;
+DWORD sub_004467FC;
 VOID __stdcall PressToogle(BOOL isRight)
 {
 	if (isRight)
@@ -293,7 +293,7 @@ VOID __stdcall PressToogle(BOOL isRight)
 	{
 		MemoryCopy(joyList, joyTempList, 32 * sizeof(DWORD));
 		MemoryCopy(keyList, keyTempList, 10 * sizeof(BYTE));
-		isXbox = configOtherXboxConfig;
+		isXbox = config.other.xboxConfig;
 	}
 	else
 	{
@@ -308,15 +308,15 @@ VOID __stdcall PressToogle(BOOL isRight)
 	}
 }
 
-DWORD back_00413DCD = 0x00413DCD;
+DWORD back_00413DCD;
 // left
 VOID __declspec(naked) hook_00413BBA()
 {
 	__asm
 	{
-		PUSH 0
-		CALL PressToogle
-		JMP back_00413DCD
+		push 0
+		call PressToogle
+		jmp back_00413DCD
 	}
 }
 
@@ -325,59 +325,61 @@ VOID __declspec(naked) hook_00413BF5()
 {
 	__asm
 	{
-		PUSH 1
-		CALL PressToogle
-		JMP back_00413DCD
+		push 1
+		call PressToogle
+		jmp back_00413DCD
 	}
 }
 
 VOID __stdcall AcceptControls()
 {
 	controState = 0;
-	configOtherXboxConfig = isXbox;
+	config.other.xboxConfig = isXbox;
 }
 
-DWORD back_00413D08 = 0x00413D08;
+DWORD back_00413D08;
 VOID __declspec(naked) hook_00413CF7()
 {
 	__asm
 	{
-		CALL AcceptControls
-		JMP back_00413D08
+		call AcceptControls
+		jmp back_00413D08
 	}
 }
 
-DWORD back_00413D87 = 0x00413D87;
+DWORD back_00413D87;
 VOID __declspec(naked) hook_00413D76()
 {
 	__asm
 	{
-		CALL AcceptControls
-		JMP back_00413D87
+		call AcceptControls
+		jmp back_00413D87
 	}
 }
 
 VOID __stdcall SetControls()
 {
 	AcceptControls();
-	Config::Set(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, configOtherXboxConfig);
+	Config::Set(CONFIG_OTHER, CONFIG_OTHER_XBOX_CONFIG, config.other.xboxConfig);
 }
 
 VOID __declspec(naked) hook_00413F0B()
 {
 	__asm
 	{
-		POP EBP
-		POP EDI
-		POP EBX
-		JMP SetControls
+		pop ebp
+		pop edi
+		pop ebx
+		jmp SetControls
 	}
 }
 
 namespace Hooks
 {
-	VOID Patch_Input()
+	VOID Patch_Input(HOOKER hooker)
 	{
+		DWORD baseOffset = GetBaseOffset(hooker);
+
 		if (InputGetState)
 		{
 			for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
@@ -388,41 +390,41 @@ namespace Hooks
 					isController = TRUE;
 
 					// Change icon position
-					PatchHook(0x0041443B, hook_0041443B);
-					back_00414478 += baseOffset;
+					PatchHook(hooker, 0x0041443B, hook_0041443B);
+					back_00414478 = f(0x00414478);
 
-					PatchFunction("joyGetNumDevs", joyGetNumDevsHook);
-					PatchFunction("joyGetPos", joyGetPosHook);
-					PatchFunction("joyGetDevCapsA", joyGetDevCapsAHook);
-					PatchByte(0x0042747F + 2, XUSER_MAX_COUNT);
-					PatchHook(0x00427536, hook_00427536);
-					back_00427552 += baseOffset;
+					PatchImportByName(hooker, "joyGetNumDevs", joyGetNumDevsHook);
+					PatchImportByName(hooker, "joyGetPos", joyGetPosHook);
+					PatchImportByName(hooker, "joyGetDevCapsA", joyGetDevCapsAHook);
+					PatchByte(hooker, 0x0042747F + 2, XUSER_MAX_COUNT);
+					PatchHook(hooker, 0x00427536, hook_00427536);
+					back_00427552 = f(0x00427552);
 
 					// Accept joy controls
-					PatchHook(0x00413F0B, hook_00413F0B);
+					PatchHook(hooker, 0x00413F0B, hook_00413F0B);
 					break;
 				}
 			}
 		}
 
 		// Correct joy buttons draw position
-		PatchNop(0x0041446C, 2);
-		PatchDWord(0x00414213 + 1, 17);
+		PatchNop(hooker, 0x0041446C, 2);
+		PatchDWord(hooker, 0x00414213 + 1, 17);
 
 		// Add PS / XBOX switch
-		PatchHook(0x00413A12, hook_00413A12);
-		back_00413A18 += baseOffset;
+		PatchHook(hooker, 0x00413A12, hook_00413A12);
+		back_00413A18 = f(0x00413A18);
 
-		sub_004467FC += baseOffset;
+		sub_004467FC = f(0x004467FC);
 
-		PatchHook(0x00413BBA, hook_00413BBA);
-		PatchHook(0x00413BF5, hook_00413BF5);
-		back_00413DCD += baseOffset;
+		PatchHook(hooker, 0x00413BBA, hook_00413BBA);
+		PatchHook(hooker, 0x00413BF5, hook_00413BF5);
+		back_00413DCD = f(0x00413DCD);
 
-		PatchHook(0x00413CF7, hook_00413CF7);
-		back_00413D08 += baseOffset;
-		PatchHook(0x00413D76, hook_00413D76);
-		back_00413D87 += baseOffset;
+		PatchHook(hooker, 0x00413CF7, hook_00413CF7);
+		back_00413D08 = f(0x00413D08);
+		PatchHook(hooker, 0x00413D76, hook_00413D76);
+		back_00413D87 = f(0x00413D87);
 
 		// Correct label shadows
 		labelShadowsList = (LabelShadow*)((DWORD)labelShadowsList + baseOffset);
@@ -437,13 +439,13 @@ namespace Hooks
 
 		xJoyListConnected = (BOOL*)((DWORD)xJoyListConnected + baseOffset);
 
-		joyList = (DWORD*)((DWORD)joyList + baseOffset);
-		joyPsList = (DWORD*)((DWORD)joyPsList + baseOffset);
-		joyXboxList = (DWORD*)((DWORD)joyXboxList + baseOffset);
-		joyTempList = (DWORD*)((DWORD)joyTempList + baseOffset);
+		joyList = (DWORD*)f(0x004BCCEC);
+		joyPsList = (DWORD*)f(0x004BCD6C);
+		joyXboxList = (DWORD*)f(0x004BCDEC);
+		joyTempList = (DWORD*)f(0x00511A74);
 
-		keyList = (BYTE*)((DWORD)keyList + baseOffset);
-		keyDefaultList = (BYTE*)((DWORD)keyDefaultList + baseOffset);
-		keyTempList = (BYTE*)((DWORD)keyTempList + baseOffset);
+		keyList = (BYTE*)f(0x004BD1FB);
+		keyDefaultList = (BYTE*)f(0x004BD1F1);
+		keyTempList = (BYTE*)f(0x00511AF4);
 	}
 }

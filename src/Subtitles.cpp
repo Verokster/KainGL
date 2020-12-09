@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -76,137 +76,138 @@ VOID __stdcall CheckPlay(CHAR* fileName)
 
 	if (found)
 	{
-		soundStartTime = GetTickCount();
+		soundStartTime = timeGetTime();
 		soundSuspendTime = 0;
 	}
 	else
 		subtitlesCurrent = NULL;
 }
 
-DWORD sub_00448834 = 0x00448834;
-DWORD back_00447836 = 0x00447836;
+DWORD sub_00448834;
+DWORD back_00447836;
 VOID __declspec(naked) hook_00447831()
 {
 	__asm
 	{
-		PUSH EBP
-		CALL CheckPlay
+		push ebp
+		call CheckPlay
 
-		CALL sub_00448834
-		JMP back_00447836
+		call sub_00448834
+		jmp back_00447836
 	}
 }
 
-DWORD sub_00446988 = 0x00446988;
-DWORD back_00445895 = 0x00445895;
+DWORD sub_00446988;
+DWORD back_00445895;
 VOID __declspec(naked) hook_00445890()
 {
 	__asm
 	{
-		PUSH EAX
-		CALL CheckPlay
+		push eax
+		call CheckPlay
 
-		CALL sub_00446988
-		JMP back_00445895
+		call sub_00446988
+		jmp back_00445895
 	}
 }
 
-DWORD back_00458D86 = 0x00458D86;
+DWORD back_00458D86;
 VOID __declspec(naked) hook_00458D80()
 {
 	__asm
 	{
-		XOR EAX, EAX
-		MOV subtitlesCurrent, EAX
+		xor eax, eax
+		mov subtitlesCurrent, eax
 
-		PUSH    EBX
-		PUSH    ESI
-		PUSH    EDI
-		PUSH    EBP
-		XOR     AH, AH
+		push ebx
+		push esi
+		push edi
+		push ebp
+		xor ah, ah
 
-		JMP back_00458D86
+		jmp back_00458D86
 	}
 }
 
-DWORD back_0045ABD9 = 0x0045ABD9;
-DWORD sub_00438B70 = 0x00438B70; // CheckAndPlay
-DWORD some_004C0A28 = 0x004C0A28;
+DWORD back_0045ABD9;
+DWORD sub_00438B70; // CheckAndPlay
+DWORD some_004C0A28;
 VOID __declspec(naked) hook_0045ABD4()
 {
-	__asm
-	{
-		MOV EAX, some_004C0A28
-		MOV EAX, DWORD PTR DS : [EAX]
-		TEST EAX, EAX
-		JZ lbl_back
-		CALL sub_00438B70
-		lbl_back : JMP back_0045ABD9
+	__asm {
+		mov eax, some_004C0A28
+		mov eax, [eax]
+		test eax, eax
+		jz lbl_back
+		call sub_00438B70
+		lbl_back : jmp back_0045ABD9
 	}
 }
 
-DWORD sub_004386F0 = 0x004386F0;
-DWORD back_004458F3 = 0x004458F3;
+DWORD sub_004386F0;
+DWORD back_004458F3;
 VOID __declspec(naked) hook_004458EE()
 {
 	__asm
 	{
-		XOR EAX, EAX
-		INC EAX
-		MOV soundIsInventory, EAX
+		xor eax, eax
+		inc eax
+		mov soundIsInventory, eax
 
-		CALL sub_004386F0
-		JMP back_004458F3
+		call sub_004386F0
+		jmp back_004458F3
 	}
 }
 
-DWORD back_004409A3 = 0x004409A3;
+DWORD back_004409A3;
 VOID __declspec(naked) hook_0044099E()
 {
 	__asm
 	{
-		XOR EAX, EAX
-		INC EAX
-		MOV soundIsInventory, EAX
+		xor eax, eax
+		inc eax
+		mov soundIsInventory, eax
 
-		CALL sub_004386F0
-		JMP back_004409A3
+		call sub_004386F0
+		jmp back_004409A3
 	}
 }
 
 namespace Hooks
 {
-	VOID Patch_Subtitles()
+	VOID Patch_Subtitles(HOOKER hooker)
 	{
-		if (configLangSubtitles < 0)
+		if (config.language.subtitles < 0)
 			return;
 
-		// Check for subtitles
-		PatchHook(0x00447831, hook_00447831);
-		sub_00448834 += baseOffset;
-		back_00447836 += baseOffset;
+		DWORD baseOffset = GetBaseOffset(hooker);
 
-		PatchHook(0x00445890, hook_00445890);
-		sub_00446988 += baseOffset;
-		back_00445895 += baseOffset;
+		// Check for subtitles
+		PatchHook(hooker, 0x00447831, hook_00447831);
+		sub_00448834 = f(0x00448834);
+		back_00447836 = f(0x00447836);
+
+		PatchHook(hooker, 0x00445890, hook_00445890);
+		sub_00446988 = f(0x00446988);
+		back_00445895 = f(0x00445895);
 
 		// Option music - release subtitles
-		PatchHook(0x00458D80, hook_00458D80);
-		back_00458D86 += baseOffset;
+		PatchHook(hooker, 0x00458D80, hook_00458D80);
+		back_00458D86 = f(0x00458D86);
 
-		PatchHook(0x0045ABD4, hook_0045ABD4);
-		back_0045ABD9 += baseOffset;
-		sub_00438B70 += baseOffset;
-		some_004C0A28 += baseOffset;
+		PatchHook(hooker, 0x0045ABD4, hook_0045ABD4);
+		back_0045ABD9 = f(0x0045ABD9);
+		sub_00438B70 = f(0x00438B70);
+		some_004C0A28 = f(0x004C0A28);
 
 		// Set flags for display rectangle
-		sub_004386F0 += baseOffset;
+		sub_004386F0 = f(0x004386F0);
 
-		PatchHook(0x004458EE, hook_004458EE);
-		back_004458F3 += baseOffset;
+		PatchHook(hooker, 0x004458EE, hook_004458EE);
+		back_004458F3 = f(0x004458F3);
 
-		PatchHook(0x0044099E, hook_0044099E);
-		back_004409A3 += baseOffset;
+		PatchHook(hooker, 0x0044099E, hook_0044099E);
+		back_004409A3 = f(0x004409A3);
 
 		HANDLE hFile = CreateFile(langFiles.subtitlesFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 		if (hFile)
@@ -301,7 +302,7 @@ namespace Hooks
 							DWORD tempLength = StrLength(tempPath);
 
 							// prepare random
-							SeedRandom(GetTickCount());
+							SeedRandom(timeGetTime());
 
 							CHAR familiesList[2][MAX_PATH];
 							CHAR* filePath = fontFiles[0];
@@ -367,7 +368,7 @@ namespace Hooks
 								fontItem->background = RGB(r, g, b);
 
 								fontItem->font = CreateFont(fontSize, 0, 0, 0, (fontType & 0x1) ? 700 : 0, fontType & 0x10, FALSE, FALSE, ANSI_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, familiesList[idx]);
-								
+
 								if (filesCount != 1)
 									++idx;
 
@@ -385,9 +386,9 @@ namespace Hooks
 								fontItem->background = RGB(0, 0, 0);
 
 								fontItem->font = CreateFont(count == 1 ? 24 : 13, 0, 0, 0, 0, 0, FALSE, FALSE, ANSI_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, "Arial");
-								
+
 								++fontItem;
-							}  while (--count);
+							} while (--count);
 						}
 					}
 

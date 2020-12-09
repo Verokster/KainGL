@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,11 @@
 
 LangFiles langFiles;
 
-DWORD* filesCount = (DWORD*)0x008E2E20;
-FileHeader* filesHeaders = (FileHeader*)0x00506AA4;
-FILE** filesHandlers = (FILE**)0x00501324;
+DWORD* filesCount;
+FileHeader* filesHeaders;
+FILE** filesHandlers;
 
-CHAR* pillBigPath = (CHAR*)0x005012A4;
+CHAR* pillBigPath;
 CHAR audioBigPath[MAX_PATH];
 
 CHAR* bigPathes[MAX_FILES_COUNT];
@@ -109,18 +109,22 @@ VOID LoadBigFiles()
 	LoadLangBigFile(langFiles.voicesFile);
 	LoadLangBigFile(langFiles.interfaceFile);
 
-	Hooks::Patch_Credits();
+	HOOKER hooker = CreateHooker(GetModuleHandle(NULL));
+	{
+		Hooks::Patch_Credits(hooker);
+	}
+	ReleaseHooker(hooker);
 }
 
 VOID __declspec(naked) hook_00412856()
 {
 	__asm
 	{
-		CALL LoadBigFiles
-		POP EBX
-		XOR EAX, EAX
-		INC EAX
-		RETN
+		call LoadBigFiles
+		pop ebx
+		xor eax, eax
+		inc eax
+		retn
 	}
 }
 
@@ -129,99 +133,101 @@ VOID __stdcall GetFilePath(DWORD index, CHAR** outPath)
 	*outPath = bigPathes[index];
 }
 
-DWORD back_00412C8E = 0x00412C8E;
+DWORD back_00412C8E;
 VOID __declspec(naked) hook_00412C89()
 {
 	__asm
 	{
-		PUSH EAX
-		PUSH ESP
-		PUSH EBX
-		CALL GetFilePath
-		JMP back_00412C8E
+		push eax
+		push esp
+		push ebx
+		call GetFilePath
+		jmp back_00412C8E
 	}
 }
 
-DWORD back_00412D70 = 0x00412D70;
+DWORD back_00412D70;
 VOID __declspec(naked) hook_00412D6B()
 {
 	__asm
 	{
-		PUSH EAX
-		PUSH ESP
-		PUSH EBX
-		CALL GetFilePath
-		JMP back_00412D70
+		push eax
+		push esp
+		push ebx
+		call GetFilePath
+		jmp back_00412D70
 	}
 }
 
-DWORD back_00412DDE = 0x00412DDE;
+DWORD back_00412DDE;
 VOID __declspec(naked) hook_00412DD9()
 {
 	__asm
 	{
-		PUSH EAX
-		PUSH ESP
-		PUSH EBX
-		CALL GetFilePath
-		JMP back_00412DDE
+		push eax
+		push esp
+		push ebx
+		call GetFilePath
+		jmp back_00412DDE
 	}
 }
 
-DWORD back_00412F8C = 0x00412F8C;
+DWORD back_00412F8C;
 VOID __declspec(naked) hook_00412F87()
 {
 	__asm
 	{
-		PUSH EAX
-		PUSH ESP
-		PUSH EBX
-		CALL GetFilePath
-		JMP back_00412F8C
+		push eax
+		push esp
+		push ebx
+		call GetFilePath
+		jmp back_00412F8C
 	}
 }
 
-DWORD back_00413163 = 0x00413163;
+DWORD back_00413163;
 VOID __declspec(naked) hook_0041315E()
 {
 	__asm
 	{
-		PUSH EAX
-		PUSH ESP
-		PUSH ESI
-		CALL GetFilePath
-		JMP back_00413163
+		push eax
+		push esp
+		push esi
+		call GetFilePath
+		jmp back_00413163
 	}
 }
 
 namespace Hooks
 {
-	VOID Patch_Language()
+	VOID Patch_Language(HOOKER hooker)
 	{
-		filesCount = (DWORD*)((DWORD)filesCount + baseOffset);
-		filesHeaders = (FileHeader*)((DWORD)filesHeaders + baseOffset);
-		filesHandlers = (FILE**)((DWORD)filesHandlers + baseOffset);
+		DWORD baseOffset = GetBaseOffset(hooker);
 
-		pillBigPath = (CHAR*)((DWORD)pillBigPath + baseOffset);
+		filesCount = (DWORD*)f(0x008E2E20);
+		filesHeaders = (FileHeader*)f(0x00506AA4);
+		filesHandlers = (FILE**)f(0x00501324);
 
-		PatchByte(0x0044E669, 0xEB); // remove language check
+		pillBigPath = (CHAR*)f(0x005012A4);
 
-		PatchHook(0x00412856, hook_00412856); // Load other big files
+		PatchByte(hooker, 0x0044E669, 0xEB); // remove language check
+
+		PatchHook(hooker, 0x00412856, hook_00412856); // Load other big files
 
 		// retrive big pathes by files index
-		PatchHook(0x00412C89, hook_00412C89);
-		back_00412C8E += baseOffset;
+		PatchHook(hooker, 0x00412C89, hook_00412C89);
+		back_00412C8E = f(0x00412C8E);
 
-		PatchHook(0x00412D6B, hook_00412D6B);
-		back_00412D70 += baseOffset;
+		PatchHook(hooker, 0x00412D6B, hook_00412D6B);
+		back_00412D70 = f(0x00412D70);
 
-		PatchHook(0x00412DD9, hook_00412DD9);
-		back_00412DDE += baseOffset;
+		PatchHook(hooker, 0x00412DD9, hook_00412DD9);
+		back_00412DDE = f(0x00412DDE);
 
-		PatchHook(0x00412F87, hook_00412F87);
-		back_00412F8C += baseOffset;
+		PatchHook(hooker, 0x00412F87, hook_00412F87);
+		back_00412F8C = f(0x00412F8C);
 
-		PatchHook(0x0041315E, hook_0041315E);
-		back_00413163 += baseOffset;
+		PatchHook(hooker, 0x0041315E, hook_0041315E);
+		back_00413163 = f(0x00413163);
 	}
 }

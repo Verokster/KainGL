@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-	Copyright (c) 2019 Oleksiy Ryabchun
+	Copyright (c) 2020 Oleksiy Ryabchun
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -26,36 +26,7 @@
 #include "Config.h"
 #include "Glib.h"
 
-TCHAR iniFile[MAX_PATH];
-
-DWORD configGlVersion;
-DWORD configGlFiltering;
-
-BOOL configDisplayWindowed;
-Resolution configDisplayResolution;
-BOOL configDisplayAspect;
-BOOL configDisplayVSync;
-
-BOOL configFpsCounter;
-DOUBLE configFpsLimit;
-DOUBLE configFpsSync;
-
-BOOL configVideoSkipIntro;
-BOOL configVideoSmoother;
-
-INT configLangVoices;
-INT configLangInterface;
-INT configLangSubtitles;
-
-BOOL* configCameraStatic;
-BOOL configCameraZoomed;
-
-BOOL configOther3DSound;
-BOOL configOtherXboxConfig;
-BOOL configOtherForceFeedback;
-
-BOOL configSingleThread;
-BOOL configSingleWindow;
+ConfigItem config;
 
 namespace Config
 {
