@@ -39,6 +39,7 @@ BOOL __stdcall SetCursorPosHook(INT X, INT Y) { return TRUE; };
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Mouse(HOOKER hooker)
 	{
 		PatchImportByName(hooker, "GetCursorPos", GetCursorPosHook);
@@ -47,4 +48,5 @@ namespace Hooks
 		PatchByte(hooker, 0x00444B68, 0xC3); // Prevent map move by cursor
 		PatchByte(hooker, 0x00428A1D + 1, 1); // add no wait flag 
 	}
+#pragma optimize("", on)
 }

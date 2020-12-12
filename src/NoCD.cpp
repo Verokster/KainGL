@@ -27,6 +27,7 @@
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_NoCD(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -34,4 +35,5 @@ namespace Hooks
 		PatchDWord(hooker, 0x0044E6F8 + 2, f(0x005947F4));
 		PatchDWord(hooker, 0x0044E737 + 1, f(0x005947E8));
 	}
+#pragma optimize("", on)
 }

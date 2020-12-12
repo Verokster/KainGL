@@ -28,9 +28,11 @@
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Timers(HOOKER hooker)
 	{
 		PatchImportByName(hooker, "GetTickCount", timeGetTime);
 		PatchNop(hooker, 0x0044436E, 2); // remove timer for gameplay
 	}
+#pragma optimize("", on)
 }

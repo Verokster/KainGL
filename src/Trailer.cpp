@@ -26,54 +26,55 @@
 #include "Hooks.h"
 #include "Config.h"
 
-namespace Hooks
+const CHAR* logoList[3] = {
+	"ACTL001",
+	"LOGO001",
+	"SK"
+};
+
+const CHAR* trailersList[2] = {
+	"TRAILERA",
+	"TRAILERB"
+};
+
+const CHAR* __stdcall CheckTrailer(DWORD index)
 {
-	const CHAR* logoList[3] = {
-		"ACTL001",
-		"LOGO001",
-		"SK"
-	};
-
-	const CHAR* trailersList[2] = {
-		"TRAILERA",
-		"TRAILERB"
-	};
-
-	const CHAR* __stdcall CheckTrailer(DWORD index)
+	if (!index)
 	{
-		if (!index)
-		{
-			SeedRandom(timeGetTime());
-			return trailersList[Random() % (sizeof(trailersList) / sizeof(CHAR*))];
-		}
-		else
-			return logoList[index - 1];
+		SeedRandom(timeGetTime());
+		return trailersList[Random() % (sizeof(trailersList) / sizeof(CHAR*))];
 	}
+	else
+		return logoList[index - 1];
+}
 
-	DWORD back_004518C6;
-	VOID __declspec(naked) hook_004518BF()
+DWORD back_004518C6;
+VOID __declspec(naked) hook_004518BF()
+{
+	__asm
 	{
-		__asm
-		{
 			push eax
 			call CheckTrailer
 			mov ebx, eax
 			jmp back_004518C6
-		}
 	}
+}
 
-	DWORD back_004518FA;
-	VOID __declspec(naked) hook_004518F3()
+DWORD back_004518FA;
+VOID __declspec(naked) hook_004518F3()
+{
+	__asm
 	{
-		__asm
-		{
 			push eax
 			call CheckTrailer
 			mov edx, eax
 			jmp back_004518FA
-		}
 	}
+}
 
+namespace Hooks
+{
+#pragma optimize("s", on)
 	VOID Patch_Trailer(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -88,6 +89,7 @@ namespace Hooks
 		if (config.video.skipIntro)
 			PatchByte(hooker, 0x0043DAA3, 0xEB);
 		else
-			PatchCall(hooker, 0x0043DAAE, (VOID*)(0x004518DC + baseOffset));
+			PatchCall(hooker, 0x0043DAAE, (VOID*)f(0x004518DC));
 	}
+#pragma optimize("", on)
 }

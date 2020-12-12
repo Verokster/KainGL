@@ -200,6 +200,7 @@ VOID __declspec(naked) hook_0041315E()
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Language(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -230,4 +231,5 @@ namespace Hooks
 		PatchHook(hooker, 0x0041315E, hook_0041315E);
 		back_00413163 = f(0x00413163);
 	}
+#pragma optimize("", on)
 }

@@ -38,9 +38,9 @@ struct LabelShadow
 {
 	BYTE left;
 	BYTE right;
-} * labelShadowsList = (LabelShadow*)0x00496918;
+} * labelShadowsList;
 
-BOOL* xJoyListConnected = (BOOL*)0x0058CCF8;
+BOOL* xJoyListConnected;
 BOOL xJoyListCheck[XUSER_MAX_COUNT];
 
 DWORD __stdcall joyGetNumDevsHook() { return XUSER_MAX_COUNT; }
@@ -376,6 +376,7 @@ VOID __declspec(naked) hook_00413F0B()
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Input(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -427,7 +428,7 @@ namespace Hooks
 		back_00413D87 = f(0x00413D87);
 
 		// Correct label shadows
-		labelShadowsList = (LabelShadow*)((DWORD)labelShadowsList + baseOffset);
+		labelShadowsList = (LabelShadow*)f(0x00496918);
 		LabelShadow* shadowItem = labelShadowsList;
 		DWORD count = 10;
 		do
@@ -437,7 +438,7 @@ namespace Hooks
 			++shadowItem;
 		} while (--count);
 
-		xJoyListConnected = (BOOL*)((DWORD)xJoyListConnected + baseOffset);
+		xJoyListConnected = (BOOL*)f(0x0058CCF8);
 
 		joyList = (DWORD*)f(0x004BCCEC);
 		joyPsList = (DWORD*)f(0x004BCD6C);
@@ -448,4 +449,5 @@ namespace Hooks
 		keyDefaultList = (BYTE*)f(0x004BD1F1);
 		keyTempList = (BYTE*)f(0x00511AF4);
 	}
+#pragma optimize("", on)
 }

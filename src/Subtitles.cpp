@@ -175,6 +175,7 @@ VOID __declspec(naked) hook_0044099E()
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Subtitles(HOOKER hooker)
 	{
 		if (config.language.subtitles < 0)
@@ -399,4 +400,5 @@ namespace Hooks
 			}
 		}
 	}
+#pragma optimize("", on)
 }

@@ -475,6 +475,7 @@ VOID __declspec(naked) hook_00445340()
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Audio(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -507,7 +508,7 @@ namespace Hooks
 		sub_CreateRegularSoundBuffer = RedirectCall(hooker, 0x00451A64, CreateRegularSoundBuffer);
 
 		// prevent wave format calculation
-		PatchJump(hooker, 0x0044778E, 0x0044779A);
+		PatchJump(hooker, 0x0044778E, f(0x0044779A));
 		PatchHook(hooker, 0x00447064, hook_00447064);
 
 		PatchHook(hooker, 0x00451A01, hook_00451A01); // Do not check if audio file for video exists
@@ -550,6 +551,7 @@ namespace Hooks
 		back_0041684F = f(0x0041684F);
 
 		// Prevent "Coffee Guy"
-		PatchJump(hooker, 0x00419C5F, 0x00419C92);
+		PatchJump(hooker, 0x00419C5F, f(0x00419C92));
 	}
+#pragma optimize("", on)
 }

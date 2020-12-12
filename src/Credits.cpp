@@ -106,6 +106,7 @@ VOID __cdecl PrintSave(CHAR* dst, const CHAR* format, DWORD page, DWORD save)
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Credits(HOOKER hooker)
 	{
 		BYTE* creditsList = NULL;
@@ -330,4 +331,5 @@ namespace Hooks
 
 		PatchByte(hooker, 0x0041990C + 2, 24); // decrease speed 
 	}
+#pragma optimize("", on)
 }

@@ -28,6 +28,7 @@
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Library(HOOKER hooker)
 	{
 		PatchImportByName(hooker, "DirectDrawEnumerateA", Main::DirectDrawEnumerateA);
@@ -38,4 +39,5 @@ namespace Hooks
 		PatchHook(hooker, 0x0046F64D, memcpy);
 		PatchHook(hooker, 0x0046FBD6, memcmp);
 	}
+#pragma optimize("", on)
 }

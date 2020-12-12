@@ -27,7 +27,7 @@
 
 DWORD back_00423E9B;
 DWORD sub_0045DE6C;
-DWORD MemSet = (DWORD)memset;
+const DWORD sub_memset = (DWORD)memset;
 VOID __declspec(naked) hook_00423E96()
 {
 	__asm
@@ -38,19 +38,20 @@ VOID __declspec(naked) hook_00423E96()
 		push 0x34
 		push ecx
 		push eax
-		call MemSet
+		call sub_memset
 
 		pop eax
 		add esp, 0x8
 		push eax
 
-		call sub_0045DE6C
-		jmp back_00423E9B
+		push  back_00423E9B
+		jmp sub_0045DE6C
 	}
 }
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_EagleEye(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -59,4 +60,5 @@ namespace Hooks
 		back_00423E9B = f(0x00423E9B);
 		sub_0045DE6C = f(0x0045DE6C);
 	}
+#pragma optimize("", on)
 }

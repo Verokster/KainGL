@@ -25,7 +25,7 @@
 #include "stdafx.h"
 #include "Hooks.h"
 
-struct Mode
+const struct Mode
 {
 	BOOL hiRes;
 	BOOL hiColor;
@@ -46,7 +46,7 @@ DWORD GetFlag()
 {
 	for (DWORD i = 0; i < sizeof(modes) / sizeof(Mode); ++i)
 	{
-		Mode* mode = &modes[i];
+		const Mode* mode = &modes[i];
 		if (mode->hiRes == *flags.hiRes &&
 			mode->hiColor == *flags.hiColor &&
 			mode->window == *flags.window &&
@@ -70,18 +70,19 @@ VOID __declspec(naked) hook_0042785B()
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Modes(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
 
 		flags = { (BOOL*)f(0x008E81E0), (BOOL*)f(0x004C0EC0), (BOOL*)f(0x008E81D8), (BOOL*)f(0x008E81D0), (BOOL*)f(0x008E81DC) };
 
-		MemoryCopy((VOID*)(0x004BCF90 + baseOffset), modes, sizeof(modes));
+		MemoryCopy((VOID*)f(0x004BCF90), modes, sizeof(modes));
 		PatchHook(hooker, 0x0042785B, hook_0042785B);
 		back_0042789C = f(0x0042789C);
 
 		//PatchByte(0x0044E6B1 + 1, 0x1B);
-		PatchJump(hooker, 0x00429AFF, 0x00429B24);
+		PatchJump(hooker, 0x00429AFF, f(0x00429B24));
 		PatchByte(hooker, 0x00429BBD + 2, 3);
 
 		// Remove interlace from logic
@@ -113,4 +114,5 @@ namespace Hooks
 		PatchNop(hooker, 0x00428521, 6);
 		PatchNop(hooker, 0x0042852C, 6);
 	}
+#pragma optimize("", on)
 }

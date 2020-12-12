@@ -55,6 +55,7 @@ VOID __cdecl CheckZoom(DWORD flag)
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Zoom(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -86,4 +87,5 @@ namespace Hooks
 		// Prevent static camera
 		PatchNop(hooker, 0x0044E732, 5);
 	}
+#pragma optimize("", on)
 }

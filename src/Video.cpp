@@ -417,7 +417,7 @@ VOID __cdecl CheckVideoFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* na
 {
 	StrPrint(dest, format, kainDirPath, name);
 
-	interlaced = name == Hooks::trailersList[0] || name == Hooks::trailersList[1];
+	interlaced = name == trailersList[0] || name == trailersList[1];
 
 	FILE* hFile = FileOpen(dest, "rb");
 	if (hFile)
@@ -428,6 +428,7 @@ VOID __cdecl CheckVideoFile(CHAR* dest, const CHAR* format, CHAR* path, CHAR* na
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Video(HOOKER hooker)
 	{
 		DWORD baseOffset = GetBaseOffset(hooker);
@@ -440,13 +441,13 @@ namespace Hooks
 
 		// Remove delay start playing
 		PatchNop(hooker, 0x0045198B, 2);
-		PatchJump(hooker, 0x004640EB, 0x0046412F);
+		PatchJump(hooker, 0x004640EB, f(0x0046412F));
 		PatchHook(hooker, 0x00444EE2, hook_00444EE2);
 
 		if (config.video.skipIntro)
 		{
-			PatchJump(hooker, 0x0042A6FD, 0x0042A72A); // Skip movies
-			PatchJump(hooker, 0x0042A754, 0x0042A7E5); // Skip intro
+			PatchJump(hooker, 0x0042A6FD, f(0x0042A72A)); // Skip movies
+			PatchJump(hooker, 0x0042A754, f(0x0042A7E5)); // Skip intro
 		}
 		else
 		{
@@ -486,4 +487,5 @@ namespace Hooks
 
 		PatchCall(hooker, 0x004519A4, CheckVideoFile);
 	}
+#pragma optimize("", on)
 }

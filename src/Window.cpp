@@ -783,6 +783,7 @@ HWND __stdcall GetActiveWindowHook()
 
 namespace Hooks
 {
+#pragma optimize("s", on)
 	VOID Patch_Window(HOOKER hooker)
 	{
 		BOOL noWindow = FALSE;
@@ -1033,4 +1034,5 @@ namespace Hooks
 		devMode.dmSize = sizeof(DEVMODE);
 		config.fps.sync = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devMode) && (devMode.dmFields & DM_DISPLAYFREQUENCY) ? 1.0f / devMode.dmDisplayFrequency : 0.0;
 	}
+#pragma optimize("", on)
 }

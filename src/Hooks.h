@@ -53,13 +53,13 @@ extern DWORD* filesCount;
 extern FILE** filesHandlers;
 extern CHAR* bigPathes[];
 
+extern const CHAR* trailersList[2];
+
 namespace Hooks
 {
 	extern HWND hMainWnd;
 
 	extern DWORD sub_GetHash;
-
-	extern const CHAR* trailersList[2];
 
 	BOOL Load();
 

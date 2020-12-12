@@ -36,6 +36,7 @@ namespace Hooks
 
 	DWORD sub_GetHash;
 
+#pragma optimize("s", on)
 	VOID Start()
 	{
 		LoadXInput();
@@ -73,8 +74,8 @@ namespace Hooks
 	{
 		_asm
 		{
-			call Start
-			jmp back_0046B6AC
+			push back_0046B6AC
+			jmp Start
 		}
 	}
 
@@ -82,8 +83,6 @@ namespace Hooks
 	{
 		HOOKER hooker = CreateHooker(GetModuleHandle(NULL));
 		{
-			DWORD baseOffset = GetBaseOffset(hooker);
-
 			DWORD check;
 			if (ReadDWord(hooker, 0x0045F5DA + 1, &check) && check == WS_POPUP)
 			{
@@ -112,10 +111,11 @@ namespace Hooks
 				if (!found)
 					StrCopy(kainJamPath, kainDirPath);
 
-				config.camera.isStatic = (BOOL*)(0x005947CC + baseOffset);
+				DWORD baseOffset = GetBaseOffset(hooker);
+				config.camera.isStatic = (BOOL*)f(0x005947CC);
 
 				DWORD old_prot;
-				VirtualProtect((VOID*)(0x00480000 + baseOffset), 0x2000, PAGE_EXECUTE_READWRITE, &old_prot);
+				VirtualProtect((VOID*)f(0x00480000), 0x2000, PAGE_EXECUTE_READWRITE, &old_prot);
 
 				PatchHook(hooker, 0x0046841E, hook_0046841E);
 				back_0046B6AC = f(0x0046B6AC);
@@ -129,4 +129,5 @@ namespace Hooks
 
 		return FALSE;
 	}
+#pragma optimize("", on)
 }
